@@ -3,7 +3,11 @@ import { logout } from './actions';
 
 const LINKS = [
   { href: '/admin', label: 'Übersicht', key: 'home' },
+  { href: '/admin/bestellungen', label: 'Bestellungen', key: 'orders' },
   { href: '/admin/produkte', label: 'Produkte', key: 'products' },
+  { href: '/admin/widerrufe', label: 'Widerrufe', key: 'withdrawals' },
+  { href: '/admin/veranstaltungen', label: 'Veranstaltungen', key: 'events' },
+  { href: '/admin/einstellungen', label: 'Einstellungen', key: 'settings', owner: true },
   { href: '/admin/api-keys', label: 'API-Schlüssel', key: 'keys', owner: true },
 ] as const;
 

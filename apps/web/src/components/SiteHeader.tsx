@@ -7,7 +7,13 @@ import { currentCartId } from '@/server/cart';
 import { LanguageSwitch } from './LanguageSwitch';
 import { SearchForm } from './SearchForm';
 
-export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets'; query?: string }) {
+export async function SiteHeader({
+  active,
+  query,
+}: {
+  active?: 'cards' | 'sets' | 'events';
+  query?: string;
+}) {
   const t = await getTranslations('Nav');
   // Reading the cookie makes every page dynamic, which the shop pages are anyway.
   const cartId = await currentCartId();
@@ -27,6 +33,9 @@ export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets';
           </Link>
           <Link href="/sets" aria-current={active === 'sets' ? 'page' : undefined}>
             {t('sets')}
+          </Link>
+          <Link href="/veranstaltungen" aria-current={active === 'events' ? 'page' : undefined}>
+            {t('events')}
           </Link>
         </nav>
         <SearchForm

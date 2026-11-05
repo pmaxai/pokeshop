@@ -6,6 +6,8 @@ export type MailTemplate =
   | 'order_confirmation'
   | 'order_notification'
   | 'order_unavailable'
+  | 'order_shipped'
+  | 'refund_issued'
   | 'withdrawal_ack'
   | 'withdrawal_notification'
   | 'admin_alert';

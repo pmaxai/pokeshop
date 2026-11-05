@@ -77,9 +77,13 @@ function pageNumbers(doc: PDFKit.PDFDocument, label: (n: number, total: number) 
 // ---------------------------------------------------------------------------
 
 export type InvoiceData = {
+  /** Invoice, or a correction (credit note) for a refund on an invoiced order. */
+  kind: 'invoice' | 'credit_note';
   number: string;
   issuedAt: Date;
-  deliveredAt: Date;
+  deliveredAt: Date | null;
+  /** Credit note: number of the invoice it corrects. */
+  refersTo: string | null;
   orderNumber: string;
   locale: 'de' | 'en';
   company: Company;
@@ -105,6 +109,11 @@ export type InvoiceData = {
 const INVOICE_TEXT = {
   de: {
     title: 'Rechnung',
+    creditTitle: 'Rechnungskorrektur',
+    creditDate: 'Datum',
+    creditTotal: 'Erstattungsbetrag',
+    refersTo: 'Zu Rechnung',
+    refunded: (date: string) => `Der Betrag wurde am ${date} auf dein Zahlungsmittel erstattet.`,
     number: 'Rechnungsnummer',
     date: 'Rechnungsdatum',
     delivery: 'Lieferdatum',
@@ -125,6 +134,11 @@ const INVOICE_TEXT = {
   },
   en: {
     title: 'Invoice',
+    creditTitle: 'Credit note',
+    creditDate: 'Date',
+    creditTotal: 'Amount refunded',
+    refersTo: 'Corrects invoice',
+    refunded: (date: string) => `The amount was refunded to your payment method on ${date}.`,
     number: 'Invoice number',
     date: 'Invoice date',
     delivery: 'Delivery date',
@@ -156,7 +170,9 @@ export const PAYMENT_METHOD_LABELS: Record<string, { de: string; en: string }> =
 export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
   const t = INVOICE_TEXT[inv.locale];
   const L = inv.locale;
-  const doc = newDoc(`${t.title} ${inv.number}`, inv.company.name ?? '');
+  const credit = inv.kind === 'credit_note';
+  const title = credit ? t.creditTitle : t.title;
+  const doc = newDoc(`${title} ${inv.number}`, inv.company.name ?? '');
   const left = doc.page.margins.left;
   const width = doc.page.width - left - doc.page.margins.right;
 
@@ -200,14 +216,11 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
     );
 
   // Title and facts
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(16)
-    .fillColor(INK)
-    .text(`${t.title} ${inv.number}`, left, 268);
+  doc.font('Helvetica-Bold').fontSize(16).fillColor(INK).text(`${title} ${inv.number}`, left, 268);
   const facts: [string, string][] = [
-    [t.date, dateFmt(inv.issuedAt, L)],
-    [t.delivery, dateFmt(inv.deliveredAt, L)],
+    [credit ? t.creditDate : t.date, dateFmt(inv.issuedAt, L)],
+    ...(inv.deliveredAt ? ([[t.delivery, dateFmt(inv.deliveredAt, L)]] as [string, string][]) : []),
+    ...(inv.refersTo ? ([[t.refersTo, inv.refersTo]] as [string, string][]) : []),
     [t.order, inv.orderNumber],
   ];
   let y = 296;
@@ -282,14 +295,16 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
   };
   sumRow(t.net, formatEuro(inv.totalCents - inv.vatCents, L));
   sumRow(`${t.vat} ${formatRate(inv.vatRateBp, L)}`, formatEuro(inv.vatCents, L));
-  sumRow(t.gross, formatEuro(inv.totalCents, L), true);
+  sumRow(credit ? t.creditTotal : t.gross, formatEuro(inv.totalCents, L), true);
 
   y += 16;
   doc.font('Helvetica').fontSize(9).fillColor(INK);
   const notes: string[] = [];
   if (inv.vatRegime === 'oss' && inv.taxCountry) notes.push(t.oss(inv.taxCountry));
   if (inv.vatRegime === 'export') notes.push(t.export);
-  if (inv.paidAt) {
+  if (credit) {
+    notes.push(t.refunded(dateFmt(inv.issuedAt, L)));
+  } else if (inv.paidAt) {
     const m = inv.paidWith ? (PAYMENT_METHOD_LABELS[inv.paidWith]?.[L] ?? inv.paidWith) : 'Stripe';
     notes.push(t.paid(m, dateFmt(inv.paidAt, L)));
   }

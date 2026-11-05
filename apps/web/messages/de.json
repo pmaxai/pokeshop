@@ -21,7 +21,8 @@
     "home": "Startseite",
     "skip": "Zum Inhalt springen",
     "cart": "Warenkorb",
-    "cartCount": "Warenkorb, {count, plural, =0 {leer} one {# Karte} other {# Karten}}"
+    "cartCount": "Warenkorb, {count, plural, =0 {leer} one {# Karte} other {# Karten}}",
+    "events": "Veranstaltungen"
   },
   "Home": {
     "title": "Pokémon-Einzelkarten, deren Zustand du kennst, bevor du bestellst",
@@ -118,7 +119,8 @@
     "company": "Ein Shop der {name}",
     "terms": "AGB",
     "withdrawalInfo": "Widerrufsbelehrung",
-    "withdraw": "Vertrag widerrufen"
+    "withdraw": "Vertrag widerrufen",
+    "events": "Veranstaltungen"
   },
   "Conditions": {
     "M": "Mint",
@@ -280,7 +282,10 @@
     "deliverTo": "Lieferadresse",
     "orderedOn": "Bestellt am {date}",
     "withdraw": "Vertrag widerrufen",
-    "backToShop": "Weiter einkaufen"
+    "backToShop": "Weiter einkaufen",
+    "track": "Sendung verfolgen",
+    "trackingNumber": "Sendungsnummer {number}",
+    "shippedText": "Wir haben deine Karten am {date} mit der Österreichischen Post verschickt. Die Rechnung kam mit der Versandbestätigung per E-Mail."
   },
   "Legal": {
     "missing": "Dieser Text wird gerade aktualisiert. Bitte schreib uns bei Fragen an {email}.",
@@ -300,5 +305,20 @@
     "doneText": "Eingang: {time}. Die Eingangsbestätigung mit dem Inhalt deiner Erklärung ist per E-Mail unterwegs. Bitte schick die Karten innerhalb von 14 Tagen an {address} zurück.",
     "info": "Die Einzelheiten stehen in der <link>Widerrufsbelehrung</link>.",
     "errorsTitle": "Bitte prüfe die markierten Felder."
+  },
+  "Events": {
+    "title": "Veranstaltungen",
+    "intro": "Hier triffst du uns persönlich: auf Tauschbörsen, Sammlermessen und Turnieren. Bring deine Wunschliste mit – oder schreib uns vorher, welche Karten wir mitnehmen sollen.",
+    "upcoming": "Nächste Termine",
+    "none": "Gerade sind keine Termine geplant. Schau bald wieder vorbei.",
+    "past": "Vergangene Veranstaltungen",
+    "when": "Wann",
+    "where": "Wo",
+    "entry": "Eintritt",
+    "table": "Unser Stand",
+    "website": "Zur Veranstaltung",
+    "more": "Details",
+    "all": "Alle Veranstaltungen",
+    "until": "bis"
   }
 }

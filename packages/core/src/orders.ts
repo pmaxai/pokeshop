@@ -7,7 +7,7 @@ import { isPgError, SQLSTATE } from './db.ts';
 import { emptyCart, loadCart, saveCheckoutDraft } from './cart.ts';
 import type { CheckoutProblem } from './checkout.ts';
 import { currentLegalVersions } from './legal.ts';
-import { formatDocumentNumber, newOrderNumber } from './numbering.ts';
+import { newOrderNumber } from './numbering.ts';
 import { alertShop, enqueueMail, enqueueShopMail } from './outbox.ts';
 import type { PaymentEvent, PaymentProvider, SessionInfo } from './payments.ts';
 import { reservedUntil, stripeSessionExpiresAt } from './reservation.ts';
@@ -342,37 +342,6 @@ export type PaidOutcome =
   | { kind: 'unknown_order' };
 
 /**
- * Issues the invoice for an order (gap-free numbers per year, Vienna time). Called when the
- * order ships, because the invoice must state the delivery date (§ 11 UStG).
- */
-export async function issueInvoice(
-  tx: Tx,
-  orderId: number,
-  at: Date,
-): Promise<{ id: number; number: string }> {
-  const [order] = await tx<OrderRow[]>`
-    SELECT id, number, status, locale, email, total_cents, vat_cents, vat_rate_bp, cart_id,
-           stripe_session_id FROM orders WHERE id = ${orderId} FOR UPDATE`;
-  if (!order) throw new Error(`order ${orderId} not found`);
-  const [existing] = await tx<{ id: number; number: string }[]>`
-    SELECT id, number FROM documents WHERE order_id = ${orderId} AND kind = 'invoice'`;
-  if (existing) return existing;
-  const year = Number(
-    new Intl.DateTimeFormat('en', { year: 'numeric', timeZone: 'Europe/Vienna' }).format(at),
-  );
-  const [s] = await tx<{ seq: number }[]>`SELECT next_document_seq('invoice', ${year}) AS seq`;
-  const number = formatDocumentNumber('invoice', year, s!.seq);
-  const [doc] = await tx<{ id: number }[]>`
-    INSERT INTO documents (order_id, kind, year, seq, number, issued_at, net_cents, vat_cents,
-                           gross_cents, vat_rate_bp, locale)
-    VALUES (${order.id}, 'invoice', ${year}, ${s!.seq}, ${number}, ${at},
-            ${order.total_cents - order.vat_cents}, ${order.vat_cents}, ${order.total_cents},
-            ${order.vat_rate_bp}, ${order.locale})
-    RETURNING id`;
-  return { id: doc!.id, number };
-}
-
-/**
  * The buyer paid. Commits the held cards (taking them again if the hold had run out),
  * issues the invoice and queues the mails. If the cards are gone by now, the payment is
  * refunded in full and the buyer is told.
@@ -479,7 +448,7 @@ export async function runPendingRefunds(
   >`
     SELECT r.id, r.order_id, r.amount_cents, o.stripe_payment_intent_id AS pi, o.email, o.locale, o.number
       FROM refunds r JOIN orders o ON o.id = r.order_id
-     WHERE r.status = 'pending' AND (${orderId ?? null}::bigint IS NULL OR r.order_id = ${orderId ?? null}::bigint)
+     WHERE r.status = 'pending' AND r.reason = 'cards_sold_out_after_payment' AND (${orderId ?? null}::bigint IS NULL OR r.order_id = ${orderId ?? null}::bigint)
      ORDER BY r.id LIMIT 20`;
   let allDone = rows.length > 0;
   for (const r of rows) {
@@ -597,24 +566,8 @@ export async function handlePaymentEvent(
       return (await releaseOrder(sql, { sessionId: event.sessionId }, 'expired', 'session_expired'))
         ? 'expired'
         : 'ignored';
-    case 'charge.refunded': {
-      const [o] = await sql<{ id: number; number: string; refunded_cents: number }[]>`
-        SELECT id, number, refunded_cents FROM orders WHERE stripe_payment_intent_id = ${event.paymentIntentId}`;
-      if (!o) return 'ignored';
-      if (event.amountRefunded > o.refunded_cents) {
-        await sql`UPDATE orders SET refunded_cents = ${event.amountRefunded} WHERE id = ${o.id}`;
-        await orderEvent(sql, o.id, 'refunded_in_stripe', {
-          amount_refunded: event.amountRefunded,
-        });
-        await alertShop(
-          sql,
-          `Erstattung in Stripe: ${o.number}`,
-          `In Stripe wurden insgesamt ${(event.amountRefunded / 100).toFixed(2)} € erstattet. Bitte Bestand und Gutschrift prüfen.`,
-          `stripe_refund:${event.id}`,
-        );
-      }
-      return 'recorded';
-    }
+    case 'charge.refunded':
+      return recordExternalRefund(sql, event.paymentIntentId, event.amountRefunded, event.id);
     case 'charge.dispute.created': {
       const [o] = await sql<{ id: number; number: string }[]>`
         SELECT id, number FROM orders WHERE stripe_payment_intent_id = ${event.paymentIntentId}`;
@@ -630,6 +583,41 @@ export async function handlePaymentEvent(
     default:
       return 'ignored';
   }
+}
+
+/**
+ * Stripe reports the total refunded on a charge. Refunds the shop made itself are already
+ * recorded; anything beyond that was done in the Stripe Dashboard and is recorded here.
+ */
+export async function recordExternalRefund(
+  sql: Sql,
+  paymentIntentId: string,
+  amountRefunded: number,
+  eventId: string,
+): Promise<'recorded' | 'known' | 'ignored'> {
+  return sql.begin(async (tx) => {
+    const [o] = await tx<{ id: number; number: string }[]>`
+      SELECT id, number FROM orders WHERE stripe_payment_intent_id = ${paymentIntentId} FOR UPDATE`;
+    if (!o) return 'ignored';
+    const [k] = await tx<{ s: number }[]>`
+      SELECT coalesce(sum(amount_cents), 0)::int AS s FROM refunds
+       WHERE order_id = ${o.id} AND status IN ('pending', 'succeeded')`;
+    const diff = amountRefunded - (k?.s ?? 0);
+    if (diff <= 0) return 'known';
+    await tx`INSERT INTO refunds (order_id, amount_cents, reason, status, created_by)
+             VALUES (${o.id}, ${diff}, 'refunded_in_stripe_dashboard', 'succeeded', 'stripe')`;
+    await tx`UPDATE orders SET refunded_cents = refunded_cents + ${diff},
+                    status = CASE WHEN refunded_cents + ${diff} >= total_cents THEN 'refunded' ELSE status END
+              WHERE id = ${o.id}`;
+    await orderEvent(tx, o.id, 'refunded_in_stripe', { amount: diff });
+    await alertShop(
+      tx,
+      `Erstattung in Stripe: ${o.number}`,
+      `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet. Bestand und Gutschrift bitte im Admin prüfen – der Shop hat keine Karten zurückgebucht.`,
+      `stripe_refund:${eventId}`,
+    );
+    return 'recorded';
+  });
 }
 
 /** Stores a webhook event once. Returns false when it was already processed. */
@@ -693,6 +681,7 @@ export type CustomerOrder = {
   email: string | null;
   createdAt: Date;
   paidAt: Date | null;
+  shippedAt: Date | null;
   reservedUntil: Date | null;
   paymentUrl: string | null;
   shippingMethod: string;
@@ -735,6 +724,7 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       email: string | null;
       created_at: Date;
       paid_at: Date | null;
+      shipped_at: Date | null;
       reserved_until: Date | null;
       payment_url: string | null;
       shipping_method: string;
@@ -747,7 +737,7 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       billing_address: Address | null;
       tracking_number: string | null;
     }[]
-  >`SELECT id, number, status, locale, email, created_at, paid_at, reserved_until, payment_url,
+  >`SELECT id, number, status, locale, email, created_at, paid_at, shipped_at, reserved_until, payment_url,
            shipping_method, goods_cents, shipping_cents, total_cents, vat_cents, vat_rate_bp,
            shipping_address, billing_address, tracking_number
       FROM orders WHERE id = ${id}`;
@@ -777,6 +767,7 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
     email: o.email,
     createdAt: o.created_at,
     paidAt: o.paid_at,
+    shippedAt: o.shipped_at,
     reservedUntil: o.reserved_until,
     paymentUrl: o.status === 'checkout' ? o.payment_url : null,
     shippingMethod: o.shipping_method,

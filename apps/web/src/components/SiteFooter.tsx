@@ -17,6 +17,9 @@ export async function SiteFooter({ companyName }: { companyName: string }) {
               <li>
                 <Link href="/sets">{nav('sets')}</Link>
               </li>
+              <li>
+                <Link href="/veranstaltungen">{t('events')}</Link>
+              </li>
             </ul>
           </div>
           <div>

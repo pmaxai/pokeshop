@@ -11,7 +11,6 @@ import {
   createCheckoutOrder,
   expireHolds,
   handlePaymentEvent,
-  issueInvoice,
   orderById,
   releaseOrder,
   startPayment,
@@ -22,12 +21,13 @@ import {
 import { fakeProvider } from '../../src/payments.ts';
 import {
   graphMessage,
-  invoicePdf,
+  documentPdf,
   sendDueMails,
   type Mail,
   type MailTransport,
 } from '../../src/mail.ts';
 import { recordWithdrawal } from '../../src/withdrawals.ts';
+import { issueInvoice } from '../../src/fulfilment.ts';
 
 let sql: Sql;
 let drop: () => Promise<void>;
@@ -294,10 +294,10 @@ test('mails: confirmation with terms PDF, shop notice with boxes, invoice PDF', 
     { id: number }[]
   >`SELECT id FROM orders WHERE status = 'paid' ORDER BY id LIMIT 1`;
   const inv = await sql.begin((tx) => issueInvoice(tx, paid!.id, new Date('2026-11-06T10:00:00Z')));
-  assert.equal(inv.number, 'RE-2026-000001');
+  assert.equal(inv!.number, 'RE-2026-000001');
   const again = await sql.begin((tx) => issueInvoice(tx, paid!.id, new Date()));
-  assert.equal(again.number, inv.number, 'one invoice per order');
-  const pdf = await invoicePdf(sql, inv.id, mailCtx());
+  assert.equal(again!.number, inv!.number, 'one invoice per order');
+  const pdf = await documentPdf(sql, inv!.id, mailCtx());
   assert.equal(pdf.name, 'Rechnung-RE-2026-000001.pdf');
   assert.equal(pdf.content.subarray(0, 5).toString(), '%PDF-');
 });

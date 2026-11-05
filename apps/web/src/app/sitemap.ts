@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { sitemapProducts, setsForSale } from '@pokeshop/core/storefront';
+import { upcomingEvents } from '@pokeshop/core/events';
 import { getPathname } from '@/i18n/navigation';
 import { config, db } from '@/server/config';
 
@@ -28,6 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
   for (const s of await setsForSale(db(), 'de')) {
     const u = both({ pathname: '/sets/[set]', params: { set: s.setCode } });
+    entries.push({ url: u.de, alternates: { languages: u } });
+  }
+  for (const e of await upcomingEvents(db())) {
+    const u = both({ pathname: '/veranstaltungen/[slug]', params: { slug: e.slug } });
     entries.push({ url: u.de, alternates: { languages: u } });
   }
   for (const p of await sitemapProducts(db())) {

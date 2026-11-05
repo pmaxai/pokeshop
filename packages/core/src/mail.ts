@@ -273,6 +273,17 @@ const TEXT = {
     all: 'alle',
     legalPdf: 'AGB-und-Widerrufsbelehrung.pdf',
     invoicePdf: (n: string) => `Rechnung-${n}.pdf`,
+    creditPdf: (n: string) => `Rechnungskorrektur-${n}.pdf`,
+    shippedSubject: (n: string) => `Deine Karten sind unterwegs (${n})`,
+    shippedIntro:
+      'deine Karten sind gut verpackt und auf dem Weg zu dir. Die Rechnung findest du im Anhang.',
+    tracking: (num: string) => `Sendungsnummer: <strong>${esc(num)}</strong>`,
+    track: 'Sendung verfolgen',
+    refundSubject: (n: string) => `Erstattung zu deiner Bestellung ${n}`,
+    refundIntro: (amount: string) =>
+      `wir haben dir <strong>${esc(amount)}</strong> auf dein Zahlungsmittel zurückerstattet. Je nach Bank dauert die Gutschrift einige Tage.`,
+    refundCredit: 'Die Rechnungskorrektur findest du im Anhang.',
+    refundedItems: 'Erstattet',
   },
   en: {
     hello: (n: string) => `Hello ${n},`,
@@ -312,6 +323,16 @@ const TEXT = {
     all: 'all',
     legalPdf: 'Terms-and-withdrawal.pdf',
     invoicePdf: (n: string) => `Invoice-${n}.pdf`,
+    creditPdf: (n: string) => `Credit-note-${n}.pdf`,
+    shippedSubject: (n: string) => `Your cards are on their way (${n})`,
+    shippedIntro: 'your cards are packed safely and on their way to you. The invoice is attached.',
+    tracking: (num: string) => `Tracking number: <strong>${esc(num)}</strong>`,
+    track: 'Track parcel',
+    refundSubject: (n: string) => `Refund for your order ${n}`,
+    refundIntro: (amount: string) =>
+      `we have refunded <strong>${esc(amount)}</strong> to your payment method. Depending on your bank it may take a few days to show.`,
+    refundCredit: 'The credit note is attached.',
+    refundedItems: 'Refunded',
   },
 };
 
@@ -362,6 +383,79 @@ export async function renderTemplate(
       return {
         subject: t.confirmSubject(o.number),
         html: layout(L, ctx, t.confirmSubject(o.number), body),
+      };
+    }
+    case 'order_shipped': {
+      const o = await orderById(db, Number(payload.order_id));
+      if (!o) throw new Error('order not found');
+      const token = await orderToken(db, o.id);
+      const [c] = await db<{ value: { tracking_url?: string } }[]>`
+        SELECT value FROM settings WHERE key = 'carrier'`;
+      const trackUrl =
+        o.trackingNumber && c?.value?.tracking_url
+          ? c.value.tracking_url.replace('{number}', encodeURIComponent(o.trackingNumber))
+          : null;
+      const body = [
+        p(esc(t.hello(o.shippingAddress.name))),
+        p(t.shippedIntro),
+        o.trackingNumber ? p(t.tracking(o.trackingNumber)) : '',
+        trackUrl ? button(trackUrl, t.track) : '',
+        h2(t.yourOrder),
+        itemsTable(o, L),
+        h2(t.deliverTo),
+        p(address(o.shippingAddress, L)),
+        token
+          ? p(
+              `<a href="${esc(orderUrl(ctx, L, token))}" style="color:${C.accent}">${esc(t.viewOrder)}</a>`,
+            )
+          : '',
+        h2(t.withdrawalTitle),
+        p(t.withdrawal(withdrawUrl(ctx, L))),
+        p(esc(t.questions)),
+      ].join('\n');
+      return {
+        subject: t.shippedSubject(o.number),
+        html: layout(L, ctx, t.shippedSubject(o.number), body),
+      };
+    }
+    case 'refund_issued': {
+      const o = await orderById(db, Number(payload.order_id));
+      if (!o) throw new Error('order not found');
+      const [r] = await db<
+        {
+          amount_cents: number;
+          shipping_cents: number;
+          items: { orderItemId: number; quantity: number }[];
+        }[]
+      >`
+        SELECT amount_cents, shipping_cents, items FROM refunds WHERE id = ${Number(payload.refund_id)}`;
+      if (!r) throw new Error('refund not found');
+      const [credit] =
+        await db`SELECT 1 FROM documents WHERE refund_id = ${Number(payload.refund_id)}`;
+      const [ids] = await db<{ ids: number[] }[]>`
+        SELECT array_agg(id ORDER BY id) AS ids FROM order_items WHERE order_id = ${o.id}`;
+      const rows = r.items
+        .map((w) => {
+          const idx = (ids?.ids ?? []).indexOf(w.orderItemId);
+          const i = o.items[idx];
+          if (!i) return '';
+          return `<li>${w.quantity} × ${esc(L === 'en' ? i.nameEn : i.nameDe)} ${esc(i.cardNumber)}</li>`;
+        })
+        .join('');
+      const shippingRow =
+        r.shipping_cents > 0 ? `<li>${esc(t.shippingLabel(o.shippingMethod))}</li>` : '';
+      const body = [
+        p(esc(t.hello(o.shippingAddress.name))),
+        p(t.refundIntro(formatEuro(r.amount_cents, L))),
+        rows || shippingRow
+          ? `${h2(t.refundedItems)}<ul style="margin:0 0 14px;padding-left:20px">${rows}${shippingRow}</ul>`
+          : '',
+        credit ? p(esc(t.refundCredit)) : '',
+        p(esc(t.questions)),
+      ].join('\n');
+      return {
+        subject: t.refundSubject(o.number),
+        html: layout(L, ctx, t.refundSubject(o.number), body),
       };
     }
     case 'order_unavailable': {
@@ -468,7 +562,7 @@ export async function renderTemplate(
 // Attachments
 // ---------------------------------------------------------------------------
 
-export async function invoiceData(
+export async function documentData(
   db: Db,
   documentId: number,
   company: MailContext['company'],
@@ -476,54 +570,54 @@ export async function invoiceData(
   const [d] = await db<
     {
       order_id: number;
+      kind: 'invoice' | 'credit_note';
       number: string;
       issued_at: Date;
+      delivered_at: Date | null;
+      refers_to: string | null;
       locale: 'de' | 'en';
       pdf_key: string | null;
+      lines: { de: string; en: string; quantity: number; unit_cents: number }[];
+      billing_address: InvoiceData['billing'] | null;
+      gross_cents: number;
+      vat_cents: number;
+      vat_rate_bp: number;
     }[]
   >`
-    SELECT order_id, number, issued_at, locale, pdf_key FROM documents WHERE id = ${documentId} AND kind = 'invoice'`;
-  if (!d) throw new Error(`invoice ${documentId} not found`);
+    SELECT order_id, kind, number, issued_at, delivered_at, refers_to, locale, pdf_key, lines,
+           billing_address, gross_cents, vat_cents, vat_rate_bp
+      FROM documents WHERE id = ${documentId}`;
+  if (!d) throw new Error(`document ${documentId} not found`);
   const o = await orderById(db, d.order_id);
   const [x] = await db<
     {
       vat_regime: 'domestic' | 'oss' | 'export';
       tax_country: string | null;
       payment_method_type: string | null;
-      shipped_at: Date | null;
     }[]
-  >`
-    SELECT vat_regime, tax_country, payment_method_type, shipped_at FROM orders WHERE id = ${d.order_id}`;
+  >`SELECT vat_regime, tax_country, payment_method_type FROM orders WHERE id = ${d.order_id}`;
   if (!o || !x) throw new Error('order not found');
   const L = d.locale;
   return {
     pdfKey: d.pdf_key,
+    kind: d.kind,
     number: d.number,
     issuedAt: d.issued_at,
-    deliveredAt: x.shipped_at ?? d.issued_at,
+    deliveredAt: d.kind === 'invoice' ? (d.delivered_at ?? d.issued_at) : null,
+    refersTo: d.refers_to,
     orderNumber: o.number,
     locale: L,
     company,
-    billing: o.billingAddress ?? o.shippingAddress,
-    items: o.items.map((i) => ({
-      description: [
-        `${L === 'en' ? i.nameEn : i.nameDe} ${i.cardNumber}`,
-        L === 'en' ? (i.setNameEn ?? i.setNameDe) : (i.setNameDe ?? i.setNameEn),
-        i.cardLanguage,
-        i.condition,
-      ]
-        .filter(Boolean)
-        .join(', '),
-      quantity: i.quantity,
-      unitCents: i.unitPriceCents,
+    billing: d.billing_address ?? o.billingAddress ?? o.shippingAddress,
+    items: d.lines.map((l) => ({
+      description: L === 'en' ? l.en : l.de,
+      quantity: l.quantity,
+      unitCents: l.unit_cents,
     })),
-    shipping:
-      o.shippingCents > 0
-        ? { label: TEXT[L].shippingLabel(o.shippingMethod), cents: o.shippingCents }
-        : null,
-    totalCents: o.totalCents,
-    vatCents: o.vatCents,
-    vatRateBp: o.vatRateBp,
+    shipping: null,
+    totalCents: d.gross_cents,
+    vatCents: d.vat_cents,
+    vatRateBp: d.vat_rate_bp,
     vatRegime: x.vat_regime,
     taxCountry: x.tax_country,
     paidWith: x.payment_method_type,
@@ -531,24 +625,27 @@ export async function invoiceData(
   };
 }
 
-/** Invoice PDF, rendered once and kept under MEDIA_DIR/documents. */
-export async function invoicePdf(
+/** Invoice or credit note PDF, rendered once and kept under MEDIA_DIR/documents. */
+export async function documentPdf(
   db: Db,
   documentId: number,
   ctx: MailContext,
-): Promise<{ name: string; content: Buffer }> {
-  const data = await invoiceData(db, documentId, ctx.company);
-  const name = TEXT[data.locale].invoicePdf(data.number);
+): Promise<{ name: string; content: Buffer; key: string }> {
+  const data = await documentData(db, documentId, ctx.company);
+  const name =
+    data.kind === 'invoice'
+      ? TEXT[data.locale].invoicePdf(data.number)
+      : TEXT[data.locale].creditPdf(data.number);
   if (data.pdfKey) {
     const cached = await readFile(join(ctx.mediaDir, data.pdfKey)).catch(() => null);
-    if (cached) return { name, content: cached };
+    if (cached) return { name, content: cached, key: data.pdfKey };
   }
   const content = await renderInvoicePdf(data);
   const key = `documents/${data.issuedAt.getUTCFullYear()}/${data.number}.pdf`;
   await mkdir(dirname(join(ctx.mediaDir, key)), { recursive: true });
   await writeFile(join(ctx.mediaDir, key), content);
   await db`UPDATE documents SET pdf_key = ${key} WHERE id = ${documentId}`;
-  return { name, content };
+  return { name, content, key };
 }
 
 async function resolveAttachment(
@@ -558,7 +655,7 @@ async function resolveAttachment(
   ctx: MailContext,
 ): Promise<Attachment> {
   if (a.kind === 'document') {
-    const pdf = await invoicePdf(db, a.id, ctx);
+    const { key: _key, ...pdf } = await documentPdf(db, a.id, ctx);
     return { ...pdf, contentType: 'application/pdf' };
   }
   const docs = [];

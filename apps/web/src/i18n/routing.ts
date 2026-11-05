@@ -22,6 +22,8 @@ export const routing = defineRouting({
     '/agb': { de: '/agb', en: '/terms' },
     '/widerrufsbelehrung': { de: '/widerrufsbelehrung', en: '/right-of-withdrawal' },
     '/vertrag-widerrufen': { de: '/vertrag-widerrufen', en: '/withdraw' },
+    '/veranstaltungen': { de: '/veranstaltungen', en: '/events' },
+    '/veranstaltungen/[slug]': { de: '/veranstaltungen/[slug]', en: '/events/[slug]' },
     '/warenkorb': { de: '/warenkorb', en: '/cart' },
     '/kasse': { de: '/kasse', en: '/checkout' },
     '/bestellung/[token]': { de: '/bestellung/[token]', en: '/order/[token]' },
