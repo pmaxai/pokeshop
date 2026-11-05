@@ -5,7 +5,7 @@ import { formatEuro, formatRate } from '@pokeshop/core';
 import { orderByToken, syncSession } from '@pokeshop/core/orders';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { db } from '@/server/config';
+import { db, getSetting } from '@/server/config';
 import { payments } from '@/server/payments';
 
 export const dynamic = 'force-dynamic';
@@ -54,11 +54,41 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const paid = ['paid', 'packing', 'shipped', 'completed'].includes(order.status);
   const a = order.shippingAddress;
 
+  const carrier = await getSetting<{ tracking_url?: string }>('carrier', {});
+  const trackUrl =
+    order.trackingNumber && carrier.tracking_url
+      ? carrier.tracking_url.replace('{number}', encodeURIComponent(order.trackingNumber))
+      : null;
+
   let head: React.ReactNode;
-  if (paid) {
+  if (order.status === 'shipped' || order.status === 'completed') {
     head = (
       <>
-        <h1>{order.status === 'shipped' ? t('shipped') : t('thanks')}</h1>
+        <h1>{t('shipped')}</h1>
+        <p className="lead">
+          {t('shippedText', { date: dateFmt.format(order.shippedAt ?? order.createdAt) })}
+        </p>
+        {order.trackingNumber && (
+          <p className="actions">
+            <span>{t('trackingNumber', { number: order.trackingNumber })}</span>
+            {trackUrl && (
+              <a
+                href={trackUrl}
+                className="btn btn--accent"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {t('track')}
+              </a>
+            )}
+          </p>
+        )}
+      </>
+    );
+  } else if (paid) {
+    head = (
+      <>
+        <h1>{t('thanks')}</h1>
         <p className="lead">{t('paidText', { email: order.email ?? '' })}</p>
       </>
     );

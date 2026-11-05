@@ -1274,3 +1274,97 @@ p {
   border-top: 1px solid var(--line);
   margin-block: var(--s-6);
 }
+
+/* ---------- events ---------- */
+.events-page,
+.event-page {
+  padding-top: var(--s-6);
+}
+.events-page h1 {
+  font-size: var(--t-2xl);
+}
+.event-list {
+  list-style: none;
+  margin: var(--s-6) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  max-width: 52rem;
+}
+.event-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: var(--s-4);
+  padding-block: var(--s-4);
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.event-row h3 {
+  font-size: var(--t-lg);
+}
+.event-row h3 a {
+  text-decoration: none;
+}
+.event-row h3 a:hover {
+  text-decoration: underline;
+}
+.event-row__when {
+  font-weight: 600;
+  margin-top: var(--s-1);
+}
+.event-date {
+  display: grid;
+  justify-items: center;
+  line-height: 1;
+  padding: var(--s-2) 0;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.event-date__day {
+  font-size: var(--t-2xl);
+  font-weight: 800;
+  font-stretch: 72%;
+  font-variant-numeric: tabular-nums;
+}
+.event-date__month {
+  font-weight: 700;
+  font-size: var(--t-sm);
+  margin-top: 0.2rem;
+}
+.event-date__year {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  margin-top: 0.15rem;
+}
+.event-head {
+  display: flex;
+  gap: var(--s-5);
+  align-items: center;
+  margin-top: var(--s-4);
+}
+.event-date--large {
+  min-width: 5.5rem;
+}
+.event-date--large .event-date__day {
+  font-size: var(--t-3xl);
+}
+.event-text {
+  white-space: pre-line;
+  max-width: 68ch;
+}
+.events-past {
+  margin-top: var(--s-7);
+  max-width: 52rem;
+}
+.events-past h2 {
+  font-size: var(--t-lg);
+  margin-bottom: var(--s-3);
+}
+.events-past ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--s-1);
+  color: var(--muted);
+}

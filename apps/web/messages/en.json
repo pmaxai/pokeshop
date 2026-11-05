@@ -21,7 +21,8 @@
     "home": "Home",
     "skip": "Skip to content",
     "cart": "Cart",
-    "cartCount": "Cart, {count, plural, =0 {empty} one {# card} other {# cards}}"
+    "cartCount": "Cart, {count, plural, =0 {empty} one {# card} other {# cards}}",
+    "events": "Events"
   },
   "Home": {
     "title": "Single Pokémon cards whose condition you know before you order",
@@ -118,7 +119,8 @@
     "company": "A shop by {name}",
     "terms": "Terms and conditions",
     "withdrawalInfo": "Right of withdrawal",
-    "withdraw": "Withdraw from contract"
+    "withdraw": "Withdraw from contract",
+    "events": "Events"
   },
   "Conditions": {
     "M": "Mint",
@@ -280,7 +282,10 @@
     "deliverTo": "Delivery address",
     "orderedOn": "Ordered on {date}",
     "withdraw": "Withdraw from contract",
-    "backToShop": "Continue shopping"
+    "backToShop": "Continue shopping",
+    "track": "Track parcel",
+    "trackingNumber": "Tracking number {number}",
+    "shippedText": "We sent your cards with Austrian Post on {date}. The invoice came with the shipping confirmation by e-mail."
   },
   "Legal": {
     "missing": "This text is being updated. If you have questions, please write to {email}.",
@@ -300,5 +305,20 @@
     "doneText": "Received: {time}. The acknowledgement with the content of your statement is on its way by e-mail. Please send the cards back to {address} within 14 days.",
     "info": "Details are in the <link>withdrawal instructions</link>.",
     "errorsTitle": "Please check the marked fields."
+  },
+  "Events": {
+    "title": "Events",
+    "intro": "Meet us in person: at trading shows, collector fairs and tournaments. Bring your wish list – or write to us beforehand which cards we should bring.",
+    "upcoming": "Coming up",
+    "none": "No dates planned right now. Check back soon.",
+    "past": "Past events",
+    "when": "When",
+    "where": "Where",
+    "entry": "Entry",
+    "table": "Our stand",
+    "website": "Event website",
+    "more": "Details",
+    "all": "All events",
+    "until": "until"
   }
 }

@@ -23,6 +23,26 @@ export default async function Dashboard({
 }) {
   const user = await requireAdmin();
   const sp = await searchParams;
+  const [[todo]] = await Promise.all([
+    db()<
+      {
+        to_pack: number;
+        packing: number;
+        withdrawals: number;
+        failed_mails: number;
+        month_cents: number;
+        month_orders: number;
+      }[]
+    >`
+      SELECT (SELECT count(*) FROM orders WHERE status = 'paid')::int AS to_pack,
+             (SELECT count(*) FROM orders WHERE status = 'packing')::int AS packing,
+             (SELECT count(*) FROM withdrawals WHERE handled_at IS NULL)::int AS withdrawals,
+             (SELECT count(*) FROM outbox WHERE status = 'failed')::int AS failed_mails,
+             (SELECT coalesce(sum(total_cents - refunded_cents), 0) FROM orders
+               WHERE paid_at >= date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') AT TIME ZONE 'Europe/Vienna')::bigint AS month_cents,
+             (SELECT count(*) FROM orders
+               WHERE paid_at >= date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') AT TIME ZONE 'Europe/Vienna')::int AS month_orders`,
+  ]);
   const [[stats], conflicts, failedImages, api, sync] = await Promise.all([
     db()<{ active: number; draft: number; copies: number; value: number; cards: number }[]>`
       SELECT (SELECT count(*) FROM products WHERE status = 'active')::int AS active,
@@ -71,6 +91,41 @@ export default async function Dashboard({
       }}
     >
       <h1>Übersicht</h1>
+      <dl className="stats stats--todo">
+        <div>
+          <dt>
+            <a href="/admin/bestellungen?view=open">Zu packen</a>
+          </dt>
+          <dd>{todo!.to_pack}</dd>
+        </div>
+        <div>
+          <dt>
+            <a href="/admin/bestellungen?view=packing">Wird gepackt</a>
+          </dt>
+          <dd>{todo!.packing}</dd>
+        </div>
+        <div>
+          <dt>
+            <a href="/admin/widerrufe">Offene Widerrufe</a>
+          </dt>
+          <dd>{todo!.withdrawals}</dd>
+        </div>
+        <div>
+          <dt>Umsatz diesen Monat</dt>
+          <dd>{formatEuro(Number(todo!.month_cents))}</dd>
+        </div>
+        <div>
+          <dt>Bestellungen diesen Monat</dt>
+          <dd>{todo!.month_orders}</dd>
+        </div>
+      </dl>
+      {todo!.failed_mails > 0 && (
+        <p className="notice notice--err">
+          {todo!.failed_mails} E-Mail(s) konnten nicht gesendet werden. Bitte die
+          Microsoft-365-Einrichtung prüfen (Worker-Log).
+        </p>
+      )}
+      <h2>Bestand</h2>
       <dl className="stats">
         <div>
           <dt>Aktive Produkte</dt>

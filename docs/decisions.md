@@ -2,6 +2,23 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-05 · Refunds go through the shop, documents never change
+
+Refunds are made in the admin (owner role): chosen cards and optionally the shipping charge,
+refunded through Stripe with the refund's id as idempotency key, then the copies go back into the
+box they came from if wanted. If the order was already invoiced, a correction document
+(GS-YYYY-000001, "Rechnungskorrektur") refers to the invoice. Invoices and corrections store a
+frozen copy of their lines, so later changes never alter an issued document. Refunds made directly
+in the Stripe Dashboard are recorded from the webhook and reported to the shop, but nothing is
+restocked automatically.
+
+## 2026-11-05 · Pick list sorted by box
+
+The pick list combines all selected orders, one line per box and card, sorted by box number, with
+one packing slip per order (address, shipping method in capitals when insured). Printing it moves
+the orders to "packing". Insured and tracked parcels can only be marked shipped with a tracking
+number.
+
 ## 2026-11-05 · High value means a price above € 20, kept by the database
 
 A trigger sets `products.high_value` from the price (more than the setting

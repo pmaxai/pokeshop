@@ -11,7 +11,12 @@ import {
   requeueStaleJobs,
   type Job,
 } from '@pokeshop/core/jobs';
-import { mailTransportFromEnv, sendDueMails, type MailContext } from '@pokeshop/core/mail';
+import {
+  documentPdf,
+  mailTransportFromEnv,
+  sendDueMails,
+  type MailContext,
+} from '@pokeshop/core/mail';
 import { expireHolds, runPendingRefunds } from '@pokeshop/core/orders';
 import { paymentsFromEnv } from '@pokeshop/core/payments';
 import { httpTcgdexClient, syncCardDetails, syncSets } from '@pokeshop/core/tcgdex';
@@ -42,6 +47,10 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
   },
   'tcgdex.card': async (job) => {
     await syncCardDetails(sql, tcgdex, String(job.payload.card_ref));
+  },
+  // Invoice or credit note PDF requested in the admin before its mail went out.
+  'document.render': async (job) => {
+    await documentPdf(sql, Number(job.payload.document_id), await mailContext());
   },
 };
 

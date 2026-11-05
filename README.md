@@ -61,6 +61,10 @@ pnpm dev                                          # shop on :3000, admin on /adm
 MAIL_DIR=./.mails node apps/worker/src/main.ts    # worker (holds, mails as files, images, sync)
 ```
 
+## Daily work
+
+Packing, shipping, refunds and withdrawals: [docs/operations.md](docs/operations.md).
+
 ## Deployment
 
 Manual, see [docs/deploy.md](docs/deploy.md). Microsoft 365 app registrations:
