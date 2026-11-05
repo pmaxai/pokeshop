@@ -164,8 +164,9 @@ paths:
       operationId: patchProduct
       summary: Change some fields
       description: |
-        Only the fields sent change. `storage_location` moves **all** copies of the product into
-        that box (use the stock endpoint with `move` to move only some).
+        Only the fields sent change. `storage_location` moves **all free** copies of the product into
+        that box (use the stock endpoint with `move` to move only some). Copies held by an open
+        checkout stay where they are until it ends; the response lists a warning for them.
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:

@@ -1,7 +1,7 @@
 {
   "name": "pokeshop",
   "private": true,
-  "description": "pokemonkarten.at – online shop for single Pokémon TCG cards",
+  "description": "pokemonkarten.at \u2013 online shop for single Pok\u00e9mon TCG cards",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -9,16 +9,20 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "test": "pnpm run test:core && pnpm run test:db",
-    "test:core": "node --test \"packages/core/test/**/*.test.ts\"",
+    "dev": "pnpm --filter @pokeshop/web dev",
+    "build": "pnpm --filter @pokeshop/web build",
+    "migrate": "node packages/core/scripts/migrate.ts",
+    "test": "pnpm run test:core && pnpm run test:db && pnpm run test:integration",
+    "test:core": "node --test \"packages/core/test/*.test.ts\"",
     "test:db": "bash scripts/db-test.sh",
-    "typecheck": "tsc -p packages/core --noEmit",
+    "test:integration": "node --test --test-concurrency=4 \"packages/core/test/integration/*.test.ts\" \"apps/worker/test/*.test.ts\"",
+    "typecheck": "tsc -p packages/core --noEmit && tsc -p apps/worker --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
     "prettier": "^3.8.1",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   }
 }

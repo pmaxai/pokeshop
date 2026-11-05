@@ -10,6 +10,11 @@
   },
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "migrate": "node scripts/migrate.ts"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9",
+    "zod": "^4.6.7"
   }
 }

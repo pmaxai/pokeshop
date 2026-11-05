@@ -1,0 +1,37 @@
+import 'server-only';
+import { parseMasterKey } from '@pokeshop/core/secrets';
+import { getSql } from '@pokeshop/core/db';
+import { httpTcgdexClient, type TcgdexClient } from '@pokeshop/core/tcgdex';
+
+/** Server-side configuration from the environment, read lazily so `next build` works without it. */
+export const config = {
+  get baseUrl(): string {
+    return (process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  },
+  get mediaDir(): string {
+    return process.env.MEDIA_DIR ?? './.media';
+  },
+  get isProduction(): boolean {
+    return process.env.NODE_ENV === 'production';
+  },
+};
+
+let masterKey: Buffer | undefined;
+export function apiMasterKey(): Buffer {
+  masterKey ??= parseMasterKey(process.env.API_KEY_MASTER_KEY);
+  return masterKey;
+}
+
+let tcgdex: TcgdexClient | undefined;
+export function tcgdexClient(): TcgdexClient {
+  tcgdex ??= httpTcgdexClient();
+  return tcgdex;
+}
+
+export const db = getSql;
+
+/** Admin settings with sensible defaults. */
+export async function getSetting<T>(key: string, fallback: T): Promise<T> {
+  const [row] = await db()<{ value: T }[]>`SELECT value FROM settings WHERE key = ${key}`;
+  return row?.value ?? fallback;
+}
