@@ -11,9 +11,28 @@ internet ──► Caddy (infra/caddy) ──► pokeshop-web          ──►
              worker containers ──► Stripe, Microsoft Graph, TCGdex
 ```
 
-## 1. Prerequisites on the vServer
+## 1. Prerequisites on the server (Debian 12)
 
-- Docker Engine with the Compose plugin (`docker compose version`).
+- Docker Engine with the Compose plugin from Docker's apt repository (not Debian's `docker.io`):
+
+  ```sh
+  sudo apt update && sudo apt install -y ca-certificates curl git
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
+  sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+  Types: deb
+  URIs: https://download.docker.com/linux/debian
+  Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+  Components: stable
+  Architectures: $(dpkg --print-architecture)
+  Signed-By: /etc/apt/keyrings/docker.asc
+  EOF
+  sudo apt update
+  sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  docker compose version
+  ```
+
 - Ports 80 and 443 (TCP) and 443 (UDP, HTTP/3) open in the Exoscale security group.
 - DNS: `pokemonkarten.at`, `www.pokemonkarten.at` and `staging.pokemonkarten.at` point to the
   vServer (A and, if used, AAAA records). Caddy fetches certificates automatically once DNS resolves.
@@ -41,9 +60,13 @@ PostgreSQL 14 or newer.
 /opt/pokeshop/
   app/               git clone of this repository (only infra/ is needed at runtime)
   production.env     from .env.example, production values
+  production.image   one line: the image production runs, e.g. ghcr.io/pmaxai/pokeshop:sha-e77cccb
   staging.env        from .env.example, staging values (Stripe test keys, staging database)
-  secrets/graph-cert.pem
+  staging.image      one line: the image staging runs
+  secrets/graph-cert.pem   readable by uid 1001 (the app user in the image)
 ```
+
+Values containing `$` must be in single quotes in every env file (Compose expands `$` otherwise).
 
 Generate the random key per stack:
 
@@ -59,7 +82,7 @@ the scanning app needs new keys.
 ```sh
 cd /opt/pokeshop/app
 docker network create pokeshop-edge
-cp infra/caddy/.env.example infra/caddy/.env   # set ACME_EMAIL and the staging password hash
+cp infra/caddy/.env.example infra/caddy/.env   # set ACME_EMAIL and the staging password hash (in single quotes)
 docker compose -f infra/caddy/compose.yaml up -d
 ```
 
@@ -81,16 +104,20 @@ Alternatively build on the server: `docker build -f infra/Dockerfile -t pokeshop
 
 ## 6. Start or update a stack
 
+`infra/stack.sh` sets the project name, settings file and image for a stack, so production and
+staging cannot be mixed up (it also refuses a settings file whose `PUBLIC_BASE_URL` belongs to the
+other stack). Never run `infra/compose.yaml` without it: without `-p` the project is production.
+
 ```sh
 cd /opt/pokeshop/app && git pull
 
 # staging first
-ENV_FILE=/opt/pokeshop/staging.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:sha-abc1234 \
-  docker compose -p pokeshop-staging -f infra/compose.yaml up -d
+echo ghcr.io/pmaxai/pokeshop:sha-abc1234 > /opt/pokeshop/staging.image
+infra/stack.sh staging up -d
 
 # then production, same tag
-ENV_FILE=/opt/pokeshop/production.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:sha-abc1234 \
-  docker compose -p pokeshop -f infra/compose.yaml up -d
+echo ghcr.io/pmaxai/pokeshop:sha-abc1234 > /opt/pokeshop/production.image
+infra/stack.sh production up -d
 ```
 
 `migrate` runs the database migrations, loads the legal texts (terms, withdrawal, privacy) from
@@ -102,7 +129,7 @@ The worker log shows at start what it uses, e.g.
 `[worker] started (payments: stripe, mail: graph)`. Without Graph settings mails stay queued in
 the database and go out as soon as Graph is configured.
 
-Check: `docker compose -p pokeshop ps` (all healthy), `curl -fsS https://pokemonkarten.at/api/health`.
+Check: `infra/stack.sh production ps` (web and worker healthy), `curl -fsS https://pokemonkarten.at/api/health`.
 
 ## 7. First start
 
@@ -112,13 +139,13 @@ Check: `docker compose -p pokeshop ps` (all healthy), `curl -fsS https://pokemon
 2. Sign in at `https://<host>/admin` with your Microsoft account (docs/m365-setup.md, part B).
 3. Create the scanning app's key under _API-Schlüssel_ (owner only). The secret is shown once.
    Without the admin sign-in configured yet, the same works from the server:
-   `docker compose -p pokeshop -f infra/compose.yaml exec worker node apps/worker/src/cli.ts api-client create "Scanner Lager"`
+   `infra/stack.sh production exec worker node apps/worker/src/cli.ts api-client create "Scanner Lager"`
 4. Point the scanning app at `https://staging.pokemonkarten.at/api/v1` first and send a test card;
    it appears in the staging shop and under _Produkte_.
 
 ## 8. Roll back
 
-Start the previous image tag with the same command. Migrations only ever add; a rollback of the
+Write the previous image tag into `/opt/pokeshop/<stack>.image` and run `infra/stack.sh <stack> up -d`. Migrations only ever add; a rollback of the
 code works against the newer schema. A destructive schema change will be announced in the
 release notes with its own steps.
 

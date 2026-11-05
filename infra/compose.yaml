@@ -2,15 +2,13 @@
 # PostgreSQL server (DATABASE_URL in the .env file); Caddy runs separately
 # (infra/caddy) and reaches the web container over the shared "edge" network.
 #
-# Production:
-#   ENV_FILE=/opt/pokeshop/production.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:<tag> \
-#     docker compose -p pokeshop -f infra/compose.yaml up -d
-# Staging:
-#   ENV_FILE=/opt/pokeshop/staging.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:<tag> \
-#     docker compose -p pokeshop-staging -f infra/compose.yaml up -d
+# Use the wrapper, which sets project name, env file and image for you:
+#   infra/stack.sh staging up -d
+#   infra/stack.sh production up -d
 #
-# The project name (-p) also names the web container on the edge network:
-# pokeshop-web for production, pokeshop-staging-web for staging.
+# The project name (-p) names the web container on the edge network (pokeshop-web for
+# production, pokeshop-staging-web for staging) and the media volume. Without -p the project is
+# "pokeshop", i.e. production – never run this file without the wrapper or an explicit -p.
 
 name: pokeshop
 
