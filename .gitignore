@@ -13,3 +13,4 @@ coverage/
 /media/
 *.tsbuildinfo
 next-env.d.ts
+.mails

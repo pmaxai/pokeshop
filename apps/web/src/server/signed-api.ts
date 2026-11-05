@@ -15,7 +15,7 @@ import {
   type ApiScope,
 } from '@pokeshop/core/api-clients';
 import type { Actor, ProductOptions } from '@pokeshop/core/products';
-import { apiMasterKey, config, db, getSetting, tcgdexClient } from './config';
+import { apiMasterKey, config, db, tcgdexClient } from './config';
 
 export type SignedContext = {
   req: NextRequest;
@@ -148,7 +148,6 @@ export function signed(
         }
       }
 
-      const threshold = await getSetting<number | null>('high_value_threshold_cents', null);
       const result = await handler({
         req,
         raw,
@@ -158,7 +157,6 @@ export function signed(
         params: await route.params,
         options: {
           tcgdex: tcgdexClient(),
-          highValueThresholdCents: threshold,
           baseUrl: config.baseUrl,
         },
       });

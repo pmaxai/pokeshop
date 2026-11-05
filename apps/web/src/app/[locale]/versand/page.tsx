@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro, formatRate } from '@pokeshop/core';
 import type { Locale } from '@/i18n/routing';
-import { db } from '@/server/config';
+import { db, getSetting } from '@/server/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,7 @@ export default async function Shipping({ params }: { params: Promise<{ locale: L
       FROM countries WHERE delivery_enabled ORDER BY code = 'AT' DESC, code`;
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
   const first = countries[0];
+  const threshold = await getSetting<number | null>('high_value_threshold_cents', null);
   return (
     <div className="wrap prose">
       <h1>{t('title')}</h1>
@@ -58,9 +59,10 @@ export default async function Shipping({ params }: { params: Promise<{ locale: L
         ))}
       </dl>
       <p style={{ marginTop: 'var(--s-4)' }}>{t('free')}</p>
-      {first && (
+      {first && threshold !== null && (
         <p>
           {t('insured', {
+            threshold: formatEuro(threshold, locale),
             rate: formatRate(first.insured_rate_bp, locale),
             minimum: formatEuro(first.insured_minimum_cents, locale),
             limit: formatEuro(first.insured_max_order_cents ?? 50000, locale),

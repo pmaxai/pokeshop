@@ -2,6 +2,39 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-05 · High value means a price above € 20, kept by the database
+
+A trigger sets `products.high_value` from the price (more than the setting
+`high_value_threshold_cents`, € 20) and re-evaluates all products when the setting changes. The
+scanning app's `high_value` field is accepted but ignored, with a warning. Insured shipping costs
+10 % of the goods value, at least € 5, up to € 500 order value; above that there is no insured
+option and the order ships free with tracking.
+
+## 2026-11-05 · Invoice when the order ships, not at payment
+
+An invoice must state the delivery date (§ 11 UStG), which is only known when the parcel leaves.
+The order confirmation therefore carries the order details, the terms and the withdrawal
+instructions (PDF, § 7 FAGG); the invoice (gap-free number RE-YYYY-000001, PDF) is issued and
+mailed with the shipping confirmation (admin shipping step, M3).
+
+## 2026-11-05 · Payment: Stripe Checkout behind one interface
+
+The shop talks to a small `PaymentProvider` interface. Production uses Stripe Checkout (card with
+Apple Pay and Google Pay, EPS, PayPal); development and tests use a stand-in that only works on
+localhost. The webhook re-reads the session from Stripe, so duplicate or out-of-order events do no
+harm. The worker closes payment pages whose 10-minute hold ran out (plus one minute of grace).
+A payment that still arrives later is accepted if the cards are free, otherwise refunded in full
+automatically and the buyer is told.
+
+## 2026-11-05 · Legal texts in the repository, versioned in the database
+
+Terms, withdrawal instructions and privacy policy are Markdown files in `packages/core/legal`
+(German binding, English translation). `migrate` stores each changed file as a new version;
+orders record the versions the buyer accepted. Placeholders such as `{{company.address}}` are
+filled from the company settings. The online withdrawal function (§ 13a FAGG, in force since
+1 October 2026) asks only for name, contract identification and e-mail and confirms receipt with
+date and time.
+
 ## 2026-11-05 · Card pictures served from our own server
 
 TCGdex sample images and set logos are fetched by the shop and cached under `MEDIA_DIR/card-cache`

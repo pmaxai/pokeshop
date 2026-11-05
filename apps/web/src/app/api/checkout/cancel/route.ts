@@ -1,0 +1,35 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { orderByToken, releaseOrder, syncSession } from '@pokeshop/core/orders';
+import { getPathname } from '@/i18n/navigation';
+import { config, db } from '@/server/config';
+import { payments } from '@/server/payments';
+
+export const dynamic = 'force-dynamic';
+
+/** Stripe's "back" link: close the payment and give the cards back right away. */
+export async function GET(req: NextRequest) {
+  const locale = req.nextUrl.searchParams.get('l') === 'en' ? 'en' : 'de';
+  const token = req.nextUrl.searchParams.get('o') ?? '';
+  const order = await orderByToken(db(), token);
+  const provider = payments();
+  if (order && order.status === 'checkout') {
+    const [row] = await db()<{ stripe_session_id: string | null }[]>`
+      SELECT stripe_session_id FROM orders WHERE id = ${order.id}`;
+    const session = row?.stripe_session_id;
+    const closed =
+      session && provider ? await provider.expireSession(session).catch(() => null) : 'expired';
+    if (closed === 'complete' && session && provider) {
+      await syncSession(db(), provider, session);
+      return NextResponse.redirect(
+        `${config.baseUrl}${getPathname({ href: { pathname: '/bestellung/[token]', params: { token } }, locale })}`,
+        303,
+      );
+    }
+    if (closed === 'expired')
+      await releaseOrder(db(), { id: order.id }, 'cancelled', 'buyer_cancelled');
+  }
+  return NextResponse.redirect(
+    `${config.baseUrl}${getPathname({ href: '/warenkorb', locale })}?cancelled=1`,
+    303,
+  );
+}

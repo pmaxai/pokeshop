@@ -19,6 +19,12 @@ export const routing = defineRouting({
     '/versand': { de: '/versand-und-zahlung', en: '/shipping-and-payment' },
     '/impressum': { de: '/impressum', en: '/legal-notice' },
     '/datenschutz': { de: '/datenschutz', en: '/privacy' },
+    '/agb': { de: '/agb', en: '/terms' },
+    '/widerrufsbelehrung': { de: '/widerrufsbelehrung', en: '/right-of-withdrawal' },
+    '/vertrag-widerrufen': { de: '/vertrag-widerrufen', en: '/withdraw' },
+    '/warenkorb': { de: '/warenkorb', en: '/cart' },
+    '/kasse': { de: '/kasse', en: '/checkout' },
+    '/bestellung/[token]': { de: '/bestellung/[token]', en: '/order/[token]' },
   },
 });
 

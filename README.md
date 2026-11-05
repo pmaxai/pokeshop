@@ -9,13 +9,13 @@ recorded in [docs/decisions.md](docs/decisions.md).
 
 ## Status
 
-| Milestone                   | Content                                                                       | State     |
-| --------------------------- | ----------------------------------------------------------------------------- | --------- |
-| M0 Foundation               | Repo, CI, Docker/Caddy, schema, core shop rules                               | done      |
-| M1 Catalog and product API  | Data model, TCGdex import, signed API, admin products, DE/EN storefront       | in review |
-| M2 Checkout and payments    | Cart, countries, minimum order, 10-minute hold, Stripe, invoices, order mails |           |
-| M3 Admin, fulfilment, legal | Orders, pick sheet with boxes, refunds, withdrawal button, events page        |           |
-| M4 Hardening and launch     | Security review, load test, monitoring, stock import, DNS switch              |           |
+| Milestone                  | Content                                                                                    | State     |
+| -------------------------- | ------------------------------------------------------------------------------------------ | --------- |
+| M0 Foundation              | Repo, CI, Docker/Caddy, schema, core shop rules                                            | done      |
+| M1 Catalog and product API | Data model, TCGdex import, signed API, admin products, DE/EN storefront                    | done      |
+| M2 Checkout and payments   | Cart, minimum order, 10-minute hold, Stripe, order mails, legal texts, withdrawal function | in review |
+| M3 Admin and fulfilment    | Orders, pick sheet with boxes, shipping with invoice, refunds, events page                 |           |
+| M4 Hardening and launch    | Security review, load test, monitoring, stock import, DNS switch                           |           |
 
 ## Layout
 
@@ -49,7 +49,7 @@ pnpm format:check
 Database tests use the usual libpq variables (`PGHOST`, `PGUSER`, `PGPASSWORD`, …); the user needs
 `CREATEDB`.
 
-Run the shop locally:
+Run the shop locally (without Stripe keys a stand-in payment page is used on localhost):
 
 ```sh
 export DATABASE_URL=postgres://…/pokeshop_dev API_KEY_MASTER_KEY=$(openssl rand -base64 32) \
@@ -58,7 +58,7 @@ pnpm migrate
 node apps/worker/src/cli.ts tcgdex sync          # card master data, ~2 minutes
 node apps/worker/src/cli.ts api-client create "Scanner Test"
 pnpm dev                                          # shop on :3000, admin on /admin
-node apps/worker/src/main.ts                      # worker (images, nightly sync)
+MAIL_DIR=./.mails node apps/worker/src/main.ts    # worker (holds, mails as files, images, sync)
 ```
 
 ## Deployment

@@ -214,10 +214,11 @@ export default async function ProductEdit({
             <option value="archived">archiviert</option>
           </select>
         </label>
-        <label className="check">
-          <input type="checkbox" name="high_value" defaultChecked={p.high_value} /> Wertvolle Karte
-          (versicherter Versand)
-        </label>
+        <span className="muted">
+          {p.high_value
+            ? 'Wertvolle Karte (über 20 €): versicherter Versand'
+            : 'Keine wertvolle Karte (bis 20 €)'}
+        </span>
         <span className="muted">
           Einkaufspreis:{' '}
           {row!.purchase_price_cents === null ? '–' : formatEuro(row!.purchase_price_cents)} (nur

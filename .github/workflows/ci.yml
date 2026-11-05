@@ -107,6 +107,10 @@ jobs:
           check /en/cards
           check /karten
           check /versand-und-zahlung
+          check /warenkorb
+          check /agb
+          check /en/withdraw
+          curl -s http://localhost:3000/agb | grep -q 'Allgemeine Geschäftsbedingungen' || { echo 'legal texts not loaded'; exit 1; }
           docker run --rm --network host $ENV pokeshop:ci node apps/worker/src/cli.ts api-client list
           # the worker starts the card-data sync on the empty database; it must stay healthy meanwhile
           sleep 5 && docker exec worker node apps/worker/src/healthcheck.ts

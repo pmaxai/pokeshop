@@ -413,3 +413,16 @@ export async function sitemapProducts(db: Db) {
     SELECT slug, slug_en, updated_at FROM products WHERE status = 'active' AND price_cents IS NOT NULL
      ORDER BY id`;
 }
+
+/** Tiles for the given products whatever their status (cart, order pages). */
+export async function tilesByIds(
+  db: Db,
+  ids: readonly number[],
+  locale: Locale,
+): Promise<Map<number, CatalogTile & { active: boolean }>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db<(TileRow & { status: string })[]>`
+    SELECT ${TILE_COLUMNS(db)}, p.status FROM products p ${TILE_JOINS(db)}
+     WHERE p.id = ANY(${ids as number[]}::bigint[])`;
+  return new Map(rows.map((r) => [r.id, { ...tile(r, locale), active: r.status === 'active' }]));
+}

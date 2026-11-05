@@ -34,7 +34,18 @@ export async function SiteFooter({ companyName }: { companyName: string }) {
               <li>
                 <Link href="/datenschutz">{t('privacy')}</Link>
               </li>
+              <li>
+                <Link href="/agb">{t('terms')}</Link>
+              </li>
+              <li>
+                <Link href="/widerrufsbelehrung">{t('withdrawalInfo')}</Link>
+              </li>
             </ul>
+          </div>
+          <div>
+            <Link href="/vertrag-widerrufen" className="withdraw-link">
+              {t('withdraw')}
+            </Link>
           </div>
         </div>
         <p className="fine">

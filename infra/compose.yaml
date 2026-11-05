@@ -46,6 +46,10 @@ services:
   worker:
     <<: *app
     command: ['node', 'apps/worker/src/main.ts']
+    volumes:
+      - media:/data/media
+      # Graph certificate for sending mail (GRAPH_CLIENT_CERT_PATH=/run/secrets/graph-cert.pem)
+      - ${SECRETS_DIR:-/opt/pokeshop/secrets}:/run/secrets:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

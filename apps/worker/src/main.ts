@@ -1,6 +1,7 @@
-// Background worker: product images, card-data sync, job queue.
-// Later milestones add the mail outbox and the 10-minute reservation sweeper here.
+// Background worker: 10-minute holds, e-mail outbox, refunds the shop owes, product images,
+// card-data sync, cart clean-up.
 import { writeFile } from 'node:fs/promises';
+import { deleteStaleCarts } from '@pokeshop/core/cart';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -10,13 +11,19 @@ import {
   requeueStaleJobs,
   type Job,
 } from '@pokeshop/core/jobs';
+import { mailTransportFromEnv, sendDueMails, type MailContext } from '@pokeshop/core/mail';
+import { expireHolds, runPendingRefunds } from '@pokeshop/core/orders';
+import { paymentsFromEnv } from '@pokeshop/core/payments';
 import { httpTcgdexClient, syncCardDetails, syncSets } from '@pokeshop/core/tcgdex';
 import { processNextImage } from './images.ts';
 
 export const HEARTBEAT_FILE = process.env.WORKER_HEARTBEAT_FILE ?? '/tmp/pokeshop-worker.heartbeat';
 const mediaDir = process.env.MEDIA_DIR ?? './.media';
+const baseUrl = (process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const sql = createSql(process.env.DATABASE_URL, { max: 4, applicationName: 'pokeshop-worker' });
 const tcgdex = httpTcgdexClient();
+const payments = paymentsFromEnv();
+const mailer = mailTransportFromEnv();
 let stopping = false;
 
 /** Heartbeat for the Docker health check; long jobs call it as they make progress. */
@@ -61,6 +68,31 @@ async function runImages() {
   }
 }
 
+async function mailContext(): Promise<MailContext> {
+  const rows = await sql<{ key: string; value: unknown }[]>`
+    SELECT key, value FROM settings WHERE key IN ('company', 'shop_mailbox')`;
+  const get = (k: string) => rows.find((r) => r.key === k)?.value;
+  return {
+    baseUrl,
+    mediaDir,
+    company: (get('company') ?? {}) as MailContext['company'],
+    replyTo: String(get('shop_mailbox') ?? 'bestellung@pokemonkarten.at'),
+  };
+}
+
+/** Holds, refunds and mails: own loop every 5 s, so a long card sync never delays them. */
+async function runShop() {
+  if (payments) {
+    const n = await expireHolds(sql, payments);
+    if (n) console.log(`[holds] released ${n} expired reservation(s)`);
+    await runPendingRefunds(sql, payments);
+  }
+  if (mailer) {
+    const sent = await sendDueMails(sql, mailer, await mailContext(), 10, (m) => console.error(m));
+    if (sent) console.log(`[mail] sent ${sent}`);
+  }
+}
+
 /** Card data: right away on an empty database, then nightly between 3 and 5 o'clock Vienna time. */
 async function schedule() {
   const [state] = await sql<{ cards: number; recent: boolean }[]>`
@@ -91,10 +123,24 @@ async function schedule() {
     );
   }
   await requeueStaleJobs(sql);
+  const carts = await deleteStaleCarts(sql);
+  if (carts) console.log(`[carts] deleted ${carts} stale cart(s)`);
 }
 
 async function main() {
-  console.log('[worker] started');
+  console.log(
+    `[worker] started (payments: ${payments?.name ?? 'off'}, mail: ${mailer?.name ?? 'off – mails stay queued'})`,
+  );
+  const shop = (async () => {
+    while (!stopping) {
+      try {
+        await runShop();
+      } catch (e) {
+        console.error('[shop] loop error:', (e as Error).message);
+      }
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  })();
   let lastSchedule = 0;
   while (!stopping) {
     await beat();
@@ -110,6 +156,7 @@ async function main() {
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
+  await shop;
   await sql.end({ timeout: 10 });
   console.log('[worker] stopped');
 }
