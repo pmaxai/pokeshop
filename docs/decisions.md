@@ -2,6 +2,14 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-06 · Image tags per stack: staging follows main, production is promoted
+
+The server runs `ghcr.io/pmaxai/pokeshop:staging` and `:production` instead of a tag written
+into a file for each update. CI moves `:staging` with every merge into `main`; `:production`
+moves only through the manual "Promote to production" workflow, which re-points it by digest at
+the image staging runs and keeps the old one as `:production-previous`. `infra/stack.sh <stack>
+version` shows which commit runs; `/opt/pokeshop/<stack>.image` still pins a stack to one image.
+
 ## 2026-11-05 · Refunds go through the shop, documents never change
 
 Refunds are made in the admin (owner role): chosen cards and optionally the shipping charge,

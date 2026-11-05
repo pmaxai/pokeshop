@@ -13,8 +13,8 @@
 name: pokeshop
 
 x-app: &app
-  image: ${POKESHOP_IMAGE:-ghcr.io/pmaxai/pokeshop:latest}
-  env_file: ${ENV_FILE:-.env}
+  image: ${POKESHOP_IMAGE:?run this file through infra/stack.sh}
+  env_file: ${ENV_FILE:?run this file through infra/stack.sh}
   restart: unless-stopped
   volumes:
     - media:/data/media
