@@ -11,7 +11,11 @@ FROM node:${NODE_VERSION}-slim AS base
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     NEXT_TELEMETRY_DISABLED=1
-RUN corepack enable
+# Node 25+ ships without corepack: install the pnpm version pinned in package.json with npm.
+RUN --mount=type=bind,source=package.json,target=/tmp/package.json \
+    npm install --global --no-fund --no-audit \
+      "$(node -p "require('/tmp/package.json').packageManager")" \
+ && pnpm --version
 WORKDIR /app
 
 # --- dependencies (cached as long as manifests and lockfile do not change) ---
