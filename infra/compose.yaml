@@ -1,0 +1,64 @@
+# Shop stack: migrate (one-shot), web, worker. The database is your existing
+# PostgreSQL server (DATABASE_URL in the .env file); Caddy runs separately
+# (infra/caddy) and reaches the web container over the shared "edge" network.
+#
+# Production:
+#   ENV_FILE=/opt/pokeshop/production.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:<tag> \
+#     docker compose -p pokeshop -f infra/compose.yaml up -d
+# Staging:
+#   ENV_FILE=/opt/pokeshop/staging.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:<tag> \
+#     docker compose -p pokeshop-staging -f infra/compose.yaml up -d
+#
+# The project name (-p) also names the web container on the edge network:
+# pokeshop-web for production, pokeshop-staging-web for staging.
+
+name: pokeshop
+
+x-app: &app
+  image: ${POKESHOP_IMAGE:-ghcr.io/pmaxai/pokeshop:latest}
+  env_file: ${ENV_FILE:-.env}
+  restart: unless-stopped
+  volumes:
+    - media:/data/media
+  logging:
+    driver: json-file
+    options:
+      max-size: '20m'
+      max-file: '5'
+
+services:
+  migrate:
+    <<: *app
+    restart: 'no'
+    command: ['node', 'packages/core/scripts/migrate.ts']
+
+  web:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      default: {}
+      edge:
+        aliases:
+          - ${COMPOSE_PROJECT_NAME:-pokeshop}-web
+
+  worker:
+    <<: *app
+    command: ['node', 'apps/worker/src/main.ts']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'node', 'apps/worker/src/healthcheck.ts']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  media:
+
+networks:
+  edge:
+    external: true
+    name: pokeshop-edge

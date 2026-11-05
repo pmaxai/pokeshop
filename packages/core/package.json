@@ -1,0 +1,15 @@
+{
+  "name": "@pokeshop/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain rules shared by web and worker: money, VAT, shipping, stock, API signing.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  }
+}
