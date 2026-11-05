@@ -1,0 +1,601 @@
+openapi: 3.1.0
+info:
+  title: pokemonkarten.at product API
+  version: 1.0.0
+  description: |
+    Used by the scanning app to create and update products and stock.
+    Every request is signed (see docs/api-signing.md). Writes need an `Idempotency-Key`;
+    a repeated key within 24 h returns the first response and changes nothing.
+
+    Money is always integer cents in EUR. Storage boxes (`storage_location`) are digit strings
+    with at least three digits ("001", "014", "1203"); copies of one product can sit in
+    several boxes and are counted per box.
+servers:
+  - url: https://pokemonkarten.at/api/v1
+    description: Production
+  - url: https://staging.pokemonkarten.at/api/v1
+    description: Staging (Stripe test mode, own database)
+
+security:
+  - keyId: []
+    timestamp: []
+    signature: []
+
+tags:
+  - name: Stock
+  - name: Products
+  - name: Master data
+  - name: System
+
+paths:
+  /stock/intake:
+    post:
+      tags: [Stock]
+      operationId: intake
+      summary: Find or create the product for a scanned card and add copies to a box
+      description: |
+        The main scanning call. The product is identified by the card (`card_ref`, or
+        `set_code` + `card_number`) together with card language, condition, finish and grading.
+        If no product matches, it is created; names, set and rarity missing from the request are
+        filled from master data. Other fields sent (price, high_value, description, images, …)
+        overwrite the stored ones; fields left out stay as they are.
+        Without a price a new product is created as `draft`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IntakeRequest' }
+            example:
+              card_ref: sv03.5-199
+              card_language: DE
+              condition: NM
+              finish: holo
+              grading: null
+              delta: 1
+              storage_location: '014'
+              price: { amount: 12900, currency: EUR }
+              purchase_price: { amount: 4000, currency: EUR }
+              high_value: true
+              external_id: scan-7f3a9c
+              images: [{ role: front, url: 'https://example.com/scans/front.jpg' }]
+              status: active
+      responses:
+        '200':
+          description: Existing product, copies added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IntakeResponse' }
+        '201':
+          description: Product created, copies added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IntakeResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+
+  /products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: Find products
+      parameters:
+        - { name: external_id, in: query, schema: { type: string } }
+        - { name: card_ref, in: query, schema: { type: string } }
+        - {
+            name: storage_location,
+            in: query,
+            schema: { $ref: '#/components/schemas/StorageLocation' },
+          }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/Status' } }
+        - name: updated_since
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          description: Value of `next_cursor` from the previous page
+          schema: { type: string }
+      responses:
+        '200':
+          description: One page of products
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Product' }
+                  next_cursor: { type: [string, 'null'] }
+        '401': { $ref: '#/components/responses/Error' }
+
+  /products/{sku}:
+    parameters:
+      - $ref: '#/components/parameters/Sku'
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Product with stock per box
+      responses:
+        '200':
+          description: The product
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [Products]
+      operationId: upsertProduct
+      summary: Create or fully replace a product
+      description: |
+        Identity fields (card, card language, condition, finish, grading) must match the SKU in
+        the path; a mismatch returns 409. Stock is not set here – use the stock endpoints.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '200':
+          description: Replaced
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+    patch:
+      tags: [Products]
+      operationId: patchProduct
+      summary: Change some fields
+      description: |
+        Only the fields sent change. `storage_location` moves **all** copies of the product into
+        that box (use the stock endpoint with `move` to move only some).
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductPatch' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '404': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /products/{sku}/stock:
+    parameters:
+      - $ref: '#/components/parameters/Sku'
+    post:
+      tags: [Stock]
+      operationId: changeStock
+      summary: Add, remove, set or move copies in a box
+      description: |
+        Exactly one of `delta`, `set` or `move` per request. `delta` is the safe default when two
+        devices scan at the same time. Removing more copies than a box holds returns 409.
+        Setting a box below what open checkouts have reserved is accepted; the product then shows
+        as sold out and the admin is notified.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StockChange' }
+            examples:
+              add: { value: { delta: 1, storage_location: '014', reason: scan } }
+              remove: { value: { delta: -1, storage_location: '014', reason: damaged } }
+              set: { value: { set: 3, storage_location: '014', reason: recount } }
+              move: { value: { move: 1, from: '003', to: '014' } }
+      responses:
+        '200':
+          description: New stock
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stock' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /products/{sku}/images:
+    parameters:
+      - $ref: '#/components/parameters/Sku'
+    post:
+      tags: [Products]
+      operationId: addImage
+      summary: Upload an image or register one by URL
+      description: |
+        JPEG, PNG or WebP, at most 10 MB. Images are resized on the server (AVIF/WebP in several
+        sizes). URLs must be public `https` addresses. Processing runs in the background; the
+        image appears in the shop once its `status` is `ready`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                role: { $ref: '#/components/schemas/ImageRole' }
+          application/json:
+            schema: { $ref: '#/components/schemas/ImageInput' }
+      responses:
+        '202':
+          description: Accepted for processing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Image' }
+        '413': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /batch:
+    post:
+      tags: [Stock]
+      operationId: batch
+      summary: Up to 100 intake, upsert or stock operations in one request
+      description: |
+        Each operation is handled on its own (one failing item does not undo the others) and
+        gets one result in the same order. The batch shares one `Idempotency-Key`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operations]
+              properties:
+                operations:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    oneOf:
+                      - type: object
+                        required: [op, body]
+                        properties:
+                          op: { const: intake }
+                          body: { $ref: '#/components/schemas/IntakeRequest' }
+                      - type: object
+                        required: [op, sku, body]
+                        properties:
+                          op: { const: upsert }
+                          sku: { type: string }
+                          body: { $ref: '#/components/schemas/ProductInput' }
+                      - type: object
+                        required: [op, sku, body]
+                        properties:
+                          op: { const: stock }
+                          sku: { type: string }
+                          body: { $ref: '#/components/schemas/StockChange' }
+      responses:
+        '200':
+          description: One result per operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required: [status]
+                      properties:
+                        status:
+                          { type: integer, description: HTTP status the single call would have had }
+                        body: {}
+
+  /master/cards:
+    get:
+      tags: [Master data]
+      operationId: masterCards
+      summary: Look up card master data to confirm a scan
+      parameters:
+        - { name: card_ref, in: query, schema: { type: string } }
+        - { name: set, in: query, description: Set code, schema: { type: string } }
+        - {
+            name: number,
+            in: query,
+            description: 'Card number, "199" or "199/165"',
+            schema: { type: string },
+          }
+        - { name: q, in: query, description: Name search (DE or EN), schema: { type: string } }
+        - name: lang
+          in: query
+          description: Language of the names returned
+          schema: { type: string, enum: [de, en], default: de }
+      responses:
+        '200':
+          description: Matching cards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/MasterCard' }
+
+  /health:
+    get:
+      tags: [System]
+      operationId: health
+      summary: Checks that signing works; returns the key id and server time
+      responses:
+        '200':
+          description: Signed correctly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { const: true }
+                  key_id: { type: string }
+                  server_time: { type: string, format: date-time }
+
+components:
+  securitySchemes:
+    keyId: { type: apiKey, in: header, name: X-Key-Id }
+    timestamp: { type: apiKey, in: header, name: X-Timestamp }
+    signature:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: v1=<hex HMAC-SHA256>, see docs/api-signing.md
+
+  parameters:
+    Sku:
+      name: sku
+      in: path
+      required: true
+      schema: { type: string, example: sv03.5-199-DE-NM-H }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          examples:
+            [validation, not_found, insufficient_stock, identity_mismatch, signature_mismatch]
+        message: { type: string }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+          example: { condition: "unknown value 'NMM'" }
+
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: integer, minimum: 0, description: Cents }
+        currency: { const: EUR }
+
+    StorageLocation:
+      type: string
+      pattern: '^[0-9]{3,10}$'
+      example: '014'
+
+    CardLanguage:
+      type: string
+      enum: [DE, EN, FR, IT, ES, PT, NL, PL, RU, JA, KO, ZH-HANT, ZH-HANS, ID, TH]
+
+    Condition:
+      type: string
+      enum: [M, NM, EX, GD, LP, PL, PO]
+      description: Mint, Near Mint, Excellent, Good, Light Played, Played, Poor
+
+    Finish:
+      type: string
+      enum: [normal, holo, reverse_holo, first_edition, shadowless, stamped, pokeball, masterball]
+
+    Status:
+      type: string
+      enum: [draft, active, archived]
+
+    Grading:
+      type: [object, 'null']
+      required: [company, grade]
+      properties:
+        company: { type: string, enum: [PSA, BGS, CGC, SGC, TAG, ACE] }
+        grade: { type: string, example: '10' }
+        cert: { type: [string, 'null'], example: '81234567' }
+
+    ImageRole:
+      type: string
+      enum: [front, back, extra]
+
+    ImageInput:
+      type: object
+      required: [url]
+      properties:
+        role: { $ref: '#/components/schemas/ImageRole' }
+        url: { type: string, format: uri, pattern: '^https://' }
+
+    Image:
+      type: object
+      properties:
+        id: { type: integer }
+        role: { $ref: '#/components/schemas/ImageRole' }
+        status: { type: string, enum: [pending, ready, failed] }
+        url: { type: [string, 'null'], description: Public URL once ready }
+
+    CardIdentity:
+      type: object
+      description: Either `card_ref`, or `set_code` together with `card_number`.
+      required: [card_language, condition, finish]
+      properties:
+        card_ref: { type: string, description: TCGdex card id, example: sv03.5-199 }
+        set_code: { type: string, example: sv03.5 }
+        card_number: { type: string, example: 199/165 }
+        card_language: { $ref: '#/components/schemas/CardLanguage' }
+        condition: { $ref: '#/components/schemas/Condition' }
+        finish: { $ref: '#/components/schemas/Finish' }
+        grading: { $ref: '#/components/schemas/Grading' }
+      anyOf:
+        - required: [card_ref]
+        - required: [set_code, card_number]
+
+    ProductFields:
+      type: object
+      properties:
+        external_id: { type: string, description: The scanning app's own id }
+        name_de: { type: string }
+        name_en: { type: string }
+        set_name_de: { type: string }
+        set_name_en: { type: string }
+        release_year: { type: integer }
+        rarity: { type: string }
+        supertype: { type: string, enum: [pokemon, trainer, energy] }
+        energy_types: { type: array, items: { type: string } }
+        price: { $ref: '#/components/schemas/Money' }
+        purchase_price:
+          $ref: '#/components/schemas/Money'
+          description: Internal, never shown; used for profit reports
+        high_value: { type: boolean, description: Triggers insured shipping }
+        description_de: { type: string }
+        description_en: { type: string }
+        images:
+          type: array
+          maxItems: 10
+          items: { $ref: '#/components/schemas/ImageInput' }
+        status: { $ref: '#/components/schemas/Status' }
+
+    IntakeRequest:
+      allOf:
+        - $ref: '#/components/schemas/CardIdentity'
+        - $ref: '#/components/schemas/ProductFields'
+        - type: object
+          required: [delta, storage_location]
+          properties:
+            delta: { type: integer, minimum: 1, maximum: 1000, description: Copies to add }
+            storage_location: { $ref: '#/components/schemas/StorageLocation' }
+
+    IntakeResponse:
+      type: object
+      properties:
+        created: { type: boolean }
+        product: { $ref: '#/components/schemas/Product' }
+
+    ProductInput:
+      allOf:
+        - $ref: '#/components/schemas/CardIdentity'
+        - $ref: '#/components/schemas/ProductFields'
+
+    ProductPatch:
+      allOf:
+        - $ref: '#/components/schemas/ProductFields'
+        - type: object
+          properties:
+            storage_location:
+              $ref: '#/components/schemas/StorageLocation'
+              description: Moves all copies into this box
+
+    StockChange:
+      type: object
+      oneOf:
+        - required: [delta, storage_location]
+        - required: [set, storage_location]
+        - required: [move, from, to]
+      properties:
+        delta:
+          { type: integer, description: 'Copies to add (positive) or remove (negative), not 0' }
+        set: { type: integer, minimum: 0, description: New count for the box }
+        storage_location: { $ref: '#/components/schemas/StorageLocation' }
+        move: { type: integer, minimum: 1, description: Copies to move }
+        from: { $ref: '#/components/schemas/StorageLocation' }
+        to: { $ref: '#/components/schemas/StorageLocation' }
+        reason: { type: string, maxLength: 200 }
+
+    Stock:
+      type: object
+      required: [quantity, reserved, available, boxes]
+      properties:
+        quantity: { type: integer, description: Copies on hand, all boxes }
+        reserved: { type: integer, description: Copies held by open checkouts }
+        available: { type: integer, description: Copies a customer can buy now }
+        boxes:
+          type: array
+          items:
+            type: object
+            properties:
+              storage_location: { $ref: '#/components/schemas/StorageLocation' }
+              quantity: { type: integer }
+              reserved: { type: integer }
+
+    Product:
+      type: object
+      properties:
+        sku: { type: string, example: sv03.5-199-DE-NM-H }
+        external_id: { type: [string, 'null'] }
+        card_ref: { type: [string, 'null'] }
+        set_code: { type: string }
+        set_name_de: { type: [string, 'null'] }
+        set_name_en: { type: [string, 'null'] }
+        card_number: { type: string }
+        name_de: { type: string }
+        name_en: { type: string }
+        card_language: { $ref: '#/components/schemas/CardLanguage' }
+        condition: { $ref: '#/components/schemas/Condition' }
+        finish: { $ref: '#/components/schemas/Finish' }
+        grading: { $ref: '#/components/schemas/Grading' }
+        release_year: { type: [integer, 'null'] }
+        rarity: { type: [string, 'null'] }
+        price: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
+        high_value: { type: boolean }
+        status: { $ref: '#/components/schemas/Status' }
+        url: { type: string, description: Product page in the German shop }
+        stock: { $ref: '#/components/schemas/Stock' }
+        images:
+          type: array
+          items: { $ref: '#/components/schemas/Image' }
+        updated_at: { type: string, format: date-time }
+
+    MasterCard:
+      type: object
+      properties:
+        card_ref: { type: string }
+        set_code: { type: string }
+        set_name: { type: string }
+        local_id: { type: string }
+        card_count: { type: [integer, 'null'] }
+        name: { type: string }
+        rarity: { type: [string, 'null'] }
+        image_url: { type: [string, 'null'] }

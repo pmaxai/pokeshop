@@ -1,0 +1,41 @@
+{
+	# Let's Encrypt account e-mail (set in infra/caddy/.env)
+	email {$ACME_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
+
+pokemonkarten.at {
+	import security_headers
+	encode zstd gzip
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy pokeshop-web:3000
+}
+
+www.pokemonkarten.at {
+	redir https://pokemonkarten.at{uri} permanent
+}
+
+staging.pokemonkarten.at {
+	import security_headers
+	header X-Robots-Tag "noindex, nofollow"
+	encode zstd gzip
+
+	# Staging is password-protected, except the two machine endpoints that
+	# authenticate themselves (Stripe webhook signature, HMAC product API).
+	@protected not path /api/stripe/webhook /api/v1/*
+	basic_auth @protected {
+		{$STAGING_USER} {$STAGING_PASSWORD_HASH}
+	}
+	reverse_proxy pokeshop-staging-web:3000
+}
