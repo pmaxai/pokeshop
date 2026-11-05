@@ -49,7 +49,7 @@ COPY --from=prod-deps --chown=app:app /app ./
 COPY --from=build --chown=app:app /app/apps/web/.next ./apps/web/.next
 COPY --chown=app:app apps/web/public ./apps/web/public
 COPY --chown=app:app apps/web/next.config.ts apps/web/
-COPY --chown=app:app apps/web/src ./apps/web/src
+COPY --chown=app:app apps/web/messages ./apps/web/messages
 COPY --chown=app:app apps/worker/src ./apps/worker/src
 COPY --chown=app:app packages/core ./packages/core
 USER app

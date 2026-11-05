@@ -45,10 +45,9 @@ PostgreSQL 14 or newer.
   secrets/graph-cert.pem
 ```
 
-Generate the two random secrets per stack:
+Generate the random key per stack:
 
 ```sh
-openssl rand -base64 32   # SESSION_SECRET
 openssl rand -base64 32   # API_KEY_MASTER_KEY
 ```
 
@@ -101,13 +100,25 @@ succeeded. Mount the Graph certificate by adding to the env file
 
 Check: `docker compose -p pokeshop ps` (all healthy), `curl -fsS https://pokemonkarten.at/api/health`.
 
-## 7. Roll back
+## 7. First start
+
+1. The worker notices the empty card master data and runs the TCGdex sync on its own (about two
+   minutes; afterwards every night between 3 and 5 o'clock). Check in the admin under
+   _Übersicht → Kartendaten_.
+2. Sign in at `https://<host>/admin` with your Microsoft account (docs/m365-setup.md, part B).
+3. Create the scanning app's key under _API-Schlüssel_ (owner only). The secret is shown once.
+   Without the admin sign-in configured yet, the same works from the server:
+   `docker compose -p pokeshop -f infra/compose.yaml exec worker node apps/worker/src/cli.ts api-client create "Scanner Lager"`
+4. Point the scanning app at `https://staging.pokemonkarten.at/api/v1` first and send a test card;
+   it appears in the staging shop and under _Produkte_.
+
+## 8. Roll back
 
 Start the previous image tag with the same command. Migrations only ever add; a rollback of the
 code works against the newer schema. A destructive schema change will be announced in the
 release notes with its own steps.
 
-## 8. Stripe webhook
+## 9. Stripe webhook (from M2)
 
 In the Stripe Dashboard (test mode for staging, live mode for production) add the endpoint
 `https://<host>/api/stripe/webhook` with these events, and put its signing secret into
@@ -120,7 +131,7 @@ In the Stripe Dashboard (test mode for staging, live mode for production) add th
 - `charge.refunded`
 - `charge.dispute.created`
 
-## 9. Backups and restore test
+## 10. Backups and restore test
 
 The vServer (including the `media` volume with product images) and the PostgreSQL server are
 covered by the existing backups. Once a quarter, restore the latest `pokeshop` dump into a

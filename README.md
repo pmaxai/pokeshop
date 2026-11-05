@@ -9,19 +9,19 @@ recorded in [docs/decisions.md](docs/decisions.md).
 
 ## Status
 
-| Milestone                   | Content                                                                       | State       |
-| --------------------------- | ----------------------------------------------------------------------------- | ----------- |
-| M0 Foundation               | Repo, CI, Docker/Caddy, schema, core shop rules                               | in progress |
-| M1 Catalog and product API  | Data model, TCGdex import, signed API, admin products, DE/EN storefront       | next        |
-| M2 Checkout and payments    | Cart, countries, minimum order, 10-minute hold, Stripe, invoices, order mails |             |
-| M3 Admin, fulfilment, legal | Orders, pick sheet with boxes, refunds, withdrawal button, events page        |             |
-| M4 Hardening and launch     | Security review, load test, monitoring, stock import, DNS switch              |             |
+| Milestone                   | Content                                                                       | State     |
+| --------------------------- | ----------------------------------------------------------------------------- | --------- |
+| M0 Foundation               | Repo, CI, Docker/Caddy, schema, core shop rules                               | done      |
+| M1 Catalog and product API  | Data model, TCGdex import, signed API, admin products, DE/EN storefront       | in review |
+| M2 Checkout and payments    | Cart, countries, minimum order, 10-minute hold, Stripe, invoices, order mails |           |
+| M3 Admin, fulfilment, legal | Orders, pick sheet with boxes, refunds, withdrawal button, events page        |           |
+| M4 Hardening and launch     | Security review, load test, monitoring, stock import, DNS switch              |           |
 
 ## Layout
 
 ```
-apps/web          Next.js: storefront (DE/EN), admin, REST API /api/v1, Stripe webhook   (M1)
-apps/worker       background jobs: mail outbox, reservation sweeper, image processing     (M1)
+apps/web          Next.js: storefront (DE/EN), admin (/admin), signed REST API (/api/v1)
+apps/worker       background jobs: images, card-data sync; CLI for API keys and sync
 packages/core     shop rules shared by web and worker
   src/            money and VAT, shipping and insurance, checkout checks, SKU and boxes,
                   10-minute hold, API request signing, secret encryption, numbering
@@ -39,14 +39,27 @@ Requirements: Node.js 22.18+ (26 in production), pnpm 10, PostgreSQL 14+ with `p
 
 ```sh
 pnpm install
-pnpm test:core     # shop rules, no database needed
+pnpm test:core          # shop rules, no database needed
+pnpm test:integration   # products, API keys, jobs, images, card data (temporary databases)
 pnpm test:db       # applies all migrations to a temporary database and runs the SQL tests
 pnpm typecheck
 pnpm format:check
 ```
 
-`test:db` uses the usual libpq variables (`PGHOST`, `PGUSER`, `PGPASSWORD`, …); the user needs
+Database tests use the usual libpq variables (`PGHOST`, `PGUSER`, `PGPASSWORD`, …); the user needs
 `CREATEDB`.
+
+Run the shop locally:
+
+```sh
+export DATABASE_URL=postgres://…/pokeshop_dev API_KEY_MASTER_KEY=$(openssl rand -base64 32) \
+       PUBLIC_BASE_URL=http://localhost:3000 ADMIN_DEV_LOGIN=true MEDIA_DIR=./.media
+pnpm migrate
+node apps/worker/src/cli.ts tcgdex sync          # card master data, ~2 minutes
+node apps/worker/src/cli.ts api-client create "Scanner Test"
+pnpm dev                                          # shop on :3000, admin on /admin
+node apps/worker/src/main.ts                      # worker (images, nightly sync)
+```
 
 ## Deployment
 
