@@ -97,12 +97,23 @@ jobs:
           docker run -d --name web --network host $ENV pokeshop:ci
           docker run -d --name worker --network host $ENV pokeshop:ci node apps/worker/src/main.ts
           for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health && break; sleep 2; done
-          curl -sf http://localhost:3000/api/health
-          curl -sf -o /dev/null http://localhost:3000/
-          curl -sf -o /dev/null http://localhost:3000/en/cards
+          check() {
+            code=$(curl -s -o /tmp/page -w '%{http_code}' "http://localhost:3000$1")
+            echo "$1 -> $code"
+            if [ "$code" != 200 ]; then head -c 2000 /tmp/page; echo; return 1; fi
+          }
+          check /api/health
+          check /
+          check /en/cards
+          check /karten
+          check /versand-und-zahlung
           docker run --rm --network host $ENV pokeshop:ci node apps/worker/src/cli.ts api-client list
           sleep 5 && docker exec worker node apps/worker/src/healthcheck.ts
-          docker logs web | tail -20; docker logs worker | tail -20
+      - name: Container logs
+        if: always()
+        run: |
+          docker logs web 2>&1 | tail -80 || true
+          docker logs worker 2>&1 | tail -40 || true
       - if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
