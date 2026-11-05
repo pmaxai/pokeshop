@@ -25,7 +25,9 @@ try {
     console.log(`  key id: ${client.key_id}`);
     console.log(`  secret: ${secret}   (shown only now – store it in the scanning app)`);
   } else if (cmd === 'api-client' && sub === 'list') {
-    for (const c of await listApiClients(sql)) {
+    const clients = await listApiClients(sql);
+    if (clients.length === 0) console.log('no API keys yet');
+    for (const c of clients) {
       console.log(
         `${c.id}\t${c.key_id}\t${c.name}\t${c.revoked_at ? 'revoked' : 'active'}\tlast used: ${c.last_used_at?.toISOString() ?? '–'}`,
       );

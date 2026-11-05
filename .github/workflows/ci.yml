@@ -108,7 +108,9 @@ jobs:
           check /karten
           check /versand-und-zahlung
           docker run --rm --network host $ENV pokeshop:ci node apps/worker/src/cli.ts api-client list
+          # the worker starts the card-data sync on the empty database; it must stay healthy meanwhile
           sleep 5 && docker exec worker node apps/worker/src/healthcheck.ts
+          sleep 20 && docker exec worker node apps/worker/src/healthcheck.ts
       - name: Container logs
         if: always()
         run: |

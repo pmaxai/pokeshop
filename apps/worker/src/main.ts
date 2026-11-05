@@ -19,9 +19,18 @@ const sql = createSql(process.env.DATABASE_URL, { max: 4, applicationName: 'poke
 const tcgdex = httpTcgdexClient();
 let stopping = false;
 
+/** Heartbeat for the Docker health check; long jobs call it as they make progress. */
+async function beat() {
+  try {
+    await writeFile(HEARTBEAT_FILE, new Date().toISOString());
+  } catch (e) {
+    console.error('[worker] heartbeat:', (e as Error).message);
+  }
+}
+
 const handlers: Record<string, (job: Job) => Promise<void>> = {
   'tcgdex.sync': async () => {
-    const r = await syncSets(sql, tcgdex);
+    const r = await syncSets(sql, tcgdex, () => void beat());
     console.log(`[tcgdex] synced ${r.sets} sets, ${r.cards} cards`);
   },
   'tcgdex.card': async (job) => {
@@ -48,6 +57,7 @@ async function runJobs() {
 async function runImages() {
   for (let i = 0; i < 20 && !stopping; i++) {
     if (!(await processNextImage(sql, mediaDir))) return;
+    await beat();
   }
 }
 
@@ -87,6 +97,7 @@ async function main() {
   console.log('[worker] started');
   let lastSchedule = 0;
   while (!stopping) {
+    await beat();
     try {
       if (Date.now() - lastSchedule > 10 * 60_000) {
         await schedule();
@@ -94,7 +105,6 @@ async function main() {
       }
       await runImages();
       await runJobs();
-      await writeFile(HEARTBEAT_FILE, new Date().toISOString());
     } catch (e) {
       console.error('[worker] loop error:', (e as Error).message);
     }

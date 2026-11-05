@@ -46,7 +46,7 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     MEDIA_DIR=/data/media
 RUN groupadd --system --gid 1001 app \
- && useradd --system --uid 1001 --gid app --home /app app \
+ && useradd --system --uid 1001 --gid app --create-home --home-dir /home/app app \
  && mkdir -p /data/media \
  && chown app:app /data/media
 COPY --from=prod-deps --chown=app:app /app ./
