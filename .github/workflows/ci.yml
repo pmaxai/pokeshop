@@ -40,6 +40,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # The pnpm cache needs a lockfile; it switches on by itself once pnpm-lock.yaml exists.
+          package-manager-cache: ${{ hashFiles('pnpm-lock.yaml') != '' }}
           cache: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm' || '' }}
       - name: Install dependencies
         run: |
