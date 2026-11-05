@@ -59,7 +59,8 @@ jobs:
 
   image:
     # Builds the Docker image on every run and smoke-tests it against PostgreSQL.
-    # Pushes to GHCR only for main and tags; deployment stays manual (docs/deploy.md).
+    # Pushes to GHCR only for main and tags: every image as :sha-<commit>, and main also as
+    # :staging. :production moves only through the "Promote to production" workflow.
     needs: test
     runs-on: ubuntu-24.04
     permissions:
@@ -136,7 +137,7 @@ jobs:
           tags: |
             type=sha,format=short
             type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=staging,enable={{is_default_branch}}
       - if: github.event_name == 'push'
         uses: docker/build-push-action@v6
         with:

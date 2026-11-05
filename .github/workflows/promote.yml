@@ -1,0 +1,81 @@
+name: Promote to production
+
+# Points the image tag :production at the image :staging runs (or at another tag), without
+# rebuilding, so production gets exactly the image that was tested on staging. The image that
+# was production before is kept as :production-previous; promoting that tag rolls back.
+# The server then updates with: infra/stack.sh production up -d --pull always
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Tag to promote: staging, production-previous (roll back) or sha-<commit>'
+        required: true
+        default: staging
+      dry_run:
+        description: 'Only show what would change'
+        type: boolean
+        default: false
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    # Add required reviewers to this environment in the repository settings if promotions
+    # should need a second person.
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      SOURCE: ${{ inputs.source }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Check the tag
+        run: |
+          if ! [[ "$SOURCE" =~ ^(staging|production-previous|sha-[0-9a-f]{7,40}|v[0-9][0-9A-Za-z.-]*)$ ]]; then
+            echo "::error::'$SOURCE' is not a tag this workflow promotes"
+            exit 1
+          fi
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Move :production
+        run: |
+          # Digest of a tag, empty if the tag does not exist (the checks below report that).
+          digest() { docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' 2>/dev/null | jq -r '.digest // empty' || true; }
+          src=$(digest "$IMAGE:$SOURCE")
+          [ -n "$src" ] || { echo "::error::$IMAGE:$SOURCE not found"; exit 1; }
+          cur=$(digest "$IMAGE:production")
+          {
+            echo "### Promote $SOURCE to production"
+            echo ""
+            echo "| | Digest |"
+            echo "| --- | --- |"
+            echo "| $SOURCE | \`$src\` |"
+            echo "| production before | \`${cur:-none}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$src" = "$cur" ]; then
+            echo "Production already points at this image." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run: nothing changed." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ -n "$cur" ]; then
+            docker buildx imagetools create --tag "$IMAGE:production-previous" "$IMAGE@$cur"
+          fi
+          docker buildx imagetools create --tag "$IMAGE:production" "$IMAGE@$src"
+          [ "$(digest "$IMAGE:production")" = "$src" ] || { echo "::error:::production does not point at $src"; exit 1; }
+          {
+            echo ""
+            echo "Done. On the server: \`infra/stack.sh production up -d --pull always\`"
+          } >> "$GITHUB_STEP_SUMMARY"

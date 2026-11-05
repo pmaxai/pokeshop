@@ -60,10 +60,10 @@ PostgreSQL 14 or newer.
 /opt/pokeshop/
   app/               git clone of this repository (only infra/ is needed at runtime)
   production.env     from .env.example, production values
-  production.image   one line: the image production runs, e.g. ghcr.io/pmaxai/pokeshop:sha-e77cccb
   staging.env        from .env.example, staging values (Stripe test keys, staging database)
-  staging.image      one line: the image staging runs
   secrets/graph-cert.pem   readable by uid 1001 (the app user in the image)
+  production.image   optional: pins production to one image (see 8. Roll back)
+  staging.image      optional: pins staging to one image
 ```
 
 Values containing `$` must be in single quotes in every env file (Compose expands `$` otherwise).
@@ -89,18 +89,30 @@ docker compose -f infra/caddy/compose.yaml up -d
 Staging is protected with basic auth, except `/api/stripe/webhook` and `/api/v1/*`, which
 authenticate themselves.
 
-## 5. Image
+## 5. Image tags
 
-The image is published by CI for every push to `main` (`:latest`, `:sha-<short>`) and every
-`v*` tag. If the GHCR package is private, log in once with a GitHub token that has
-`read:packages`:
+Each stack follows its own tag of `ghcr.io/pmaxai/pokeshop`:
+
+| Tag                    | Moves when                                                           | Used by           |
+| ---------------------- | -------------------------------------------------------------------- | ----------------- |
+| `:staging`             | automatically, with every merge into `main`                          | staging           |
+| `:production`          | only when someone runs **Actions → Promote to production** in GitHub | production        |
+| `:production-previous` | with every promotion: the image production had before                | roll back         |
+| `:sha-<commit>`        | never: one per merged commit                                         | pinning a version |
+
+Promoting re-points `:production` at the image `:staging` runs (by digest, nothing is rebuilt),
+so production gets exactly what was tested. The workflow also takes `production-previous` or a
+`sha-…` tag, and has a dry-run switch. To require a second person for promotions, add required
+reviewers to the `production` environment in the repository settings.
+
+If the GHCR package is private, log in once with a GitHub token that has `read:packages`:
 
 ```sh
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 ```
 
-Alternatively build on the server: `docker build -f infra/Dockerfile -t pokeshop:local .` and use
-`POKESHOP_IMAGE=pokeshop:local`.
+Alternatively build on the server, `docker build -f infra/Dockerfile -t pokeshop:local .`, and pin
+a stack to it by writing `pokeshop:local` into `/opt/pokeshop/<stack>.image`.
 
 ## 6. Start or update a stack
 
@@ -111,13 +123,13 @@ other stack). Never run `infra/compose.yaml` without it: without `-p` the projec
 ```sh
 cd /opt/pokeshop/app && git pull
 
-# staging first
-echo ghcr.io/pmaxai/pokeshop:sha-abc1234 > /opt/pokeshop/staging.image
-infra/stack.sh staging up -d
+# staging: newest image from main
+infra/stack.sh staging up -d --pull always
+infra/stack.sh staging version          # image, commit and start time of web
 
-# then production, same tag
-echo ghcr.io/pmaxai/pokeshop:sha-abc1234 > /opt/pokeshop/production.image
-infra/stack.sh production up -d
+# after testing: GitHub → Actions → Promote to production → Run workflow (source: staging)
+infra/stack.sh production up -d --pull always
+infra/stack.sh production version       # same commit as staging
 ```
 
 `migrate` runs the database migrations, loads the legal texts (terms, withdrawal, privacy) from
@@ -145,8 +157,12 @@ Check: `infra/stack.sh production ps` (web and worker healthy), `curl -fsS https
 
 ## 8. Roll back
 
-Write the previous image tag into `/opt/pokeshop/<stack>.image` and run `infra/stack.sh <stack> up -d`. Migrations only ever add; a rollback of the
-code works against the newer schema. A destructive schema change will be announced in the
+Production: run **Promote to production** with source `production-previous`, then
+`infra/stack.sh production up -d --pull always`. Without GitHub (or for staging): pin the stack by
+writing an older image into `/opt/pokeshop/<stack>.image`, e.g.
+`ghcr.io/pmaxai/pokeshop:sha-abc1234`, and run `infra/stack.sh <stack> up -d --pull always`;
+delete the file to follow the tag again. Migrations only ever add; a rollback of the code works
+against the newer schema. A destructive schema change will be announced in the
 release notes with its own steps.
 
 ## 9. Stripe
