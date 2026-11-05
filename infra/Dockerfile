@@ -11,7 +11,11 @@ FROM node:${NODE_VERSION}-slim AS base
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     NEXT_TELEMETRY_DISABLED=1
-RUN corepack enable
+# Node 25+ ships without corepack: install the pnpm version pinned in package.json with npm.
+RUN --mount=type=bind,source=package.json,target=/tmp/package.json \
+    npm install --global --no-fund --no-audit \
+      "$(node -p "require('/tmp/package.json').packageManager")" \
+ && pnpm --version
 WORKDIR /app
 
 # --- dependencies (cached as long as manifests and lockfile do not change) ---
@@ -42,14 +46,14 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     MEDIA_DIR=/data/media
 RUN groupadd --system --gid 1001 app \
- && useradd --system --uid 1001 --gid app --home /app app \
+ && useradd --system --uid 1001 --gid app --create-home --home-dir /home/app app \
  && mkdir -p /data/media \
  && chown app:app /data/media
 COPY --from=prod-deps --chown=app:app /app ./
 COPY --from=build --chown=app:app /app/apps/web/.next ./apps/web/.next
 COPY --chown=app:app apps/web/public ./apps/web/public
 COPY --chown=app:app apps/web/next.config.ts apps/web/
-COPY --chown=app:app apps/web/src ./apps/web/src
+COPY --chown=app:app apps/web/messages ./apps/web/messages
 COPY --chown=app:app apps/worker/src ./apps/worker/src
 COPY --chown=app:app packages/core ./packages/core
 USER app

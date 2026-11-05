@@ -2,6 +2,32 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-05 · Card pictures served from our own server
+
+TCGdex sample images and set logos are fetched by the shop and cached under `MEDIA_DIR/card-cache`
+(`/media/card/…`). Visitors' browsers never contact a third party, so no consent is needed. If
+TCGdex is unreachable a neutral card back is shown. Own scans are resized by the worker to WebP and
+AVIF in 320/640/1200 px.
+
+## 2026-11-05 · Admin sign-in with Microsoft Entra ID (OpenID Connect)
+
+Authorization code flow with PKCE (`arctic`); only members of the owner/staff groups or holders of
+the app roles get in. Sessions are random tokens in an HttpOnly cookie scoped to `/admin`; the
+database stores only their SHA-256 hash. Admin changes go through Next.js server actions (origin
+checked) and are written to the audit log.
+
+## 2026-11-05 · Storefront: one typeface, the toploader as the one visual device
+
+Archivo (variable width) self-hosted: expanded heavy for headings, condensed for card numbers.
+Every card is shown at card proportions in a "toploader" frame; everything around it stays plain.
+Filters are a GET form, so they work without JavaScript and every filtered view has a URL.
+
+## 2026-11-05 · Scanned cards without master data
+
+Intake fetches missing card details from TCGdex on the spot (rarity, type, names). If TCGdex is down
+or does not know the card, the product is created from the names the app sends; the worker fills in
+details later.
+
 ## 2026-11-05 · Deployment is manual
 
 CI builds and publishes `ghcr.io/pmaxai/pokeshop`; the owner pulls and starts it on the
