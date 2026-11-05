@@ -8,7 +8,21 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: staging
       ? { userAgent: '*', disallow: '/' }
-      : { userAgent: '*', allow: '/', disallow: ['/admin', '/api'] },
+      : {
+          userAgent: '*',
+          allow: '/',
+          disallow: [
+            '/admin',
+            '/api',
+            '/dev',
+            '/warenkorb',
+            '/kasse',
+            '/bestellung',
+            '/en/cart',
+            '/en/checkout',
+            '/en/order',
+          ],
+        },
     sitemap: staging ? undefined : `${config.baseUrl}/sitemap.xml`,
   };
 }

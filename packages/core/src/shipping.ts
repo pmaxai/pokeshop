@@ -8,7 +8,7 @@ export type CountryShippingSettings = {
   minOrder: Cents;
   /** Standard shipping, 0 by default. */
   standardShipping: Cents;
-  /** Insured-shipping charge as share of the goods subtotal, e.g. 2000 = 20 %. */
+  /** Insured-shipping charge as share of the goods subtotal, e.g. 1000 = 10 %. */
   insuredRate: BasisPoints;
   /** Lowest insured-shipping charge, e.g. 500 = € 5. */
   insuredMinimum: Cents;
@@ -30,11 +30,11 @@ export type ShippingQuote = {
 
 /**
  * Picks the shipping method and price for a cart.
- * - No high-value card: standard shipping (free by default).
- * - High-value card and subtotal up to the insurance limit: insured shipping,
- *   20 % of the goods subtotal, at least the minimum (and at most the cap, if set).
- * - High-value card and subtotal above the limit: tracked, signed-for,
- *   uninsured shipping at the standard price.
+ * - No high-value card (none over € 20): standard shipping (free by default).
+ * - High-value card and subtotal up to the insurance limit (€ 500): insured shipping,
+ *   10 % of the goods subtotal, at least the minimum (€ 5; at most the cap, if set).
+ * - High-value card and subtotal above the limit: no insured option; the order ships
+ *   tracked and uninsured at the standard price.
  */
 export function quoteShipping(input: {
   goodsSubtotal: Cents;

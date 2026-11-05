@@ -93,10 +93,14 @@ ENV_FILE=/opt/pokeshop/production.env POKESHOP_IMAGE=ghcr.io/pmaxai/pokeshop:sha
   docker compose -p pokeshop -f infra/compose.yaml up -d
 ```
 
-`migrate` runs the database migrations and exits; `web` and `worker` start only after it
-succeeded. Mount the Graph certificate by adding to the env file
-`GRAPH_CLIENT_CERT_PATH=/run/secrets/graph-cert.pem` and a compose override
-(`infra/compose.override.example.yaml`, follows with the mail milestone).
+`migrate` runs the database migrations, loads the legal texts (terms, withdrawal, privacy) from
+`packages/core/legal` and exits; `web` and `worker` start only after it succeeded. The worker
+mounts `/opt/pokeshop/secrets` read-only at `/run/secrets` (other folder: `SECRETS_DIR=…`), so
+`GRAPH_CLIENT_CERT_PATH=/run/secrets/graph-cert.pem` finds the mail certificate.
+
+The worker log shows at start what it uses, e.g.
+`[worker] started (payments: stripe, mail: graph)`. Without Graph settings mails stay queued in
+the database and go out as soon as Graph is configured.
 
 Check: `docker compose -p pokeshop ps` (all healthy), `curl -fsS https://pokemonkarten.at/api/health`.
 
@@ -118,11 +122,20 @@ Start the previous image tag with the same command. Migrations only ever add; a 
 code works against the newer schema. A destructive schema change will be announced in the
 release notes with its own steps.
 
-## 9. Stripe webhook (from M2)
+## 9. Stripe
 
-In the Stripe Dashboard (test mode for staging, live mode for production) add the endpoint
-`https://<host>/api/stripe/webhook` with these events, and put its signing secret into
-`STRIPE_WEBHOOK_SECRET`:
+In the Stripe Dashboard – test mode for staging, live mode for production:
+
+1. **Payment methods** (Settings → Payment methods): switch on Cards, Apple Pay, Google Pay, EPS
+   and PayPal. The shop offers card (which includes Apple Pay and Google Pay), EPS and PayPal;
+   `STRIPE_PAYMENT_METHODS=card,eps,paypal` changes that list.
+2. **Branding** (Settings → Branding): logo, accent colour `#ef5b0c`, shop name – this is what
+   buyers see on the payment page.
+3. **API key**: Developers → API keys → secret key into `STRIPE_SECRET_KEY` (`sk_test_…` on
+   staging, `sk_live_…` in production; a restricted key needs write access to Checkout Sessions
+   and Refunds).
+4. **Webhook**: Developers → Webhooks → add the endpoint `https://<host>/api/stripe/webhook`
+   with the events below and put its signing secret into `STRIPE_WEBHOOK_SECRET`:
 
 - `checkout.session.completed`
 - `checkout.session.async_payment_succeeded`
@@ -130,6 +143,11 @@ In the Stripe Dashboard (test mode for staging, live mode for production) add th
 - `checkout.session.expired`
 - `charge.refunded`
 - `charge.dispute.created`
+
+Test on staging with Stripe's test cards (e.g. `4242 4242 4242 4242`, any future date, any CVC):
+the order page shows "Danke für deine Bestellung!", the confirmation mail arrives, and in the
+admin the stock is counted down. Without a Stripe key the shop refuses to take orders (except on
+`localhost`, where a stand-in payment page is used for development).
 
 ## 10. Backups and restore test
 

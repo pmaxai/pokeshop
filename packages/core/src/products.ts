@@ -18,8 +18,6 @@ export type Actor = { source: 'api' | 'admin' | 'import'; id: string; reference?
 export type ProductOptions = {
   /** Used to fetch card details when a scanned card is not in the master data yet. */
   tcgdex?: TcgdexClient;
-  /** Admin setting: price from which a card counts as high-value (null = manual only). */
-  highValueThresholdCents?: number | null;
   /** For the product URL in API responses. */
   baseUrl?: string;
 };
@@ -166,18 +164,22 @@ function columnsFrom(f: Fields, opts: ProductOptions): Record<string, unknown> {
     'rarity',
     'supertype',
     'energy_types',
-    'high_value',
     'description_de',
     'description_en',
   ] as const;
   for (const k of copy) if (f[k] !== undefined) c[k] = f[k];
   if (f.price) c.price_cents = f.price.amount;
   if (f.purchase_price) c.purchase_price_cents = f.purchase_price.amount;
-  const threshold = opts.highValueThresholdCents;
-  if (f.high_value === undefined && f.price && typeof threshold === 'number') {
-    c.high_value = f.price.amount >= threshold;
-  }
+  void opts;
   return c;
+}
+
+/**
+ * High value follows the price (more than the shop's threshold, € 20) and is set by the
+ * database. A `high_value` sent by the app is accepted for compatibility and ignored.
+ */
+function fieldWarnings(f: { high_value?: boolean | undefined }): string[] {
+  return f.high_value === undefined ? [] : ['high_value_ignored_set_by_price'];
 }
 
 function mapWriteError(e: unknown): never {
@@ -320,7 +322,10 @@ export async function intake(
                                    ${actor.id}, ${actor.reference ?? null}, 'intake')`;
       await addImages(tx, id, input.images);
       const wanted = input.status ?? (created ? (input.price ? 'active' : 'draft') : undefined);
-      const warnings = wanted ? await applyStatus(tx, id, wanted) : [];
+      const warnings = [
+        ...fieldWarnings(input),
+        ...(wanted ? await applyStatus(tx, id, wanted) : []),
+      ];
       return { created, product: (await getProduct(tx, card.sku, opts))!, warnings };
     });
   } catch (e) {
@@ -364,7 +369,6 @@ export async function replaceProduct(
           energy_types: m?.energy_types ?? [],
           price_cents: null,
           purchase_price_cents: null,
-          high_value: false,
           description_de: null,
           description_en: null,
           name_de: m?.name_de ?? input.name_en ?? null,
@@ -382,11 +386,10 @@ export async function replaceProduct(
                    AND source_url <> ALL(${(input.images ?? []).map((i) => i.url)}::text[])`;
       }
       await addImages(tx, id!, input.images);
-      const warnings = await applyStatus(
-        tx,
-        id!,
-        input.status ?? (input.price ? 'active' : 'draft'),
-      );
+      const warnings = [
+        ...fieldWarnings(input),
+        ...(await applyStatus(tx, id!, input.status ?? (input.price ? 'active' : 'draft'))),
+      ];
       void actor;
       return { created, product: (await getProduct(tx, sku, opts))!, warnings };
     });
@@ -410,7 +413,7 @@ export async function patchProduct(
       const cols = columnsFrom(patch, opts);
       if (Object.keys(cols).length)
         await tx`UPDATE products SET ${tx(cols as never)} WHERE id = ${p.id}`;
-      const warnings: string[] = [];
+      const warnings: string[] = fieldWarnings(patch);
       if (patch.storage_location) {
         const boxes = await tx<{ storage_location: string; free: number; reserved: number }[]>`
           SELECT storage_location, quantity - reserved AS free, reserved FROM stock_locations

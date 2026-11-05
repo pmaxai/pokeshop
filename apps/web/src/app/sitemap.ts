@@ -12,7 +12,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     en: base + getPathname({ href, locale: 'en' }),
   });
   const entries: MetadataRoute.Sitemap = [];
-  for (const href of ['/', '/karten', '/sets', '/zustand', '/versand'] as const) {
+  for (const href of [
+    '/',
+    '/karten',
+    '/sets',
+    '/zustand',
+    '/versand',
+    '/agb',
+    '/widerrufsbelehrung',
+    '/datenschutz',
+    '/impressum',
+  ] as const) {
     const u = both(href);
     entries.push({ url: u.de, alternates: { languages: u } });
   }

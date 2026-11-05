@@ -67,7 +67,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     delta: 1,
     storage_location: '014',
     price: { amount: 12900, currency: 'EUR' },
-    high_value: true,
     images: [{ role: 'front', url: 'https://example.com/scans/front.jpg' }],
   });
   console.log(res.status, await res.text());

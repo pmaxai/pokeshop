@@ -9,6 +9,7 @@ import { config, db } from '@/server/config';
 import { CardImage } from '@/components/CardImage';
 import { CardTile } from '@/components/CardTile';
 import { ZoomCard } from '@/components/ZoomCard';
+import { addToCartAction } from '../../shop-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -160,7 +161,7 @@ export default async function CardPage({ params }: Props) {
           <div className="buybox">
             <span className="price">{formatEuro(p.priceCents, locale)}</span>
             <small>
-              {t('inclVat')}, {t('freeShipping')}
+              {p.highValue ? t('inclVatInsured') : `${t('inclVat')}, ${t('freeShipping')}`}
             </small>
             {p.available > 0 ? (
               <span className={p.available === 1 ? 'stock stock--last' : 'stock'}>
@@ -169,7 +170,29 @@ export default async function CardPage({ params }: Props) {
             ) : (
               <span className="stock muted">{t('soldOut')}</span>
             )}
-            <p className="muted">{t('cartSoon')}</p>
+            {p.available > 0 && (
+              <form action={addToCartAction} className="buy">
+                <input type="hidden" name="product_id" value={p.id} />
+                <input type="hidden" name="locale" value={locale} />
+                {p.available > 1 && (
+                  <label className="buy__qty">
+                    <span className="visually-hidden">{t('quantity')}</span>
+                    <select name="quantity" defaultValue="1">
+                      {Array.from({ length: Math.min(p.available, 10) }, (_, i) => i + 1).map(
+                        (n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                )}
+                <button type="submit" className="btn btn--accent">
+                  {t('addToCart')}
+                </button>
+              </form>
+            )}
             {p.highValue && <p>{t('highValue')}</p>}
             <p className="muted">{t('shippingNote')}</p>
           </div>

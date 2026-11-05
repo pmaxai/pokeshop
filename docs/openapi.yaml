@@ -37,7 +37,7 @@ paths:
         The main scanning call. The product is identified by the card (`card_ref`, or
         `set_code` + `card_number`) together with card language, condition, finish and grading.
         If no product matches, it is created; names, set and rarity missing from the request are
-        filled from master data. Other fields sent (price, high_value, description, images, …)
+        filled from master data. Other fields sent (price, description, images, …)
         overwrite the stored ones; fields left out stay as they are.
         Without a price a new product is created as `draft`.
       parameters:
@@ -57,7 +57,6 @@ paths:
               storage_location: '014'
               price: { amount: 12900, currency: EUR }
               purchase_price: { amount: 4000, currency: EUR }
-              high_value: true
               external_id: scan-7f3a9c
               images: [{ role: front, url: 'https://example.com/scans/front.jpg' }]
               status: active
@@ -490,7 +489,13 @@ components:
         purchase_price:
           $ref: '#/components/schemas/Money'
           description: Internal, never shown; used for profit reports
-        high_value: { type: boolean, description: Triggers insured shipping }
+        high_value:
+          type: boolean
+          deprecated: true
+          description: |
+            Ignored. A card is high value (insured shipping) when its price is more than the
+            shop's threshold (€ 20). Sending the field returns the warning
+            `high_value_ignored_set_by_price`.
         description_de: { type: string }
         description_en: { type: string }
         images:
@@ -580,7 +585,9 @@ components:
         release_year: { type: [integer, 'null'] }
         rarity: { type: [string, 'null'] }
         price: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
-        high_value: { type: boolean }
+        high_value:
+          type: boolean
+          description: Price is more than the shop's threshold (€ 20); triggers insured shipping
         status: { $ref: '#/components/schemas/Status' }
         url: { type: string, description: Product page in the German shop }
         stock: { $ref: '#/components/schemas/Stock' }

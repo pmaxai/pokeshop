@@ -69,7 +69,6 @@ const glurak = (over: Record<string, unknown> = {}) =>
     delta: 1,
     storage_location: '014',
     price: { amount: 12900, currency: 'EUR' },
-    high_value: true,
     ...over,
   });
 
@@ -154,7 +153,6 @@ test('unknown card without names is refused; with names it is created as draft w
       name_de: 'Testkarte',
       name_en: 'Test card',
       price: undefined,
-      high_value: undefined,
     }),
     actor,
     { tcgdex },
@@ -189,14 +187,25 @@ test('external_id must be unique', async () => {
   );
 });
 
-test('high-value threshold applies when the app does not decide', async () => {
-  const r = await intake(
-    sql,
-    glurak({ condition: 'EX', high_value: undefined, price: { amount: 15000, currency: 'EUR' } }),
-    actor,
-    { highValueThresholdCents: 10000 },
-  );
-  assert.equal(r.product.high_value, true);
+test('high value follows the price: more than € 20, whatever the app sends', async () => {
+  const at = (amount: number, over: Record<string, unknown> = {}) =>
+    intake(
+      sql,
+      glurak({ condition: 'EX', price: { amount, currency: 'EUR' }, ...over }),
+      actor,
+      {},
+    );
+  assert.equal((await at(2000)).product.high_value, false, '€ 20.00 is not more than € 20');
+  assert.equal((await at(2001)).product.high_value, true);
+  const r = await at(500, { high_value: true });
+  assert.equal(r.product.high_value, false, 'the app cannot override the price rule');
+  assert.ok(r.warnings.includes('high_value_ignored_set_by_price'));
+  // changing the threshold re-evaluates existing products
+  await sql`UPDATE settings SET value = '400' WHERE key = 'high_value_threshold_cents'`;
+  const [p] = await sql<{ high_value: boolean }[]>`
+    SELECT high_value FROM products WHERE sku = 'sv03.5-199-DE-EX-H'`;
+  assert.equal(p!.high_value, true);
+  await sql`UPDATE settings SET value = '2000' WHERE key = 'high_value_threshold_cents'`;
 });
 
 test('stock: remove, set, move, and refuse taking more than a box holds', async () => {

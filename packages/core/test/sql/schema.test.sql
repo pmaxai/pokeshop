@@ -10,8 +10,11 @@ BEGIN
   ASSERT (SELECT string_agg(code || ':' || min_order_cents, ',' ORDER BY code)
             FROM countries WHERE delivery_enabled) = 'AT:1000,DE:2000', 'AT € 10, DE € 20';
   ASSERT (SELECT count(*) FROM countries WHERE is_eu) = 27;
-  ASSERT (SELECT insured_rate_bp = 2000 AND insured_minimum_cents = 500 AND insured_max_order_cents = 50000
-            FROM countries WHERE code = 'AT');
+  -- Insured shipping: 10 %, at least € 5, only up to € 500 order value.
+  ASSERT (SELECT bool_and(insured_rate_bp = 1000 AND insured_minimum_cents = 500
+                          AND insured_max_order_cents = 50000)
+            FROM countries WHERE delivery_enabled);
+  ASSERT (SELECT value->>'code' FROM settings WHERE key = 'carrier') = 'post_at';
   ASSERT (SELECT value::int FROM settings WHERE key = 'reservation_minutes') = 10;
   ASSERT (SELECT value->>'vat_id' FROM settings WHERE key = 'company') = 'ATU79907228';
 
@@ -20,6 +23,13 @@ BEGIN
   VALUES ('sv04-1-FR-EX-R', 'flabebe', 'sv04', '001/182', 'Flabébé', 'Flabébé', 'FR', 'reverse_holo', 'EX')
   RETURNING id INTO v_id;
   ASSERT (SELECT search_text LIKE '%flabebe%' FROM products WHERE id = v_id);
+  -- High value: more than € 20.
+  UPDATE products SET price_cents = 2000 WHERE id = v_id;
+  ASSERT NOT (SELECT high_value FROM products WHERE id = v_id), '€ 20.00 is not high value';
+  UPDATE products SET price_cents = 2001, high_value = false WHERE id = v_id;
+  ASSERT (SELECT high_value FROM products WHERE id = v_id), '€ 20.01 is high value';
+  UPDATE products SET price_cents = NULL WHERE id = v_id;
+  ASSERT NOT (SELECT high_value FROM products WHERE id = v_id), 'no price, not high value';
   -- Search matches a word inside the long search text (word similarity), typos included.
   ASSERT (SELECT id FROM products WHERE 'flabebe' <% search_text) = v_id, 'exact word';
   ASSERT (SELECT id FROM products WHERE 'flabbebe' <% search_text) = v_id, 'typo tolerated';

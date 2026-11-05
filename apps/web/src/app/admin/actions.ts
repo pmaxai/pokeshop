@@ -82,7 +82,6 @@ export async function saveProduct(form: FormData) {
       description_de: str(form, 'description_de'),
       description_en: str(form, 'description_en'),
       price: cents === undefined ? undefined : { amount: cents, currency: 'EUR' },
-      high_value: form.get('high_value') === 'on',
       status: str(form, 'status') || undefined,
     });
     const r = await patchProduct(db(), sku, patch, { source: 'admin', id: user.email });
