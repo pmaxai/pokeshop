@@ -1,7 +1,7 @@
 # Caddy: HTTPS for pokemonkarten.at, www redirect and staging.
-# Start once on the vServer:
+# Start once on the server (from the repository folder):
 #   docker network create pokeshop-edge
-#   docker compose -f infra/caddy/compose.yaml --env-file infra/caddy/.env up -d
+#   docker compose -f infra/caddy/compose.yaml up -d
 
 name: pokeshop-edge
 
