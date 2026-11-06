@@ -19,7 +19,15 @@ import {
 } from '@pokeshop/core/mail';
 import { expireHolds, runPendingRefunds } from '@pokeshop/core/orders';
 import { paymentsFromEnv } from '@pokeshop/core/payments';
-import { httpTcgdexClient, syncCardDetails, syncSets } from '@pokeshop/core/tcgdex';
+import {
+  fillLocalNames,
+  httpTcgdexClient,
+  missingLocalNames,
+  syncCardDetails,
+  syncLocalName,
+  syncSets,
+} from '@pokeshop/core/tcgdex';
+import { TCGDEX_LOCAL_LANGS } from '@pokeshop/core/catalog';
 import { processNextImage } from './images.ts';
 
 export const HEARTBEAT_FILE = process.env.WORKER_HEARTBEAT_FILE ?? '/tmp/pokeshop-worker.heartbeat';
@@ -47,6 +55,11 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
   },
   'tcgdex.card': async (job) => {
     await syncCardDetails(sql, tcgdex, String(job.payload.card_ref));
+  },
+  // Printed name of a French, Italian … card (products created before it was known).
+  'tcgdex.local-name': async (job) => {
+    const lang = Object.values(TCGDEX_LOCAL_LANGS).find((l) => l === job.payload.lang);
+    if (lang) await syncLocalName(sql, tcgdex, String(job.payload.card_ref), lang);
   },
   // Invoice or credit note PDF requested in the admin before its mail went out.
   'document.render': async (job) => {
@@ -130,6 +143,13 @@ async function schedule() {
       { card_ref: m.card_ref },
       { dedupeKey: `tcgdex.card:${m.card_ref}` },
     );
+  }
+  // French, Italian … products without their printed name.
+  await fillLocalNames(sql);
+  for (const m of await missingLocalNames(sql)) {
+    await enqueueJob(sql, 'tcgdex.local-name', m, {
+      dedupeKey: `tcgdex.local-name:${m.card_ref}:${m.lang}`,
+    });
   }
   await requeueStaleJobs(sql);
   const carts = await deleteStaleCarts(sql);

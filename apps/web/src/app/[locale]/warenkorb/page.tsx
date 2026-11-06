@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { currentCartId } from '@/server/cart';
+import { AltNames } from '@/components/AltNames';
 import { CardImage } from '@/components/CardImage';
 import { AutoSubmit } from '@/components/AutoSubmit';
 import { updateCartAction } from '../shop-actions';
@@ -100,9 +101,11 @@ export default async function CartPage({ params, searchParams }: Props) {
                   <Link
                     href={{ pathname: '/karten/[slug]', params: { slug: l.slug } }}
                     className="cart-line__name"
+                    lang={l.nameLang}
                   >
                     {l.name}
                   </Link>
+                  <AltNames translations={l.nameTranslations} className="cart-line__alt" />
                   <span className="cart-line__set">
                     {l.setName ?? l.setCode} <span className="num">{l.cardNumber}</span> ·{' '}
                     {tl(l.cardLanguage as never)} · {l.condition}

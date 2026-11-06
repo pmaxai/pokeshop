@@ -6,6 +6,7 @@ import { listCatalog, productBySlug, type ProductPage } from '@pokeshop/core/sto
 import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db } from '@/server/config';
+import { AltNames, namesText } from '@/components/AltNames';
 import { CardImage } from '@/components/CardImage';
 import { CardTile } from '@/components/CardTile';
 import { ZoomCard } from '@/components/ZoomCard';
@@ -41,10 +42,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'Card' });
   const tl = await getTranslations({ locale, namespace: 'Languages' });
   const img = largeImage(p);
-  const title = `${p.name} ${p.cardNumber} ${p.setName ?? ''} – ${tl(p.cardLanguage as never)}, ${p.condition}`;
+  const title = `${namesText(p.name, p.nameTranslations)} ${p.cardNumber} ${p.setName ?? ''} – ${tl(p.cardLanguage as never)}, ${p.condition}`;
   return {
     title,
-    description: `${p.name}, ${p.setName ?? p.setCode} ${p.cardNumber}. ${t('language')}: ${tl(p.cardLanguage as never)}, ${t('condition')}: ${p.condition}. ${formatEuro(p.priceCents, locale)}.`,
+    description: `${namesText(p.name, p.nameTranslations)}, ${p.setName ?? p.setCode} ${p.cardNumber}. ${t('language')}: ${tl(p.cardLanguage as never)}, ${t('condition')}: ${p.condition}. ${formatEuro(p.priceCents, locale)}.`,
     alternates: { canonical: paths(p)[locale], languages: paths(p) },
     openGraph: img ? { images: [{ url: img }] } : undefined,
   };
@@ -70,12 +71,15 @@ export default async function CardPage({ params }: Props) {
     .filter((c) => c.id !== p.id)
     .slice(0, 8);
   const big = largeImage(p);
-  const alt = `${p.name}, ${p.setName ?? p.setCode} ${p.cardNumber}`;
+  const alt = `${namesText(p.name, p.nameTranslations)}, ${p.setName ?? p.setCode} ${p.cardNumber}`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `${p.name} ${p.cardNumber}`,
+    ...(p.nameTranslations.length
+      ? { alternateName: p.nameTranslations.map((n) => `${n.text} ${p.cardNumber}`) }
+      : {}),
     sku: p.sku,
     image: big ? [`${config.baseUrl}${big}`] : undefined,
     category: 'Pokémon TCG single card',
@@ -143,7 +147,8 @@ export default async function CardPage({ params }: Props) {
               {p.setName ?? p.setCode}
             </Link>
           </nav>
-          <h1>{p.name}</h1>
+          <h1 lang={p.nameLang}>{p.name}</h1>
+          <AltNames translations={p.nameTranslations} className="product__alt" />
           <p className="product__sub">
             {p.setName ?? p.setCode} <span className="num">{p.cardNumber}</span>
           </p>

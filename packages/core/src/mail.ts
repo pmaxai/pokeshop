@@ -6,6 +6,7 @@ import { createHash, X509Certificate } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import type { Db, Sql } from './db.ts';
+import { cardNames, cardNameText } from './catalog.ts';
 import { formatEuro, formatRate } from './money.ts';
 import { currentLegal, type LegalKind } from './legal.ts';
 import {
@@ -211,12 +212,12 @@ function address(a: CustomerOrder['shippingAddress'] | null, locale: 'de' | 'en'
 function itemsTable(o: CustomerOrder, locale: 'de' | 'en', boxes?: Map<number, string>): string {
   const rows = o.items
     .map((i) => {
-      const name = locale === 'en' ? i.nameEn : i.nameDe;
+      const names = cardNames(i, locale);
       const set = locale === 'en' ? (i.setNameEn ?? i.setNameDe) : (i.setNameDe ?? i.setNameEn);
       const box = boxes?.get(i.productId);
       return `<tr><td style="padding:8px 0;border-bottom:1px solid ${C.line};vertical-align:top">
-<strong>${esc(name)}</strong> <span style="color:${C.muted}">${esc(i.cardNumber)}</span><br>
-<span style="color:${C.muted};font-size:13px">${esc([set, i.cardLanguage, i.condition].filter(Boolean).join(' · '))}${box ? ` · Box ${esc(box)}` : ''}</span></td>
+<strong lang="${names.lang}">${esc(names.original)}</strong> <span style="color:${C.muted}">${esc(i.cardNumber)}</span><br>
+${names.translations.length ? `<span style="color:${C.muted};font-size:13px">${names.translations.map((t) => `<span lang="${t.lang}">${esc(t.text)}</span>`).join(' · ')}</span><br>` : ''}<span style="color:${C.muted};font-size:13px">${esc([set, i.cardLanguage, i.condition].filter(Boolean).join(' · '))}${box ? ` · Box ${esc(box)}` : ''}</span></td>
 <td style="padding:8px 0 8px 12px;border-bottom:1px solid ${C.line};text-align:right;vertical-align:top;white-space:nowrap">${i.quantity} × ${esc(formatEuro(i.unitPriceCents, locale))}</td></tr>`;
     })
     .join('');
@@ -439,7 +440,7 @@ export async function renderTemplate(
           const idx = (ids?.ids ?? []).indexOf(w.orderItemId);
           const i = o.items[idx];
           if (!i) return '';
-          return `<li>${w.quantity} × ${esc(L === 'en' ? i.nameEn : i.nameDe)} ${esc(i.cardNumber)}</li>`;
+          return `<li>${w.quantity} × ${esc(cardNameText(cardNames(i, L)))} ${esc(i.cardNumber)}</li>`;
         })
         .join('');
       const shippingRow =

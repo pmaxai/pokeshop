@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { formatEuro } from '@pokeshop/core';
+import { rowNames } from '@pokeshop/core/catalog';
 import { getProduct } from '@pokeshop/core/products';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
@@ -77,6 +78,7 @@ export default async function ProductEdit({
       SELECT id, role, status, source_url, storage_key, error FROM product_images WHERE product_id = ${row!.id} ORDER BY position, id`,
   ]);
   const price = p.price ? (p.price.amount / 100).toFixed(2).replace('.', ',') : '';
+  const names = rowNames(p, 'de');
 
   return (
     <AdminShell user={user} active="products" notice={sp}>
@@ -84,7 +86,10 @@ export default async function ProductEdit({
         <a href="/admin/produkte">Produkte</a> / {p.sku}
       </p>
       <h1>
-        {p.name_de}{' '}
+        <span lang={names.lang}>{names.original}</span>{' '}
+        {names.translations.length > 0 && (
+          <span>({names.translations.map((t) => t.text).join(', ')}) </span>
+        )}
         <span className="muted">
           {p.set_name_de ?? p.set_code} {p.card_number}
         </span>
@@ -202,6 +207,19 @@ export default async function ProductEdit({
           <span>Name (Englisch)</span>
           <input name="name_en" defaultValue={p.name_en} required />
         </label>
+        {!['DE', 'EN'].includes(p.card_language) && (
+          <label className="field">
+            <span>Name auf der Karte ({p.card_language})</span>
+            <input
+              name="name_local"
+              defaultValue={p.name_local ?? ''}
+              lang={names.lang}
+              placeholder={
+                p.card_language === 'JA' ? 'z. B. リザードンex' : 'wie auf der Karte gedruckt'
+              }
+            />
+          </label>
+        )}
         <label className="field">
           <span>Preis in € (inkl. USt.)</span>
           <input name="price" defaultValue={price} inputMode="decimal" placeholder="z. B. 129,00" />

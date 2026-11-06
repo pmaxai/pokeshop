@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro, formatRate } from '@pokeshop/core';
+import { cardNames } from '@pokeshop/core/catalog';
 import { orderByToken, syncSession } from '@pokeshop/core/orders';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { payments } from '@/server/payments';
+import { AltNames } from '@/components/AltNames';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,21 +146,33 @@ export default async function OrderPage({ params, searchParams }: Props) {
         <div>
           <h2>{t('items')}</h2>
           <ul className="summary__lines">
-            {order.items.map((i) => (
-              <li key={i.productId}>
-                <span>
-                  {i.quantity > 1 ? `${i.quantity} × ` : ''}
-                  {locale === 'en' ? i.nameEn : i.nameDe}{' '}
-                  <span className="num muted">{i.cardNumber}</span>
-                  <br />
-                  <small className="muted">
-                    {(locale === 'en' ? i.setNameEn : i.setNameDe) ?? ''} ·{' '}
-                    {tl(i.cardLanguage as never)} · {i.condition}
-                  </small>
-                </span>
-                <span>{formatEuro(i.unitPriceCents * i.quantity, locale)}</span>
-              </li>
-            ))}
+            {order.items.map((i) => {
+              const names = cardNames(i, locale);
+              return (
+                <li key={i.productId}>
+                  <span>
+                    {i.quantity > 1 ? `${i.quantity} × ` : ''}
+                    <span lang={names.lang}>{names.original}</span>{' '}
+                    <span className="num muted">{i.cardNumber}</span>
+                    {names.translations.length > 0 && (
+                      <>
+                        <br />
+                        <AltNames
+                          translations={names.translations}
+                          className="muted summary__alt"
+                        />
+                      </>
+                    )}
+                    <br />
+                    <small className="muted">
+                      {(locale === 'en' ? i.setNameEn : i.setNameDe) ?? ''} ·{' '}
+                      {tl(i.cardLanguage as never)} · {i.condition}
+                    </small>
+                  </span>
+                  <span>{formatEuro(i.unitPriceCents * i.quantity, locale)}</span>
+                </li>
+              );
+            })}
           </ul>
           <dl className="totals">
             <dt>{tCart('goods')}</dt>

@@ -1,13 +1,16 @@
+import { TCGDEX_LOCAL_LANGS, type TcgdexLocalLang } from './catalog.ts';
 import type { Db } from './db.ts';
 
 /**
  * Card master data from TCGdex (https://tcgdex.dev, MIT licence).
  * - syncSets: every set with its card list, names in German and English (~400 requests).
  * - syncCardDetails: rarity, category and types for one card, fetched when a product needs it.
+ * - syncLocalName: the card's name in one more language (French, Italian …), for products
+ *   printed in that language.
  * The shop keeps its own copy, so it never depends on TCGdex at runtime.
  */
 
-export type Lang = 'de' | 'en';
+export type Lang = 'de' | 'en' | TcgdexLocalLang;
 
 /** Digital-only TCG Pocket sets are not physical cards. */
 const EXCLUDED_SERIES = new Set(['tcgp']);
@@ -162,6 +165,7 @@ export async function syncSets(
     log(`set ${id}: ${rows.length} cards`);
   }
   await backfillProductSets(db);
+  await fillLocalNames(db);
   return report;
 }
 
@@ -253,6 +257,61 @@ async function ensureSetMeta(db: Db, client: TcgdexClient, setCode: string): Pro
       symbol_url = coalesce(${any.symbol ?? null}, symbol_url),
       updated_at = now()
     WHERE set_code = ${setCode}`;
+}
+
+/**
+ * Asks TCGdex for the card's name in `lang` and keeps the answer (also "none") in
+ * card_master.names_local; products printed in that language get it as name_local.
+ */
+export async function syncLocalName(
+  db: Db,
+  client: TcgdexClient,
+  cardRef: string,
+  lang: TcgdexLocalLang,
+): Promise<string | null> {
+  const card = await client.card(lang, cardRef);
+  const name = card?.name?.trim() || null;
+  await db`
+    UPDATE card_master SET names_local = names_local || jsonb_build_object(${lang}::text, ${name}::text),
+                           updated_at = now()
+     WHERE card_ref = ${cardRef}`;
+  await fillLocalNames(db, cardRef);
+  return name;
+}
+
+/** Products printed in French, Italian … without their own name get it from the master data. */
+export async function fillLocalNames(db: Db, cardRef?: string): Promise<number> {
+  const langs = Object.entries(TCGDEX_LOCAL_LANGS).map(([card_language, code]) => ({
+    card_language,
+    code,
+  }));
+  const r = await db`
+    UPDATE products p SET name_local = cm.names_local ->> l.code
+      FROM card_master cm,
+           jsonb_to_recordset(${db.json(langs as never)}) AS l(card_language text, code text)
+     WHERE cm.card_ref = p.card_ref AND p.card_language = l.card_language
+       AND p.name_local IS NULL AND cm.names_local ->> l.code IS NOT NULL
+       ${cardRef ? db`AND p.card_ref = ${cardRef}` : db``}`;
+  return r.count;
+}
+
+/** Card refs × languages of products whose own-language name TCGdex was never asked for. */
+export async function missingLocalNames(
+  db: Db,
+  limit = 50,
+): Promise<{ card_ref: string; lang: TcgdexLocalLang }[]> {
+  const langs = Object.entries(TCGDEX_LOCAL_LANGS).map(([card_language, code]) => ({
+    card_language,
+    code,
+  }));
+  return db<{ card_ref: string; lang: TcgdexLocalLang }[]>`
+    SELECT DISTINCT p.card_ref, l.code AS lang
+      FROM products p
+      JOIN card_master cm ON cm.card_ref = p.card_ref
+      JOIN jsonb_to_recordset(${db.json(langs as never)}) AS l(card_language text, code text)
+        ON l.card_language = p.card_language
+     WHERE p.name_local IS NULL AND NOT cm.names_local ? l.code
+     LIMIT ${limit}`;
 }
 
 /** Products created before their set was synced get the set data afterwards. */

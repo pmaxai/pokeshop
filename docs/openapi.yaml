@@ -481,6 +481,13 @@ components:
         external_id: { type: string, description: The scanning app's own id }
         name_de: { type: string }
         name_en: { type: string }
+        name_local:
+          type: string
+          maxLength: 200
+          description: >-
+            Name as printed on the card, for card languages other than DE and EN (e.g.
+            "リザードンex" for a JA card). Ignored for DE and EN cards. French, Italian, Spanish,
+            Portuguese, Dutch, Polish and Russian names are taken from TCGdex when left out.
         set_name_de: { type: string }
         set_name_en: { type: string }
         release_year: { type: integer }
@@ -580,6 +587,14 @@ components:
         card_number: { type: string }
         name_de: { type: string }
         name_en: { type: string }
+        name_local:
+          type: [string, 'null']
+          description: Printed name for card languages other than DE/EN; null when unknown.
+        name_original:
+          type: string
+          description: >-
+            The name printed on the card: name_de for DE, name_en for EN, name_local otherwise
+            (name_en while name_local is unknown). The shop shows this name in every language.
         card_language: { $ref: '#/components/schemas/CardLanguage' }
         condition: { $ref: '#/components/schemas/Condition' }
         finish: { $ref: '#/components/schemas/Finish' }

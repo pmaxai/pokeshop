@@ -48,6 +48,8 @@ const fieldsShape = {
   external_id: text(100).optional(),
   name_de: text(200).optional(),
   name_en: text(200).optional(),
+  /** Printed name for cards in other languages than DE/EN (French, Japanese …). */
+  name_local: text(200).optional(),
   set_name_de: text(200).optional(),
   set_name_en: text(200).optional(),
   release_year: z.number().int().min(1996).max(2100).optional(),

@@ -22,6 +22,118 @@ export const CARD_LANGUAGES = [
 ] as const;
 export type CardLanguage = (typeof CARD_LANGUAGES)[number];
 
+/** BCP 47 tag of each card language, for lang="…" on the printed name (CJK glyphs differ). */
+export const CARD_LANGUAGE_TAGS: Record<CardLanguage, string> = {
+  DE: 'de',
+  EN: 'en',
+  FR: 'fr',
+  IT: 'it',
+  ES: 'es',
+  PT: 'pt',
+  NL: 'nl',
+  PL: 'pl',
+  RU: 'ru',
+  JA: 'ja',
+  KO: 'ko',
+  'ZH-HANT': 'zh-Hant',
+  'ZH-HANS': 'zh-Hans',
+  ID: 'id',
+  TH: 'th',
+};
+
+/**
+ * Card languages whose printed name TCGdex keeps on the international card, with the TCGdex
+ * language code. Asian prints (JA, KO, ZH, ID, TH) are separate cards in separate sets there,
+ * so their names come from the scanning app or the admin.
+ */
+export const TCGDEX_LOCAL_LANGS = {
+  FR: 'fr',
+  IT: 'it',
+  ES: 'es',
+  PT: 'pt',
+  NL: 'nl',
+  PL: 'pl',
+  RU: 'ru',
+} as const satisfies Partial<Record<CardLanguage, string>>;
+export type TcgdexLocalLang = (typeof TCGDEX_LOCAL_LANGS)[keyof typeof TCGDEX_LOCAL_LANGS];
+
+export function tcgdexLocalLang(cardLanguage: string): TcgdexLocalLang | null {
+  return (TCGDEX_LOCAL_LANGS as Record<string, TcgdexLocalLang>)[cardLanguage] ?? null;
+}
+
+export type CardNames = {
+  /** The name printed on the card. */
+  original: string;
+  /** BCP 47 tag of `original`. */
+  lang: string;
+  /** Shown smaller under it: the English name, then (German shop) the German one; no repeats. */
+  translations: { text: string; lang: string }[];
+};
+
+/** "Charizard-ex" and "Charizard ex" are the same name for this purpose. */
+function nameKey(s: string): string {
+  return s
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+/**
+ * How a card is named in the shop: always the printed name, whatever the shop language,
+ * then the English name and – in the German shop – the German one.
+ * Without a known printed name (e.g. a Japanese card nobody named yet) the English name leads.
+ */
+export function cardNames(
+  card: { cardLanguage: string; nameDe: string; nameEn: string; nameLocal?: string | null },
+  shopLocale: 'de' | 'en',
+): CardNames {
+  const L = card.cardLanguage.toUpperCase();
+  let original = card.nameEn;
+  let lang = 'en';
+  if (L === 'DE') {
+    original = card.nameDe;
+    lang = 'de';
+  } else if (L !== 'EN' && card.nameLocal?.trim()) {
+    original = card.nameLocal.trim();
+    lang = CARD_LANGUAGE_TAGS[L as CardLanguage] ?? 'und';
+  }
+  const seen = new Set([nameKey(original)]);
+  const translations: CardNames['translations'] = [];
+  const candidates: [string, string][] = [[card.nameEn, 'en']];
+  if (shopLocale === 'de') candidates.push([card.nameDe, 'de']);
+  for (const [text, tag] of candidates) {
+    const key = text ? nameKey(text) : '';
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    translations.push({ text, lang: tag });
+  }
+  return { original, lang, translations };
+}
+
+/** cardNames for a database row (card_language, name_de, name_en, name_local). */
+export function rowNames(
+  r: { card_language: string; name_de: string; name_en: string; name_local?: string | null },
+  shopLocale: 'de' | 'en',
+): CardNames {
+  return cardNames(
+    {
+      cardLanguage: r.card_language,
+      nameDe: r.name_de,
+      nameEn: r.name_en,
+      nameLocal: r.name_local,
+    },
+    shopLocale,
+  );
+}
+
+/** One line of text: "リザードンex (Charizard ex, Glurak-ex)". */
+export function cardNameText(names: CardNames): string {
+  return names.translations.length
+    ? `${names.original} (${names.translations.map((t) => t.text).join(', ')})`
+    : names.original;
+}
+
 export const CONDITIONS = {
   M: { de: 'Mint', en: 'Mint' },
   NM: { de: 'Near Mint', en: 'Near Mint' },

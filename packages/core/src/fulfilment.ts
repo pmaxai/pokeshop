@@ -1,7 +1,7 @@
 // Fulfilment: packing, pick list by storage box, shipping with invoice, refunds with optional
 // restock and credit note, withdrawals. Used by the admin.
 import type { Db, Sql, Tx } from './db.ts';
-import { compareStorageLocations } from './catalog.ts';
+import { cardNameText, compareStorageLocations, rowNames } from './catalog.ts';
 import { splitGross } from './money.ts';
 import { formatDocumentNumber } from './numbering.ts';
 import { enqueueMail } from './outbox.ts';
@@ -19,6 +19,7 @@ type ItemRow = {
   sku: string;
   name_de: string;
   name_en: string;
+  name_local: string | null;
   set_name_de: string | null;
   set_name_en: string | null;
   card_number: string;
@@ -32,14 +33,43 @@ type ItemRow = {
   high_value: boolean;
 };
 
-const ITEM_COLUMNS = `id, product_id, sku, name_de, name_en, set_name_de, set_name_en, card_number,
+const ITEM_COLUMNS = `id, product_id, sku, name_de, name_en, name_local, set_name_de, set_name_en, card_number,
   card_language, condition, finish, unit_price_cents, quantity, refunded_quantity, restocked_quantity, high_value`;
+
+/** "リザードンex (Charizard ex, Glurak-ex)": printed name first, as in the shop. */
+function itemName(
+  i: Pick<ItemRow, 'card_language' | 'name_de' | 'name_en' | 'name_local'>,
+  locale: 'de' | 'en',
+): string {
+  return cardNameText(rowNames(i, locale));
+}
+
+/** The PDF font (Helvetica, WinAnsi) only prints Western European characters. */
+const PDF_PRINTABLE =
+  /^[\x20-\x7e\u00a0-\u00ff\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u2013\u2014\u2018\u2019\u201c\u201d\u201e\u2022\u2026\u20ac]*$/;
+
+/**
+ * Name on invoices and credit notes: as in the shop, except that a Japanese, Korean, Chinese,
+ * Thai or Cyrillic printed name gives way to the English (and German) one – the card language
+ * stays on the line.
+ */
+export function documentItemName(
+  i: Pick<ItemRow, 'card_language' | 'name_de' | 'name_en' | 'name_local'>,
+  locale: 'de' | 'en',
+): string {
+  const n = rowNames(i, locale);
+  if (PDF_PRINTABLE.test(n.original)) return cardNameText(n);
+  const [first, ...rest] = n.translations.filter((t) => PDF_PRINTABLE.test(t.text));
+  return first
+    ? cardNameText({ original: first.text, lang: first.lang, translations: rest })
+    : i.name_en;
+}
 
 function itemLine(i: ItemRow, quantity: number): DocumentLine {
   const tail = [i.card_language, i.condition].join(', ');
   return {
-    de: `${i.name_de} ${i.card_number}, ${i.set_name_de ?? i.set_name_en ?? ''}, ${tail}`,
-    en: `${i.name_en} ${i.card_number}, ${i.set_name_en ?? i.set_name_de ?? ''}, ${tail}`,
+    de: `${documentItemName(i, 'de')} ${i.card_number}, ${i.set_name_de ?? i.set_name_en ?? ''}, ${tail}`,
+    en: `${documentItemName(i, 'en')} ${i.card_number}, ${i.set_name_en ?? i.set_name_de ?? ''}, ${tail}`,
     quantity,
     unit_cents: i.unit_price_cents,
   };
@@ -396,18 +426,25 @@ export async function pickList(
 ): Promise<{ lines: PickLine[]; slips: PackingSlip[] }> {
   if (orderIds.length === 0) return { lines: [], slips: [] };
   const rows = await db<
-    (Omit<PickLine, 'orderId' | 'orderNumber'> & { order_id: number; order_number: string })[]
+    (Omit<PickLine, 'orderId' | 'orderNumber' | 'name'> & {
+      order_id: number;
+      order_number: string;
+      name_de: string;
+      name_en: string;
+      name_local: string | null;
+    })[]
   >`
     SELECT a.storage_location AS box, a.quantity, i.order_id, o.number AS order_number, i.sku,
-           i.name_de AS name, i.set_name_de AS "setName", i.card_number AS "cardNumber",
+           i.name_de, i.name_en, i.name_local, i.set_name_de AS "setName", i.card_number AS "cardNumber",
            i.card_language AS "cardLanguage", i.condition, i.finish
       FROM order_item_allocations a
       JOIN order_items i ON i.id = a.order_item_id
       JOIN orders o ON o.id = i.order_id
      WHERE i.order_id = ANY(${orderIds}::bigint[]) AND a.status = 'committed'`;
   const lines: PickLine[] = rows
-    .map(({ order_id, order_number, ...r }) => ({
+    .map(({ order_id, order_number, name_de, name_en, name_local, ...r }) => ({
       ...r,
+      name: itemName({ card_language: r.cardLanguage, name_de, name_en, name_local }, 'de'),
       orderId: order_id,
       orderNumber: order_number,
     }))
