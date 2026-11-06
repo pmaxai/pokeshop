@@ -333,7 +333,10 @@ export async function intake(
   }
 }
 
-/** PUT: creates the product or replaces all of its fields (stock is untouched). */
+/**
+ * PUT: creates the product or replaces all of its fields. Stock and uploaded photos are
+ * untouched; URL images not listed in `images` are removed.
+ */
 export async function replaceProduct(
   sql: Sql,
   sku: string,
@@ -382,7 +385,9 @@ export async function replaceProduct(
           });
         }
         await tx`UPDATE products SET ${tx(all as never)} WHERE id = ${id}`;
+        // `images` lists the URL images; photos uploaded through /images stay.
         await tx`DELETE FROM product_images WHERE product_id = ${id} AND source_url IS NOT NULL
+                   AND source_url NOT LIKE 'upload:%'
                    AND source_url <> ALL(${(input.images ?? []).map((i) => i.url)}::text[])`;
       }
       await addImages(tx, id!, input.images);

@@ -137,7 +137,9 @@ paths:
       summary: Create or fully replace a product
       description: |
         Identity fields (card, card language, condition, finish, grading) must match the SKU in
-        the path; a mismatch returns 409. Stock is not set here – use the stock endpoints.
+        the path; a mismatch returns 409. Fields left out are reset. `images` replaces the
+        images registered by URL; photos uploaded through `/products/{sku}/images` stay.
+        Stock is not set here – use the stock endpoints.
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:

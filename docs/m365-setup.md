@@ -29,7 +29,11 @@ Create the shared mailbox `bestellung@pokemonkarten.at` (display name "pokemonka
 ### 3. Limit the app to the one mailbox (Exchange Online PowerShell)
 
 Use the _Application (client) ID_ and the _Object ID from Enterprise applications_ (not the one
-shown under App registrations).
+shown under App registrations). There is no admin-center page for this. Azure Cloud Shell needs an
+Azure subscription, so run it on your own computer instead: Windows PowerShell has everything but
+the module (`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`,
+`Install-Module ExchangeOnlineManagement -Scope CurrentUser`); on macOS install PowerShell first
+(`brew install powershell`, then `pwsh`).
 
 ```powershell
 Connect-ExchangeOnline
@@ -62,20 +66,47 @@ Changes can take up to two hours to apply because Exchange caches app permission
 
 ## B. Admin sign-in "pokemonkarten-admin"
 
-1. New registration, single tenant, platform **Web**, redirect URIs:
+1. New registration, single tenant, platform **Web** (not "Single-page application"), redirect
+   URIs:
    - `https://pokemonkarten.at/admin/auth/callback`
    - `https://staging.pokemonkarten.at/admin/auth/callback`
    - `http://localhost:3000/admin/auth/callback` (development)
-2. Certificates & secrets → new client secret → `ENTRA_CLIENT_SECRET` (note the expiry date).
-3. API permissions: Microsoft Graph delegated `openid`, `profile`, `email` (default, no admin
+2. Certificates & secrets → new client secret. Copy the **Value** column right away; it is shown
+   only once. The **Secret ID** column (a GUID) is not the secret. Note the expiry date.
+3. Env file: `ENTRA_TENANT_ID` = _Directory (tenant) ID_, `ENTRA_CLIENT_ID` = _Application
+   (client) ID_ (both GUIDs from the app's Overview page), `ENTRA_CLIENT_SECRET` = the value.
+4. API permissions: Microsoft Graph delegated `openid`, `profile`, `email` (default, no admin
    consent needed).
-4. Who may sign in – one of:
+5. Who may sign in – one of:
+   - **App roles (works with every Entra plan):** App registrations → pokemonkarten-admin →
+     App roles → create `Shop.Owner` and `Shop.Staff` (allowed member types: Users/Groups; the
+     _Value_ must be exactly these strings). Then Enterprise applications → pokemonkarten-admin →
+     Users and groups → add each **user** with a role. Assigning groups there needs Entra ID P1.
    - **Groups:** create security groups "Shop-Admins" and "Shop-Staff"; Token configuration →
      add groups claim → Security groups (ID token). Put the group object IDs into
      `ENTRA_OWNER_GROUP_ID` and `ENTRA_STAFF_GROUP_ID`.
-   - **App roles:** create the roles `Shop.Owner` and `Shop.Staff` and assign users under
-     Enterprise applications → Users and groups.
-5. Enterprise applications → pokemonkarten-admin → Properties → _Assignment required_ = Yes, then
-   assign the people (or groups) who may use the admin.
+6. Enterprise applications → pokemonkarten-admin → Properties → _Assignment required_ = Yes, then
+   assign the people who may use the admin.
 
 MFA follows your tenant's Conditional Access policies.
+
+### When the sign-in fails
+
+The login page names the problem; Microsoft's error code (AADSTS…) and a hint are in the web
+container's log:
+
+```sh
+infra/stack.sh staging logs web | grep '\[entra\]'
+```
+
+| Code                         | Cause                                                               | Fix                                                                                |
+| ---------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| AADSTS7000215                | `ENTRA_CLIENT_SECRET` is not the secret value (often the Secret ID) | Copy the **Value** of the client secret; create a new one if it is no longer shown |
+| AADSTS7000222                | Client secret expired                                               | New client secret                                                                  |
+| AADSTS9002327, AADSTS700025  | Redirect URI registered as single-page app or public client         | Register it under platform **Web**                                                 |
+| AADSTS50011                  | Redirect URI not registered                                         | Add the exact URI from step 1                                                      |
+| AADSTS700016, AADSTS90002    | Wrong client ID or tenant ID                                        | Copy both GUIDs from the app's Overview page                                       |
+| AADSTS50105                  | Account not assigned to the app                                     | Step 6                                                                             |
+| (no code) "keine Shop-Rolle" | Signed in, but without `Shop.Owner` / `Shop.Staff`                  | Step 5, then sign in again                                                         |
+
+After changing the env file, run `infra/stack.sh staging up -d` so the container picks it up.

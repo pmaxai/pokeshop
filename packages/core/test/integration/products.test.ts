@@ -288,6 +288,44 @@ test('PUT refuses a body that describes another card', async () => {
   assert.equal(r.product.stock.quantity, 0);
 });
 
+test('PUT replaces URL images but keeps uploaded photos', async () => {
+  const sku = 'sv03.5-199-DE-EX-H';
+  const created = await intake(
+    sql,
+    glurak({
+      condition: 'EX',
+      images: [{ role: 'front', url: 'https://example.com/old-front.jpg' }],
+    }),
+    actor,
+    {},
+  );
+  assert.equal(created.product.sku, sku);
+  const [p] = await sql<{ id: number }[]>`SELECT id FROM products WHERE sku = ${sku}`;
+  await sql`INSERT INTO product_images (product_id, role, position, source_url)
+            VALUES (${p!.id}, 'back', 5, 'upload:incoming/scan-back.jpg')`;
+
+  await replaceProduct(
+    sql,
+    sku,
+    parse(ProductInput, {
+      card_ref: 'sv03.5-199',
+      card_language: 'DE',
+      condition: 'EX',
+      finish: 'holo',
+      price: { amount: 9900, currency: 'EUR' },
+      images: [{ role: 'front', url: 'https://example.com/new-front.jpg' }],
+    }),
+    actor,
+    {},
+  );
+  const sources = await sql<{ source_url: string }[]>`
+    SELECT source_url FROM product_images WHERE product_id = ${p!.id} ORDER BY source_url`;
+  assert.deepEqual(
+    sources.map((r) => r.source_url),
+    ['https://example.com/new-front.jpg', 'upload:incoming/scan-back.jpg'],
+  );
+});
+
 test('list with filters and cursor', async () => {
   const page1 = await listProducts(sql, { limit: 2 });
   assert.equal(page1.items.length, 2);

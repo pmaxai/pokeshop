@@ -3,6 +3,17 @@ import { createHash, randomBytes } from 'node:crypto';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { decodeIdToken, generateCodeVerifier, generateState, MicrosoftEntraId } from 'arctic';
+import {
+  aadstsCodes,
+  authorizeErrorReason,
+  describeEntraFailure,
+  entraSettingsFromEnv,
+  entraSettingsProblem,
+  redeemEntraCode,
+  sameTenant,
+  type EntraSettings,
+  type EntraSettingsProblem,
+} from '@pokeshop/core/entra-login';
 import { config, db } from './config';
 
 export type AdminRole = 'owner' | 'staff';
@@ -28,19 +39,14 @@ export function devLoginAllowed(): boolean {
   }
 }
 
-export function entraConfigured(): boolean {
-  return Boolean(
-    process.env.ENTRA_TENANT_ID && process.env.ENTRA_CLIENT_ID && process.env.ENTRA_CLIENT_SECRET,
-  );
+const SCOPES = ['openid', 'profile', 'email'];
+
+function entraSettings(): EntraSettings | null {
+  return entraSettingsFromEnv(process.env, `${config.baseUrl}/admin/auth/callback`);
 }
 
-function entra(): MicrosoftEntraId {
-  return new MicrosoftEntraId(
-    process.env.ENTRA_TENANT_ID!,
-    process.env.ENTRA_CLIENT_ID!,
-    process.env.ENTRA_CLIENT_SECRET!,
-    `${config.baseUrl}/admin/auth/callback`,
-  );
+export function entraConfigured(): boolean {
+  return entraSettings() !== null;
 }
 
 export async function createSession(user: AdminUser): Promise<void> {
@@ -87,11 +93,29 @@ export async function endSession(): Promise<void> {
   jar.delete({ name: SESSION_COOKIE, path: '/admin' });
 }
 
-/** Starts the Microsoft sign-in: PKCE verifier and state in short-lived cookies. */
-export async function startEntraLogin(): Promise<URL> {
+/**
+ * Starts the Microsoft sign-in: PKCE verifier and state in short-lived cookies.
+ * Obvious setup mistakes (a secret ID instead of the secret value …) stop here with a clear message.
+ */
+export async function startEntraLogin(): Promise<
+  { url: URL } | { problem: 'missing' | EntraSettingsProblem }
+> {
+  const s = entraSettings();
+  if (!s) return { problem: 'missing' };
+  const problem = entraSettingsProblem(s);
+  if (problem) {
+    console.error(`[entra] sign-in not started: ENTRA settings problem "${problem}"`);
+    return { problem };
+  }
   const state = generateState();
   const verifier = generateCodeVerifier();
-  const url = entra().createAuthorizationURL(state, verifier, ['openid', 'profile', 'email']);
+  // arctic only builds the URL here; the code is redeemed by redeemEntraCode.
+  const url = new MicrosoftEntraId(
+    s.tenantId,
+    s.clientId,
+    s.clientSecret,
+    s.redirectUri,
+  ).createAuthorizationURL(state, verifier, SCOPES);
   url.searchParams.set('prompt', 'select_account');
   const jar = await cookies();
   const opts = {
@@ -103,7 +127,7 @@ export async function startEntraLogin(): Promise<URL> {
   };
   jar.set('pk_oauth_state', state, opts);
   jar.set('pk_oauth_verifier', verifier, opts);
-  return url;
+  return { url };
 }
 
 type IdClaims = {
@@ -132,7 +156,21 @@ export function roleFromClaims(c: IdClaims): AdminRole | null {
 }
 
 export type CallbackResult =
-  { ok: true } | { ok: false; reason: 'state' | 'token' | 'tenant' | 'not_allowed' };
+  | { ok: true }
+  | { ok: false; reason: 'state' | 'token' | 'tenant' | 'not_allowed' | 'entra'; code?: number };
+
+/** Microsoft sent an error to the callback instead of a code (cancelled, not assigned …). */
+export function entraAuthorizeError(
+  error: string,
+  description: string | null,
+): { reason: 'cancelled' | 'not_assigned' | 'denied'; code?: number } {
+  const reason = authorizeErrorReason(error, description);
+  const code = aadstsCodes(description)[0];
+  const line = (description ?? '').split(/\r?\n/)[0];
+  if (reason === 'cancelled') console.info(`[entra] sign-in cancelled: ${error} ${line}`);
+  else console.error(`[entra] sign-in refused by Microsoft: ${error} ${line}`);
+  return code ? { reason, code } : { reason };
+}
 
 /** Finishes the Microsoft sign-in. The ID token comes straight from Microsoft's token endpoint over TLS. */
 export async function finishEntraLogin(
@@ -146,23 +184,40 @@ export async function finishEntraLogin(
   jar.delete({ name: 'pk_oauth_verifier', path: '/admin/auth' });
   if (!code || !state || !expected || !verifier || state !== expected)
     return { ok: false, reason: 'state' };
+  const s = entraSettings();
+  if (!s) return { ok: false, reason: 'entra' };
+  const r = await redeemEntraCode(s, code, verifier, SCOPES);
+  if (!r.ok) {
+    console.error(`[entra] sign-in failed at the token endpoint: ${describeEntraFailure(r)}`);
+    return r.codes[0]
+      ? { ok: false, reason: 'token', code: r.codes[0] }
+      : { ok: false, reason: 'token' };
+  }
   let claims: IdClaims;
   try {
-    const tokens = await entra().validateAuthorizationCode(code, verifier);
-    claims = decodeIdToken(tokens.idToken()) as IdClaims;
-  } catch {
+    claims = decodeIdToken(r.idToken) as IdClaims;
+  } catch (e) {
+    console.error(`[entra] ID token not readable: ${(e as Error).message}`);
     return { ok: false, reason: 'token' };
   }
-  const tenant = process.env.ENTRA_TENANT_ID!;
   if (
-    claims.tid !== tenant ||
-    claims.aud !== process.env.ENTRA_CLIENT_ID ||
+    !sameTenant(claims.tid, s.tenantId) ||
+    !sameTenant(claims.aud, s.clientId) ||
     (claims.exp ?? 0) * 1000 < Date.now()
   ) {
+    console.error(
+      `[entra] ID token for tenant ${claims.tid ?? '?'} / app ${claims.aud ?? '?'} does not match ENTRA_TENANT_ID / ENTRA_CLIENT_ID`,
+    );
     return { ok: false, reason: 'tenant' };
   }
   const role = roleFromClaims(claims);
-  if (!role) return { ok: false, reason: 'not_allowed' };
+  if (!role) {
+    console.warn(
+      `[entra] ${claims.preferred_username ?? claims.email ?? claims.oid ?? '?'} signed in without a shop role ` +
+        `(roles: ${JSON.stringify(claims.roles ?? [])}, groups: ${claims.groups?.length ?? 0})`,
+    );
+    return { ok: false, reason: 'not_allowed' };
+  }
   await createSession({
     subject: claims.oid ?? claims.sub ?? 'unknown',
     email: claims.email ?? claims.preferred_username ?? 'unknown',
