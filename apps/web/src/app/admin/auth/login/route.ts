@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation';
-import { entraConfigured, startEntraLogin } from '@/server/admin-auth';
+import { startEntraLogin } from '@/server/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  if (!entraConfigured()) redirect('/admin/login?err=entra');
-  redirect((await startEntraLogin()).toString());
+  const r = await startEntraLogin();
+  if ('problem' in r)
+    redirect(r.problem === 'missing' ? '/admin/login?err=entra' : `/admin/login?err=${r.problem}`);
+  redirect(r.url.toString());
 }
