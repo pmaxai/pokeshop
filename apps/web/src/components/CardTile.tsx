@@ -3,6 +3,7 @@ import { formatEuro } from '@pokeshop/core';
 import type { CatalogTile } from '@pokeshop/core/storefront';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
+import { AltNames, namesText } from './AltNames';
 import { CardImage } from './CardImage';
 
 export async function CardTile({
@@ -21,7 +22,7 @@ export async function CardTile({
     <li className="tile">
       <CardImage
         image={card.image}
-        alt={`${card.name}, ${card.setName ?? card.setCode} ${card.cardNumber}`}
+        alt={`${namesText(card.name, card.nameTranslations)}, ${card.setName ?? card.setCode} ${card.cardNumber}`}
         priority={priority}
         noImageLabel={t('noImage')}
       />
@@ -29,8 +30,11 @@ export async function CardTile({
         href={{ pathname: '/karten/[slug]', params: { slug: card.slug } }}
         className="tile__link"
       >
-        <span className="tile__name">{card.name}</span>
+        <span className="tile__name" lang={card.nameLang}>
+          {card.name}
+        </span>
       </Link>
+      <AltNames translations={card.nameTranslations} className="tile__alt" />
       <span className="tile__set">
         {card.setName ?? card.setCode} <span className="num">{card.cardNumber}</span>
       </span>

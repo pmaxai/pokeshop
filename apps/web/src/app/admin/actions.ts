@@ -45,6 +45,7 @@ const FIELD_NAMES: Record<string, string> = {
   move: 'Anzahl',
   name_de: 'Name (Deutsch)',
   name_en: 'Name (Englisch)',
+  name_local: 'Name auf der Karte',
   price: 'Preis',
 };
 
@@ -79,6 +80,7 @@ export async function saveProduct(form: FormData) {
     const patch = parse(ProductPatch, {
       name_de: str(form, 'name_de') || undefined,
       name_en: str(form, 'name_en') || undefined,
+      name_local: str(form, 'name_local') || undefined,
       description_de: str(form, 'description_de'),
       description_en: str(form, 'description_en'),
       price: cents === undefined ? undefined : { amount: cents, currency: 'EUR' },

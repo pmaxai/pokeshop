@@ -7,6 +7,7 @@ import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { currentCartId } from '@/server/cart';
+import { AltNames } from '@/components/AltNames';
 import { checkoutAction } from '../shop-actions';
 
 export const dynamic = 'force-dynamic';
@@ -216,7 +217,14 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
               <li key={l.id}>
                 <span>
                   {l.quantity > 1 ? `${l.quantity} × ` : ''}
-                  {l.name} <span className="num muted">{l.cardNumber}</span>
+                  <span lang={l.nameLang}>{l.name}</span>{' '}
+                  <span className="num muted">{l.cardNumber}</span>
+                  {l.nameTranslations.length > 0 && (
+                    <>
+                      <br />
+                      <AltNames translations={l.nameTranslations} className="muted summary__alt" />
+                    </>
+                  )}
                 </span>
                 <span>{formatEuro(l.lineTotal, locale)}</span>
               </li>

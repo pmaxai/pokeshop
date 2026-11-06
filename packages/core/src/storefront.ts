@@ -1,3 +1,4 @@
+import { cardNames, type CardNames } from './catalog.ts';
 import type { Db } from './db.ts';
 
 /** Read queries for the public shop. Only active products are ever returned. */
@@ -41,7 +42,12 @@ export type CatalogTile = {
   id: number;
   sku: string;
   slug: string;
+  /** The name printed on the card, in any shop language. */
   name: string;
+  /** BCP 47 tag of `name` (for lang="…"). */
+  nameLang: string;
+  /** Shown smaller under the name: English, then German in the German shop. */
+  nameTranslations: CardNames['translations'];
   setCode: string;
   setName: string | null;
   cardNumber: string;
@@ -63,6 +69,7 @@ type TileRow = {
   slug_en: string | null;
   name_de: string;
   name_en: string;
+  name_local: string | null;
   set_code: string;
   set_name_de: string | null;
   set_name_en: string | null;
@@ -95,11 +102,22 @@ function tile(r: TileRow, locale: Locale): CatalogTile {
   const sampleUrl =
     r.card_language === 'DE' ? (r.master_de ?? r.master_en) : (r.master_en ?? r.master_de);
   const sample = samplePath(sampleUrl);
+  const names = cardNames(
+    {
+      cardLanguage: r.card_language,
+      nameDe: r.name_de,
+      nameEn: r.name_en,
+      nameLocal: r.name_local,
+    },
+    locale,
+  );
   return {
     id: r.id,
     sku: r.sku,
     slug: locale === 'en' ? (r.slug_en ?? r.slug) : r.slug,
-    name: locale === 'en' ? r.name_en : r.name_de,
+    name: names.original,
+    nameLang: names.lang,
+    nameTranslations: names.translations,
     setCode: r.set_code,
     setName: locale === 'en' ? (r.set_name_en ?? r.set_name_de) : (r.set_name_de ?? r.set_name_en),
     cardNumber: r.card_number,
@@ -120,7 +138,7 @@ function tile(r: TileRow, locale: Locale): CatalogTile {
 }
 
 const TILE_COLUMNS = (db: Db) => db`
-  p.id, p.sku, p.slug, p.slug_en, p.name_de, p.name_en, p.set_code, p.set_name_de, p.set_name_en,
+  p.id, p.sku, p.slug, p.slug_en, p.name_de, p.name_en, p.name_local, p.set_code, p.set_name_de, p.set_name_en,
   p.card_number, p.card_language, p.condition, p.finish, p.grading_company, p.grading_grade,
   p.rarity, rl.label_de AS rarity_de, p.price_cents, ps.available, p.high_value,
   img.storage_key AS own_key, img.width AS own_w, img.height AS own_h,

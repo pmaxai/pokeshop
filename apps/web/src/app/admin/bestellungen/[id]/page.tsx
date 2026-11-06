@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { formatEuro, formatRate } from '@pokeshop/core';
+import { cardNameText, rowNames } from '@pokeshop/core/catalog';
 import { orderAdmin } from '@pokeshop/core/fulfilment';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
@@ -162,7 +163,9 @@ export default async function OrderDetail({
                       <strong>{boxesOf(i.id) || '–'}</strong>
                     </td>
                     <td>
-                      <a href={`/admin/produkte/${encodeURIComponent(i.sku)}`}>{i.name_de}</a>{' '}
+                      <a href={`/admin/produkte/${encodeURIComponent(i.sku)}`}>
+                        {cardNameText(rowNames(i, 'de'))}
+                      </a>{' '}
                       {i.card_number}
                       <br />
                       <span className="muted">
@@ -271,7 +274,7 @@ export default async function OrderDetail({
                     .map((i) => (
                       <tr key={i.id}>
                         <td>
-                          {i.name_de} {i.card_number}{' '}
+                          {cardNameText(rowNames(i, 'de'))} {i.card_number}{' '}
                           <span className="muted">({formatEuro(i.unit_price_cents)} je Stück)</span>
                         </td>
                         <td>

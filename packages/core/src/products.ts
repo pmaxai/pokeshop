@@ -2,15 +2,17 @@ import type { Db, Sql } from './db.ts';
 import { isPgError, SQLSTATE } from './db.ts';
 import {
   buildSku,
+  cardNames,
   localCardNumber,
   productSlug,
+  tcgdexLocalLang,
   type CardLanguage,
   type Condition,
   type Finish,
 } from './catalog.ts';
 import { ApiError, notFound } from './errors.ts';
 import type { IntakeRequest, ProductInput, ProductPatch, StockChange } from './api-schemas.ts';
-import { syncCardDetails, type TcgdexClient } from './tcgdex.ts';
+import { syncCardDetails, syncLocalName, type TcgdexClient } from './tcgdex.ts';
 
 /** Who changes stock: written to the stock ledger and the audit log. */
 export type Actor = { source: 'api' | 'admin' | 'import'; id: string; reference?: string | null };
@@ -49,6 +51,7 @@ type MasterRow = {
   series_en: string | null;
   release_date: Date | null;
   card_count: number | null;
+  names_local: Record<string, string | null>;
 };
 
 type ResolvedCard = {
@@ -57,12 +60,15 @@ type ResolvedCard = {
   setCode: string;
   cardNumber: string;
   master: MasterRow | null;
+  /** Printed name for French, Italian … cards, from TCGdex; null for DE/EN or when unknown. */
+  localName: string | null;
 };
 
 const MASTER_COLUMNS = (db: Db) => db`
   cm.card_ref, cm.set_code, cm.local_id, cm.name_de, cm.name_en, cm.rarity, cm.supertype,
   cm.energy_types, cm.image_url, cm.details_fetched_at, cs.name_de AS set_name_de,
-  cs.name_en AS set_name_en, cs.series_de, cs.series_en, cs.release_date, cs.card_count`;
+  cs.name_en AS set_name_en, cs.series_de, cs.series_en, cs.release_date, cs.card_count,
+  cm.names_local`;
 
 async function masterByRef(db: Db, ref: string): Promise<MasterRow | null> {
   const [row] = await db<MasterRow[]>`
@@ -112,6 +118,15 @@ export async function resolveCard(
   } else if (id.set_code && id.card_number) {
     master = await masterBySetNumber(db, id.set_code, localCardNumber(id.card_number));
   }
+  const lang = tcgdexLocalLang(id.card_language);
+  let localName = lang && master ? (master.names_local[lang] ?? null) : null;
+  if (lang && master && !(lang in master.names_local) && tcgdex) {
+    try {
+      localName = await syncLocalName(db, tcgdex, master.card_ref, lang);
+    } catch {
+      // TCGdex unreachable: the worker asks again later
+    }
+  }
 
   const fromRef = id.card_ref ? splitCardRef(id.card_ref) : null;
   const setCode = master?.set_code ?? id.set_code ?? fromRef!.set;
@@ -128,7 +143,7 @@ export async function resolveCard(
     finish: id.finish,
     grading: id.grading ? { company: id.grading.company as never, grade: id.grading.grade } : null,
   });
-  return { sku, cardRef: master?.card_ref ?? null, setCode, cardNumber, master };
+  return { sku, cardRef: master?.card_ref ?? null, setCode, cardNumber, master, localName };
 }
 
 type Fields = Partial<
@@ -137,6 +152,7 @@ type Fields = Partial<
     | 'external_id'
     | 'name_de'
     | 'name_en'
+    | 'name_local'
     | 'set_name_de'
     | 'set_name_en'
     | 'release_year'
@@ -158,6 +174,7 @@ function columnsFrom(f: Fields, opts: ProductOptions): Record<string, unknown> {
     'external_id',
     'name_de',
     'name_en',
+    'name_local',
     'set_name_de',
     'set_name_en',
     'release_year',
@@ -235,6 +252,7 @@ async function insertProduct(
     card_number: card.cardNumber,
     name_de: nameDe,
     name_en: nameEn,
+    name_local: card.localName, // the database drops it for DE/EN cards
     card_language: input.card_language,
     release_year: m?.release_date ? new Date(m.release_date).getUTCFullYear() : null,
     rarity: m?.rarity ?? null,
@@ -317,6 +335,9 @@ export async function intake(
         const cols = columnsFrom(input, opts);
         if (Object.keys(cols).length)
           await tx`UPDATE products SET ${tx(cols as never)} WHERE id = ${id}`;
+        if (card.localName && input.name_local === undefined)
+          await tx`UPDATE products SET name_local = ${card.localName}
+                    WHERE id = ${id} AND name_local IS NULL`;
       }
       await tx`SELECT stock_change(${id}, ${input.storage_location}, ${input.delta}, ${actor.source},
                                    ${actor.id}, ${actor.reference ?? null}, 'intake')`;
@@ -376,6 +397,7 @@ export async function replaceProduct(
           description_en: null,
           name_de: m?.name_de ?? input.name_en ?? null,
           name_en: m?.name_en ?? input.name_de ?? null,
+          name_local: card.localName,
           grading_cert: input.grading?.cert ?? null,
           ...columnsFrom(input, opts),
         };
@@ -499,6 +521,10 @@ export type ApiProduct = {
   card_number: string;
   name_de: string;
   name_en: string;
+  /** Printed name for cards in other languages than DE/EN; null when unknown or DE/EN. */
+  name_local: string | null;
+  /** The name printed on the card (name_de, name_en or name_local; English when unknown). */
+  name_original: string;
   card_language: string;
   condition: string;
   finish: string;
@@ -526,6 +552,7 @@ type ProductRow = {
   card_number: string;
   name_de: string;
   name_en: string;
+  name_local: string | null;
   card_language: string;
   condition: string;
   finish: string;
@@ -558,6 +585,16 @@ async function toApi(db: Db, r: ProductRow, opts: ProductOptions): Promise<ApiPr
     card_number: r.card_number,
     name_de: r.name_de,
     name_en: r.name_en,
+    name_local: r.name_local,
+    name_original: cardNames(
+      {
+        cardLanguage: r.card_language,
+        nameDe: r.name_de,
+        nameEn: r.name_en,
+        nameLocal: r.name_local,
+      },
+      'en',
+    ).original,
     card_language: r.card_language,
     condition: r.condition,
     finish: r.finish,
@@ -583,7 +620,7 @@ async function toApi(db: Db, r: ProductRow, opts: ProductOptions): Promise<ApiPr
 
 const PRODUCT_SELECT = (db: Db) => db`
   SELECT p.id, p.sku, p.slug, p.external_id, p.card_ref, p.set_code, p.set_name_de, p.set_name_en,
-         p.card_number, p.name_de, p.name_en, p.card_language, p.condition, p.finish,
+         p.card_number, p.name_de, p.name_en, p.name_local, p.card_language, p.condition, p.finish,
          p.grading_company, p.grading_grade, p.grading_cert, p.release_year, p.rarity,
          p.price_cents, p.high_value, p.status, p.updated_at,
          coalesce((SELECT json_agg(json_build_object('id', i.id, 'role', i.role, 'status', i.status,

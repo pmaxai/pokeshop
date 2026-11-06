@@ -1,4 +1,5 @@
 import { formatEuro } from '@pokeshop/core';
+import { cardNameText, rowNames } from '@pokeshop/core/catalog';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../AdminShell';
@@ -30,6 +31,8 @@ export default async function Products({
       {
         sku: string;
         name_de: string;
+        name_en: string;
+        name_local: string | null;
         set_name_de: string | null;
         set_code: string;
         card_number: string;
@@ -43,7 +46,7 @@ export default async function Products({
         high_value: boolean;
       }[]
     >`
-      SELECT p.sku, p.name_de, p.set_name_de, p.set_code, p.card_number, p.card_language, p.condition, p.status, p.price_cents,
+      SELECT p.sku, p.name_de, p.name_en, p.name_local, p.set_name_de, p.set_code, p.card_number, p.card_language, p.condition, p.status, p.price_cents,
              ps.quantity, ps.reserved, p.high_value,
              (SELECT string_agg(s.storage_location, ', ' ORDER BY length(s.storage_location), s.storage_location)
                 FROM stock_locations s WHERE s.product_id = p.id AND s.quantity > 0) AS boxes
@@ -113,8 +116,13 @@ export default async function Products({
             {rows.map((r) => (
               <tr key={r.sku}>
                 <td>
-                  <a href={`/admin/produkte/${encodeURIComponent(r.sku)}`}>{r.name_de}</a>
+                  <a href={`/admin/produkte/${encodeURIComponent(r.sku)}`}>
+                    {cardNameText(rowNames(r, 'de'))}
+                  </a>
                   {r.high_value ? ' (wertvoll)' : ''}
+                  {!['DE', 'EN'].includes(r.card_language) && !r.name_local && (
+                    <strong> · Name auf der Karte fehlt</strong>
+                  )}
                   <br />
                   <span className="muted">{r.sku}</span>
                 </td>

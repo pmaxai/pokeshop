@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { Db, Sql, Tx } from './db.ts';
 import { isPgError, SQLSTATE } from './db.ts';
 import { emptyCart, loadCart, saveCheckoutDraft } from './cart.ts';
+import { cardNames } from './catalog.ts';
 import type { CheckoutProblem } from './checkout.ts';
 import { currentLegalVersions } from './legal.ts';
 import { newOrderNumber } from './numbering.ts';
@@ -183,10 +184,10 @@ export async function createCheckoutOrder(
       const orderId = o!.id;
 
       await tx`
-        INSERT INTO order_items (order_id, product_id, sku, name_de, name_en, set_code, set_name_de,
+        INSERT INTO order_items (order_id, product_id, sku, name_de, name_en, name_local, set_code, set_name_de,
                                  set_name_en, card_number, card_language, condition, finish,
                                  unit_price_cents, quantity, high_value)
-        SELECT ${orderId}, p.id, p.sku, p.name_de, p.name_en, p.set_code, p.set_name_de, p.set_name_en,
+        SELECT ${orderId}, p.id, p.sku, p.name_de, p.name_en, p.name_local, p.set_code, p.set_name_de, p.set_name_en,
                p.card_number, p.card_language, p.condition, p.finish, p.price_cents, ci.quantity,
                p.high_value
           FROM cart_items ci JOIN products p ON p.id = ci.product_id
@@ -244,6 +245,7 @@ async function paymentLines(db: Db, orderId: number, locale: 'de' | 'en') {
     {
       name_de: string;
       name_en: string;
+      name_local: string | null;
       set_name_de: string | null;
       set_name_en: string | null;
       card_number: string;
@@ -252,22 +254,34 @@ async function paymentLines(db: Db, orderId: number, locale: 'de' | 'en') {
       unit_price_cents: number;
       quantity: number;
     }[]
-  >`SELECT name_de, name_en, set_name_de, set_name_en, card_number, card_language, condition,
-           unit_price_cents, quantity FROM order_items WHERE order_id = ${orderId} ORDER BY id`;
+  >`SELECT name_de, name_en, name_local, set_name_de, set_name_en, card_number, card_language,
+           condition, unit_price_cents, quantity FROM order_items WHERE order_id = ${orderId} ORDER BY id`;
   const [o] = await db<{ shipping_cents: number; shipping_method: string }[]>`
     SELECT shipping_cents, shipping_method FROM orders WHERE id = ${orderId}`;
-  const lines = items.map((i) => ({
-    name: `${locale === 'en' ? i.name_en : i.name_de} ${i.card_number}`,
-    description: [
-      locale === 'en' ? (i.set_name_en ?? i.set_name_de) : (i.set_name_de ?? i.set_name_en),
-      i.card_language,
-      i.condition,
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    unitAmount: i.unit_price_cents,
-    quantity: i.quantity,
-  }));
+  const lines = items.map((i) => {
+    const names = cardNames(
+      {
+        cardLanguage: i.card_language,
+        nameDe: i.name_de,
+        nameEn: i.name_en,
+        nameLocal: i.name_local,
+      },
+      locale,
+    );
+    return {
+      name: `${names.original} ${i.card_number}`,
+      description: [
+        ...names.translations.map((t) => t.text),
+        locale === 'en' ? (i.set_name_en ?? i.set_name_de) : (i.set_name_de ?? i.set_name_en),
+        i.card_language,
+        i.condition,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      unitAmount: i.unit_price_cents,
+      quantity: i.quantity,
+    };
+  });
   if (o && o.shipping_cents > 0) {
     lines.push({
       name: locale === 'en' ? 'Insured shipping' : 'Versicherter Versand',
@@ -697,6 +711,7 @@ export type CustomerOrder = {
     productId: number;
     nameDe: string;
     nameEn: string;
+    nameLocal: string | null;
     setNameDe: string | null;
     setNameEn: string | null;
     cardNumber: string;
@@ -747,6 +762,7 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       product_id: number;
       name_de: string;
       name_en: string;
+      name_local: string | null;
       set_name_de: string | null;
       set_name_en: string | null;
       card_number: string;
@@ -756,8 +772,8 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       unit_price_cents: number;
       quantity: number;
     }[]
-  >`SELECT product_id, name_de, name_en, set_name_de, set_name_en, card_number, card_language,
-           condition, finish, unit_price_cents, quantity
+  >`SELECT product_id, name_de, name_en, name_local, set_name_de, set_name_en, card_number,
+           card_language, condition, finish, unit_price_cents, quantity
       FROM order_items WHERE order_id = ${id} ORDER BY id`;
   return {
     id: o.id,
@@ -783,6 +799,7 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       productId: i.product_id,
       nameDe: i.name_de,
       nameEn: i.name_en,
+      nameLocal: i.name_local,
       setNameDe: i.set_name_de,
       setNameEn: i.set_name_en,
       cardNumber: i.card_number,
