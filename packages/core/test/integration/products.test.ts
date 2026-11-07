@@ -187,7 +187,7 @@ test('external_id must be unique', async () => {
   );
 });
 
-test('high value follows the price: more than € 20, whatever the app sends', async () => {
+test('high value follows the price: more than € 50, whatever the app sends', async () => {
   const at = (amount: number, over: Record<string, unknown> = {}) =>
     intake(
       sql,
@@ -195,8 +195,8 @@ test('high value follows the price: more than € 20, whatever the app sends', a
       actor,
       {},
     );
-  assert.equal((await at(2000)).product.high_value, false, '€ 20.00 is not more than € 20');
-  assert.equal((await at(2001)).product.high_value, true);
+  assert.equal((await at(5000)).product.high_value, false, '€ 50.00 is not more than € 50');
+  assert.equal((await at(5001)).product.high_value, true);
   const r = await at(500, { high_value: true });
   assert.equal(r.product.high_value, false, 'the app cannot override the price rule');
   assert.ok(r.warnings.includes('high_value_ignored_set_by_price'));
@@ -205,7 +205,7 @@ test('high value follows the price: more than € 20, whatever the app sends', a
   const [p] = await sql<{ high_value: boolean }[]>`
     SELECT high_value FROM products WHERE sku = 'sv03.5-199-DE-EX-H'`;
   assert.equal(p!.high_value, true);
-  await sql`UPDATE settings SET value = '2000' WHERE key = 'high_value_threshold_cents'`;
+  await sql`UPDATE settings SET value = '5000' WHERE key = 'high_value_threshold_cents'`;
 });
 
 test('stock: remove, set, move, and refuse taking more than a box holds', async () => {

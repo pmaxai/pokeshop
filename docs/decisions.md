@@ -27,13 +27,30 @@ one packing slip per order (address, shipping method in capitals when insured). 
 the orders to "packing". Insured and tracked parcels can only be marked shipped with a tracking
 number.
 
-## 2026-11-05 · High value means a price above € 20, kept by the database
+## 2026-11-07 · Sole trader under the small business scheme; name only in the legal notice
+
+The shop is run by Maximilian Pinter Sammelkartenverkauf (sole trader, "Handel mit Waren aller
+Art") under the Kleinunternehmerregelung (§ 6 Abs. 1 Z 27 UStG). The setting `small_business`
+makes every order VAT-free (regime `small_business`); invoices and credit notes carry the note
+"Umsatzsteuerbefreit, Kleinunternehmer gemäß § 6 Abs. 1 Z 27 UStG" instead of a VAT breakdown, and
+show no UID. Switching it off brings back domestic/OSS/export VAT.
+
+The owner's name appears on the legal notice, on invoices and credit notes (§ 11 UStG) and in the
+e-mail footer (the order confirmation must identify the seller). Shop pages and the legal texts
+say "pokemonkarten.at" (`company.public_name`) with its address and refer to the legal notice.
+
+The online withdrawal is labelled "Bestellung retournieren (Vertrag widerrufen)": the statutory
+words stay in the label (§ 13a FAGG, § 356a BGB), and the confirm button keeps "Widerruf
+bestätigen".
+
+## 2026-11-05 · High value means a price above the threshold, kept by the database
 
 A trigger sets `products.high_value` from the price (more than the setting
-`high_value_threshold_cents`, € 20) and re-evaluates all products when the setting changes. The
-scanning app's `high_value` field is accepted but ignored, with a warning. Insured shipping costs
-10 % of the goods value, at least € 5, up to € 500 order value; above that there is no insured
-option and the order ships free with tracking.
+`high_value_threshold_cents`, € 50 since 2026-11-07, € 20 before) and re-evaluates all products
+when the setting changes. The scanning app's `high_value` field is accepted but ignored, with a
+warning. Insured shipping costs 5 % of the goods value (10 % before 2026-11-07), at least € 5, up
+to € 500 order value; above that there is no insured option and the order ships free with
+tracking.
 
 ## 2026-11-05 · Invoice when the order ships, not at payment
 

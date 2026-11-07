@@ -8,9 +8,9 @@ You have the right to withdraw from this contract within fourteen days without g
 
 The withdrawal period will expire after fourteen days from the day on which you acquire, or a third party other than the carrier and indicated by you acquires, physical possession of the goods.
 
-To exercise the right of withdrawal, you must inform us ({{company.name}}, {{company.address}}, e-mail: {{company.email}}) of your decision to withdraw from this contract by an unequivocal statement (e.g. a letter sent by post or an e-mail). You may use the attached model withdrawal form, but it is not obligatory.
+To exercise the right of withdrawal, you must inform us ({{company.public_name}}, {{company.address}}, e-mail: {{company.email}}) of your decision to withdraw from this contract by an unequivocal statement (e.g. a letter sent by post or an e-mail). You may use the attached model withdrawal form, but it is not obligatory.
 
-You can also exercise your right of withdrawal online at {{withdraw_url}} ("Withdraw from contract"). If you use this online function, we will send you without delay, on a durable medium (e.g. by e-mail), an acknowledgement of receipt with information on the content of the withdrawal statement and the date and time of its receipt.
+You can also exercise your right of withdrawal online at {{withdraw_url}} ("Return an order (withdraw from contract)"). If you use this online function, we will send you without delay, on a durable medium (e.g. by e-mail), an acknowledgement of receipt with information on the content of the withdrawal statement and the date and time of its receipt.
 
 To meet the withdrawal deadline, it is sufficient for you to send your communication concerning your exercise of the right of withdrawal before the withdrawal period has expired.
 
@@ -32,7 +32,7 @@ You are only liable for any diminished value of the goods resulting from the han
 
 (Complete and return this form only if you wish to withdraw from the contract.)
 
-- To {{company.name}}, {{company.address}}, e-mail: {{company.email}}
+- To {{company.public_name}}, {{company.address}}, e-mail: {{company.email}}
 - I/We (\*) hereby give notice that I/We (\*) withdraw from my/our (\*) contract of sale of the following goods (\*)/for the provision of the following service (\*)
 - Ordered on (\*)/received on (\*)
 - Name of consumer(s)

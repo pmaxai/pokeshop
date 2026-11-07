@@ -15,7 +15,7 @@ handle withdrawals; refunds and settings need the owner role.
 4. The shop then issues the invoice and e-mails the customer the shipping confirmation with the
    invoice and the tracking link.
 
-Cards with a price above € 20 make the parcel insured; above € 500 order value the parcel goes
+Cards with a price above € 50 make the parcel insured; above € 500 order value the parcel goes
 tracked but uninsured. The order list shows "Versichert" in bold.
 
 ## Refunds (owner)

@@ -503,7 +503,7 @@ components:
           deprecated: true
           description: |
             Ignored. A card is high value (insured shipping) when its price is more than the
-            shop's threshold (€ 20). Sending the field returns the warning
+            shop's threshold (€ 50). Sending the field returns the warning
             `high_value_ignored_set_by_price`.
         description_de: { type: string }
         description_en: { type: string }
@@ -604,7 +604,7 @@ components:
         price: { oneOf: [{ $ref: '#/components/schemas/Money' }, { type: 'null' }] }
         high_value:
           type: boolean
-          description: Price is more than the shop's threshold (€ 20); triggers insured shipping
+          description: Price is more than the shop's threshold (€ 50); triggers insured shipping
         status: { $ref: '#/components/schemas/Status' }
         url: { type: string, description: Product page in the German shop }
         stock: { $ref: '#/components/schemas/Stock' }

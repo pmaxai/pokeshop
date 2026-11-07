@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro, formatRate } from '@pokeshop/core';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
+import { getCompany } from '@/server/shop';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export default async function Shipping({ params }: { params: Promise<{ locale: L
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
   const first = countries[0];
   const threshold = await getSetting<number | null>('high_value_threshold_cents', null);
+  const { email } = await getCompany();
   return (
     <div className="wrap prose">
       <h1>{t('title')}</h1>
@@ -58,7 +60,13 @@ export default async function Shipping({ params }: { params: Promise<{ locale: L
           </div>
         ))}
       </dl>
-      <p style={{ marginTop: 'var(--s-4)' }}>{t('free')}</p>
+      <p style={{ marginTop: 'var(--s-4)' }}>
+        {t.rich('otherCountries', {
+          email,
+          mail: (chunks) => <a href={`mailto:${email}`}>{chunks}</a>,
+        })}
+      </p>
+      <p>{t('free')}</p>
       {first && threshold !== null && (
         <p>
           {t('insured', {

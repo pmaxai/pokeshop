@@ -3,6 +3,7 @@
 import PDFDocument from 'pdfkit';
 import { Lexer, type Token, type Tokens } from 'marked';
 import { formatEuro, formatRate } from './money.ts';
+import { SMALL_BUSINESS_NOTE, type VatRegime } from './vat.ts';
 import { fillPlaceholders, type LegalContext } from './legal.ts';
 
 type Company = Record<string, string | null | undefined>;
@@ -100,7 +101,7 @@ export type InvoiceData = {
   totalCents: number;
   vatCents: number;
   vatRateBp: number;
-  vatRegime: 'domestic' | 'oss' | 'export';
+  vatRegime: VatRegime;
   taxCountry: string | null;
   paidWith: string | null;
   paidAt: Date | null;
@@ -293,8 +294,11 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
     doc.text(value, col.total, y, { width: 70, align: 'right' });
     y += bold ? 18 : 15;
   };
-  sumRow(t.net, formatEuro(inv.totalCents - inv.vatCents, L));
-  sumRow(`${t.vat} ${formatRate(inv.vatRateBp, L)}`, formatEuro(inv.vatCents, L));
+  const smallBusiness = inv.vatRegime === 'small_business';
+  if (!smallBusiness) {
+    sumRow(t.net, formatEuro(inv.totalCents - inv.vatCents, L));
+    sumRow(`${t.vat} ${formatRate(inv.vatRateBp, L)}`, formatEuro(inv.vatCents, L));
+  }
   sumRow(credit ? t.creditTotal : t.gross, formatEuro(inv.totalCents, L), true);
 
   y += 16;
@@ -302,6 +306,7 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
   const notes: string[] = [];
   if (inv.vatRegime === 'oss' && inv.taxCountry) notes.push(t.oss(inv.taxCountry));
   if (inv.vatRegime === 'export') notes.push(t.export);
+  if (smallBusiness) notes.push(`${SMALL_BUSINESS_NOTE[L]}.`);
   if (credit) {
     notes.push(t.refunded(dateFmt(inv.issuedAt, L)));
   } else if (inv.paidAt) {

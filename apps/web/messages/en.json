@@ -25,8 +25,8 @@
     "events": "Events"
   },
   "Home": {
-    "title": "Single Pokémon cards whose condition you know before you order",
-    "lead": "Cards from every series and many languages, each scanned one by one and graded by condition. Free shipping to Austria and Germany.",
+    "title": "Single Pokémon cards from every series and language",
+    "lead": "Free shipping to Austria and Germany.",
     "newest": "Just arrived",
     "allCards": "See all cards",
     "bySet": "Browse by set",
@@ -98,7 +98,9 @@
     "close": "Close",
     "quantity": "Quantity",
     "addToCart": "Add to cart",
-    "inclVatInsured": "incl. VAT, plus insured shipping"
+    "inclVatInsured": "incl. VAT, plus insured shipping",
+    "noVat": "Final price, no VAT (small business)",
+    "noVatInsured": "Final price, no VAT (small business), plus insured shipping"
   },
   "Sets": {
     "title": "Sets",
@@ -116,10 +118,9 @@
     "imprint": "Legal notice",
     "privacy": "Privacy",
     "trademark": "pokemonkarten.at is not affiliated with Nintendo, Creatures, GAME FREAK or The Pokémon Company. Pokémon and all card names are trademarks of their owners.",
-    "company": "A shop by {name}",
     "terms": "Terms and conditions",
     "withdrawalInfo": "Right of withdrawal",
-    "withdraw": "Withdraw from contract",
+    "withdraw": "Return an order (withdraw from contract)",
     "events": "Events"
   },
   "Conditions": {
@@ -133,12 +134,12 @@
     "M_text": "Fresh from the booster: no scratches, no whitening, perfect corners and edges, well centred.",
     "NM_text": "Almost flawless. On close inspection at most one or two tiny white specks on the edges or back.",
     "EX_text": "Light wear: some whitening on the edges, fine scratches visible in the light. No creases.",
-    "GD_text": "Clear wear on edges and corners, light scratches on the front. No creases.",
+    "GD_text": "Clear wear on edges and corners, light scratches on the front.",
     "LP_text": "Visibly played: worn corners, scratches, possibly a small crease that does not bend the card.",
     "PL_text": "Heavily played: creases, clear scratches or discolouration. Fine for collections that just need the card.",
     "PO_text": "Badly damaged: tears, water damage, writing or heavy creases.",
     "title": "Condition grades",
-    "lead": "Every card is looked at on its own and given one of these grades. Details such as off-centre printing are added to the card's description."
+    "lead": "Every card is looked at on its own and given one of these grades. Particulars are added to the card's description."
   },
   "Finishes": {
     "normal": "Normal",
@@ -178,19 +179,24 @@
     "minimum": "Minimum order {amount}",
     "deliveryTime": "Delivery {time}",
     "free": "We ship with Austrian Post. Shipping is free.",
-    "insured": "If your order contains a card over {threshold}, we ship it insured. For this we charge {rate} of the goods value, at least {minimum}. Orders over {limit} cannot be shipped insured: they travel to you free of charge with tracking.",
+    "insured": "If your order contains a card over {threshold}, we ship it insured. For this we charge {rate} of the goods value, at least {minimum}. Orders over {limit} cannot be shipped insured.",
+    "otherCountries": "For now we deliver to other countries on request only. Just write to us at <mail>{email}</mail>.",
     "payment": "You can pay by credit card, Apple Pay, Google Pay, EPS and PayPal. Payments are handled by Stripe."
   },
   "Imprint": {
     "title": "Legal notice",
-    "law": "Information according to § 5 ECG, § 14 UGB and § 25 MedienG (Austria)",
+    "law": "Information according to § 5 ECG and § 25 MedienG (Austria)",
     "owner": "Owner and operator",
+    "trade": "Business activity",
+    "smallBusiness": "VAT",
+    "law_trade": "Trade law",
+    "law_trade_text": "Austrian Trade Regulation Act (GewO), available at <link>www.ris.bka.gv.at</link>",
     "register": "Company register number",
     "court": "Register court",
     "vat": "VAT ID",
     "director": "Managing director",
     "chamber": "Member of",
-    "authority": "Supervisory authority",
+    "authority": "Trade authority",
     "contact": "Contact"
   },
   "Privacy": {
@@ -227,6 +233,7 @@
     "trackedNote": "Over {limit} insured shipping is not possible; we ship free of charge with tracking.",
     "total": "Total",
     "vat": "incl. {rate} VAT",
+    "noVat": "VAT-exempt small business pursuant to § 6 (1) Z 27 UStG (Austrian VAT Act)",
     "belowMinimum": "The minimum order for {country} is {minimum}. {missing} to go.",
     "notDelivered": "Sorry, we do not deliver to this country.",
     "toCheckout": "Go to checkout",
@@ -281,7 +288,7 @@
     "items": "Cards",
     "deliverTo": "Delivery address",
     "orderedOn": "Ordered on {date}",
-    "withdraw": "Withdraw from contract",
+    "withdraw": "Return an order (withdraw from contract)",
     "backToShop": "Continue shopping",
     "track": "Track parcel",
     "trackingNumber": "Tracking number {number}",
@@ -292,17 +299,17 @@
     "version": "Version {version}"
   },
   "Withdraw": {
-    "title": "Withdraw from contract",
-    "intro": "Here you can withdraw from a purchase in full or in part. You do not need to give a reason or have an account. We send you an acknowledgement of receipt by e-mail straight away.",
+    "title": "Return an order",
+    "intro": "Here you can return an order in full or in part – legally, this means withdrawing from the contract. You do not need to give a reason or have an account. We send you an acknowledgement of receipt by e-mail straight away.",
     "name": "Name",
     "email": "E-mail address for the acknowledgement",
     "orderNumber": "Order number (e.g. PK-2611-7KQ4M)",
     "orderDate": "Ordered or received on (optional)",
-    "items": "Which cards? Leave empty if you withdraw from the whole order.",
+    "items": "Which cards? Leave empty if you return the whole order.",
     "message": "Message (optional)",
     "submit": "Confirm withdrawal",
-    "done": "Your withdrawal has been received.",
-    "doneText": "Received: {time}. The acknowledgement with the content of your statement is on its way by e-mail. Please send the cards back to {address} within 14 days.",
+    "done": "Your return is registered.",
+    "doneText": "Your withdrawal was received on {time}. The acknowledgement with the content of your statement is on its way by e-mail. Please send the cards back to {address} within 14 days.",
     "info": "Details are in the <link>withdrawal instructions</link>.",
     "errorsTitle": "Please check the marked fields."
   },

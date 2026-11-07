@@ -5,7 +5,7 @@ import { formatEuro } from '@pokeshop/core';
 import { listCatalog, productBySlug, type ProductPage } from '@pokeshop/core/storefront';
 import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { config, db } from '@/server/config';
+import { config, db, getSetting } from '@/server/config';
 import { AltNames, namesText } from '@/components/AltNames';
 import { CardImage } from '@/components/CardImage';
 import { CardTile } from '@/components/CardTile';
@@ -60,6 +60,7 @@ export default async function CardPage({ params }: Props) {
 
   const t = await getTranslations('Card');
   const tl = await getTranslations('Languages');
+  const smallBusiness = await getSetting<boolean>('small_business', false);
   const tc = await getTranslations('Conditions');
   const tf = await getTranslations('Finishes');
   const tt = await getTranslations('Supertypes');
@@ -166,7 +167,13 @@ export default async function CardPage({ params }: Props) {
           <div className="buybox">
             <span className="price">{formatEuro(p.priceCents, locale)}</span>
             <small>
-              {p.highValue ? t('inclVatInsured') : `${t('inclVat')}, ${t('freeShipping')}`}
+              {smallBusiness
+                ? p.highValue
+                  ? t('noVatInsured')
+                  : `${t('noVat')}, ${t('freeShipping')}`
+                : p.highValue
+                  ? t('inclVatInsured')
+                  : `${t('inclVat')}, ${t('freeShipping')}`}
             </small>
             {p.available > 0 ? (
               <span className={p.available === 1 ? 'stock stock--last' : 'stock'}>

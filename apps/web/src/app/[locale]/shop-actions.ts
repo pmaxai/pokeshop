@@ -98,6 +98,7 @@ export async function checkoutAction(form: FormData) {
       details: v.data,
       reservationMinutes: await getSetting<number>('reservation_minutes', 10),
       ossEnabled: await getSetting<boolean>('oss_enabled', false),
+      smallBusiness: await getSetting<boolean>('small_business', false),
     });
     const orderPath = getPathname({
       href: { pathname: '/bestellung/[token]', params: { token: order.token } },
