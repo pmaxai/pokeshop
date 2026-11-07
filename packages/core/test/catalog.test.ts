@@ -103,7 +103,7 @@ test('the printed name leads in every shop language', () => {
     ja.translations.map((t) => t.lang),
     ['en', 'de'],
   );
-  assert.equal(cardNameText(ja), 'リザードンex (Charizard ex, Glurak-ex)');
+  assert.equal(cardNameText(ja), 'リザードンex · Charizard ex (EN) · Glurak-ex (DE)');
   assert.deepEqual(
     show(cardNames({ ...charizard, cardLanguage: 'ZH-HANT', nameLocal: '噴火龍ex' }, 'en')),
     ['噴火龍ex', 'Charizard ex'],

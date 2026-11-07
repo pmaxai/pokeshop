@@ -218,7 +218,7 @@ function itemsTable(o: CustomerOrder, locale: 'de' | 'en', boxes?: Map<number, s
       const box = boxes?.get(i.productId);
       return `<tr><td style="padding:8px 0;border-bottom:1px solid ${C.line};vertical-align:top">
 <strong lang="${names.lang}">${esc(names.original)}</strong> <span style="color:${C.muted}">${esc(i.cardNumber)}</span><br>
-${names.translations.length ? `<span style="color:${C.muted};font-size:13px">${names.translations.map((t) => `<span lang="${t.lang}">${esc(t.text)}</span>`).join(' · ')}</span><br>` : ''}<span style="color:${C.muted};font-size:13px">${esc([set, i.cardLanguage, i.condition].filter(Boolean).join(' · '))}${box ? ` · Box ${esc(box)}` : ''}</span></td>
+${names.translations.length ? `<span style="color:${C.muted};font-size:13px">${names.translations.map((t) => `<span lang="${t.lang}">${esc(t.text)}</span> (${t.lang.toUpperCase()})`).join(' · ')}</span><br>` : ''}<span style="color:${C.muted};font-size:13px">${esc([set, i.cardLanguage, i.condition].filter(Boolean).join(' · '))}${box ? ` · Box ${esc(box)}` : ''}</span></td>
 <td style="padding:8px 0 8px 12px;border-bottom:1px solid ${C.line};text-align:right;vertical-align:top;white-space:nowrap">${i.quantity} × ${esc(formatEuro(i.unitPriceCents, locale))}</td></tr>`;
     })
     .join('');

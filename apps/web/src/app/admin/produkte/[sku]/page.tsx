@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { formatEuro } from '@pokeshop/core';
-import { rowNames } from '@pokeshop/core/catalog';
+import { rowNames, translationText } from '@pokeshop/core/catalog';
 import { getProduct } from '@pokeshop/core/products';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
@@ -88,7 +88,7 @@ export default async function ProductEdit({
       <h1>
         <span lang={names.lang}>{names.original}</span>{' '}
         {names.translations.length > 0 && (
-          <span>({names.translations.map((t) => t.text).join(', ')}) </span>
+          <span>· {names.translations.map(translationText).join(' · ')} </span>
         )}
         <span className="muted">
           {p.set_name_de ?? p.set_code} {p.card_number}

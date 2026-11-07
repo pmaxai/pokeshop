@@ -3,8 +3,10 @@ import { formatEuro } from '@pokeshop/core';
 import type { CatalogTile } from '@pokeshop/core/storefront';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
+import { cartQuantities } from '@/server/cart';
 import { AltNames, namesText } from './AltNames';
 import { CardImage } from './CardImage';
+import { QuickAdd } from './QuickAdd';
 
 export async function CardTile({
   card,
@@ -18,6 +20,7 @@ export async function CardTile({
   const t = await getTranslations('Card');
   const tf = await getTranslations('Finishes');
   const holo = card.finish !== 'normal';
+  const inCart = (await cartQuantities()).get(card.id) ?? 0;
   return (
     <li className="tile">
       <CardImage
@@ -58,6 +61,9 @@ export async function CardTile({
           <span className="stock muted">{t('soldOut')}</span>
         )}
       </div>
+      {card.available > 0 && (
+        <QuickAdd productId={card.id} locale={locale} available={card.available} inCart={inCart} />
+      )}
     </li>
   );
 }

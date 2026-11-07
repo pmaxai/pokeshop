@@ -42,6 +42,26 @@ export async function addToCartAction(form: FormData) {
   redirect(`${cartPath(locale)}?${flag}`);
 }
 
+export type QuickAddState = {
+  status: 'idle' | 'added' | 'limited' | 'unavailable';
+  /** Copies of this card in the cart after the action. */
+  quantity: number;
+};
+
+/**
+ * "In den Warenkorb" on a catalog tile: adds one copy and stays on the page, so a visitor can
+ * fill the cart straight from the list. The header count updates with the re-render.
+ */
+export async function quickAddAction(_prev: QuickAddState, form: FormData): Promise<QuickAddState> {
+  const cart = await ensureCartId(localeOf(form));
+  const r = await addToCart(db(), cart, Number(str(form, 'product_id')), 1);
+  revalidatePath('/', 'layout');
+  return {
+    status: r.unavailable ? 'unavailable' : r.limited ? 'limited' : 'added',
+    quantity: r.quantity,
+  };
+}
+
 export async function updateCartAction(form: FormData) {
   const locale = localeOf(form);
   const cart = await ensureCartId(locale);

@@ -98,6 +98,10 @@
     "close": "Close",
     "quantity": "Quantity",
     "addToCart": "Add to cart",
+    "adding": "Adding …",
+    "inCartCount": "✓ {count} in your cart",
+    "allInCart": "✓ In your cart",
+    "soldOutNow": "Just sold out",
     "inclVatInsured": "incl. VAT, plus insured shipping",
     "noVat": "Final price, no VAT (small business)",
     "noVatInsured": "Final price, no VAT (small business), plus insured shipping"

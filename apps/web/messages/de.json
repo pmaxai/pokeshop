@@ -98,6 +98,10 @@
     "close": "Schließen",
     "quantity": "Anzahl",
     "addToCart": "In den Warenkorb",
+    "adding": "Wird hinzugefügt …",
+    "inCartCount": "✓ {count} im Warenkorb",
+    "allInCart": "✓ Im Warenkorb",
+    "soldOutNow": "Gerade ausverkauft",
     "inclVatInsured": "inkl. MwSt., zzgl. versichertem Versand",
     "noVat": "Endpreis, keine USt. (Kleinunternehmer)",
     "noVatInsured": "Endpreis, keine USt. (Kleinunternehmer), zzgl. versichertem Versand"
