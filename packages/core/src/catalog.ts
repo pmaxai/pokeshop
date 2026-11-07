@@ -127,11 +127,14 @@ export function rowNames(
   );
 }
 
-/** One line of text: "リザードンex (Charizard ex, Glurak-ex)". */
+/** A translated name with its language: "Charizard ex (EN)". */
+export function translationText(t: CardNames['translations'][number]): string {
+  return `${t.text} (${t.lang.toUpperCase()})`;
+}
+
+/** One line of text: "リザードンex · Charizard ex (EN) · Glurak-ex (DE)". */
 export function cardNameText(names: CardNames): string {
-  return names.translations.length
-    ? `${names.original} (${names.translations.map((t) => t.text).join(', ')})`
-    : names.original;
+  return [names.original, ...names.translations.map(translationText)].join(' · ');
 }
 
 export const CONDITIONS = {

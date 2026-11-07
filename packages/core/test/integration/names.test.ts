@@ -177,7 +177,10 @@ test('orders keep the printed name for the payment page, mails and invoices', as
   });
   const session = [...pay.sessions.values()].find((s) => s.orderId === order.id)!;
   assert.equal(session.input.lines[0]!.name, 'リザードンex 199/165');
-  assert.match(session.input.lines[0]!.description ?? '', /^Charizard ex · Glurak-ex · 151/);
+  assert.match(
+    session.input.lines[0]!.description ?? '',
+    /^Charizard ex \(EN\) · Glurak-ex \(DE\) · 151/,
+  );
 
   // invoices: the PDF font cannot print Japanese, so English and German stand in
   const row = {
@@ -186,15 +189,15 @@ test('orders keep the printed name for the payment page, mails and invoices', as
     name_en: 'Charizard ex',
     name_local: 'リザードンex',
   };
-  assert.equal(documentItemName(row, 'de'), 'Charizard ex (Glurak-ex)');
-  assert.equal(documentItemName(row, 'en'), 'Charizard ex');
+  assert.equal(documentItemName(row, 'de'), 'Charizard ex (EN) · Glurak-ex (DE)');
+  assert.equal(documentItemName(row, 'en'), 'Charizard ex (EN)');
   assert.equal(
     documentItemName({ ...row, card_language: 'FR', name_local: 'Dracaufeu-ex' }, 'de'),
-    'Dracaufeu-ex (Charizard ex, Glurak-ex)',
+    'Dracaufeu-ex · Charizard ex (EN) · Glurak-ex (DE)',
   );
   assert.equal(
     documentItemName({ ...row, card_language: 'RU', name_local: 'Чаризард-ex' }, 'de'),
-    'Charizard ex (Glurak-ex)',
+    'Charizard ex (EN) · Glurak-ex (DE)',
   );
 });
 

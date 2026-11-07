@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createCart, findCart, CART_RETENTION_DAYS } from '@pokeshop/core/cart';
 import { config, db } from './config';
@@ -27,3 +28,12 @@ export async function ensureCartId(locale: 'de' | 'en'): Promise<string> {
   });
   return id;
 }
+
+/** Copies per product in the visitor's cart; one query per request, shared by all tiles. */
+export const cartQuantities = cache(async (): Promise<Map<number, number>> => {
+  const id = await currentCartId();
+  if (!id) return new Map();
+  const rows = await db()<{ product_id: number; quantity: number }[]>`
+    SELECT product_id, quantity FROM cart_items WHERE cart_id = ${id}`;
+  return new Map(rows.map((r) => [Number(r.product_id), r.quantity]));
+});

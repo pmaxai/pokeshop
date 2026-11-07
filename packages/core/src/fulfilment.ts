@@ -1,7 +1,7 @@
 // Fulfilment: packing, pick list by storage box, shipping with invoice, refunds with optional
 // restock and credit note, withdrawals. Used by the admin.
 import type { Db, Sql, Tx } from './db.ts';
-import { cardNameText, compareStorageLocations, rowNames } from './catalog.ts';
+import { cardNameText, compareStorageLocations, rowNames, translationText } from './catalog.ts';
 import { splitGross } from './money.ts';
 import { formatDocumentNumber } from './numbering.ts';
 import { enqueueMail } from './outbox.ts';
@@ -59,10 +59,8 @@ export function documentItemName(
 ): string {
   const n = rowNames(i, locale);
   if (PDF_PRINTABLE.test(n.original)) return cardNameText(n);
-  const [first, ...rest] = n.translations.filter((t) => PDF_PRINTABLE.test(t.text));
-  return first
-    ? cardNameText({ original: first.text, lang: first.lang, translations: rest })
-    : i.name_en;
+  const printable = n.translations.filter((t) => PDF_PRINTABLE.test(t.text));
+  return printable.length ? printable.map(translationText).join(' · ') : i.name_en;
 }
 
 function itemLine(i: ItemRow, quantity: number): DocumentLine {

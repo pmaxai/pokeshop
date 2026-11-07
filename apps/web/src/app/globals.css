@@ -386,7 +386,8 @@ p {
 }
 .tile {
   position: relative;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--s-2);
 }
 .tile__link {
@@ -420,7 +421,37 @@ p {
   color: var(--muted);
   line-height: 1.3;
 }
+.tile__add {
+  /* above the tile's stretched link */
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--s-1);
+}
+.tile__add .btn {
+  width: 100%;
+  text-align: center;
+}
+.tile__in-cart {
+  /* reserved, so tiles below do not move while someone adds card after card */
+  min-height: 1.35em;
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+.tile__in-cart a {
+  color: var(--ok);
+}
+.btn--small {
+  padding: 0.45rem 0.75rem;
+  font-size: var(--t-sm);
+}
+.btn:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
 .tile__foot {
+  /* price and button line up across a row, whatever the name's length */
+  margin-top: auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;

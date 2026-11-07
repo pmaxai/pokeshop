@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { Db, Sql, Tx } from './db.ts';
 import { isPgError, SQLSTATE } from './db.ts';
 import { emptyCart, loadCart, saveCheckoutDraft } from './cart.ts';
-import { cardNames } from './catalog.ts';
+import { cardNames, translationText } from './catalog.ts';
 import type { CheckoutProblem } from './checkout.ts';
 import { currentLegalVersions } from './legal.ts';
 import { newOrderNumber } from './numbering.ts';
@@ -274,7 +274,7 @@ async function paymentLines(db: Db, orderId: number, locale: 'de' | 'en') {
     return {
       name: `${names.original} ${i.card_number}`,
       description: [
-        ...names.translations.map((t) => t.text),
+        ...names.translations.map(translationText),
         locale === 'en' ? (i.set_name_en ?? i.set_name_de) : (i.set_name_de ?? i.set_name_en),
         i.card_language,
         i.condition,
