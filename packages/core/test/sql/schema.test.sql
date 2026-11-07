@@ -10,24 +10,28 @@ BEGIN
   ASSERT (SELECT string_agg(code || ':' || min_order_cents, ',' ORDER BY code)
             FROM countries WHERE delivery_enabled) = 'AT:1000,DE:2000', 'AT € 10, DE € 20';
   ASSERT (SELECT count(*) FROM countries WHERE is_eu) = 27;
-  -- Insured shipping: 10 %, at least € 5, only up to € 500 order value.
-  ASSERT (SELECT bool_and(insured_rate_bp = 1000 AND insured_minimum_cents = 500
+  -- Insured shipping: 5 %, at least € 5, only up to € 500 order value.
+  ASSERT (SELECT bool_and(insured_rate_bp = 500 AND insured_minimum_cents = 500
                           AND insured_max_order_cents = 50000)
             FROM countries WHERE delivery_enabled);
   ASSERT (SELECT value->>'code' FROM settings WHERE key = 'carrier') = 'post_at';
   ASSERT (SELECT value::int FROM settings WHERE key = 'reservation_minutes') = 10;
-  ASSERT (SELECT value->>'vat_id' FROM settings WHERE key = 'company') = 'ATU79907228';
+  -- Sole trader under the small business scheme: no UID, no VAT.
+  ASSERT (SELECT value->>'name' FROM settings WHERE key = 'company')
+         = 'Maximilian Pinter Sammelkartenverkauf';
+  ASSERT (SELECT value->>'vat_id' FROM settings WHERE key = 'company') = '';
+  ASSERT (SELECT value FROM settings WHERE key = 'small_business') = 'true'::jsonb;
 
   -- Search text is lower-case and accent-free, so "flabebe" finds "Flabébé".
   INSERT INTO products (sku, slug, set_code, card_number, name_de, name_en, card_language, finish, condition)
   VALUES ('sv04-1-FR-EX-R', 'flabebe', 'sv04', '001/182', 'Flabébé', 'Flabébé', 'FR', 'reverse_holo', 'EX')
   RETURNING id INTO v_id;
   ASSERT (SELECT search_text LIKE '%flabebe%' FROM products WHERE id = v_id);
-  -- High value: more than € 20.
-  UPDATE products SET price_cents = 2000 WHERE id = v_id;
-  ASSERT NOT (SELECT high_value FROM products WHERE id = v_id), '€ 20.00 is not high value';
-  UPDATE products SET price_cents = 2001, high_value = false WHERE id = v_id;
-  ASSERT (SELECT high_value FROM products WHERE id = v_id), '€ 20.01 is high value';
+  -- High value: more than € 50.
+  UPDATE products SET price_cents = 5000 WHERE id = v_id;
+  ASSERT NOT (SELECT high_value FROM products WHERE id = v_id), '€ 50.00 is not high value';
+  UPDATE products SET price_cents = 5001, high_value = false WHERE id = v_id;
+  ASSERT (SELECT high_value FROM products WHERE id = v_id), '€ 50.01 is high value';
   UPDATE products SET price_cents = NULL WHERE id = v_id;
   ASSERT NOT (SELECT high_value FROM products WHERE id = v_id), 'no price, not high value';
   -- Search matches a word inside the long search text (word similarity), typos included.
