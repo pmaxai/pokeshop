@@ -109,6 +109,9 @@ const boxes = async (id: number) =>
 
 before(async () => {
   ({ sql, drop } = await freshDatabase());
+  // The numbers in these tests use the earlier rule values: high value above € 20, 10 % insurance.
+  await sql`UPDATE settings SET value = '2000' WHERE key = 'high_value_threshold_cents'`;
+  await sql`UPDATE countries SET insured_rate_bp = 1000`;
   await syncLegalTexts(sql);
   mediaDir = await mkdtemp(join(tmpdir(), 'pokeshop-ful-'));
 });

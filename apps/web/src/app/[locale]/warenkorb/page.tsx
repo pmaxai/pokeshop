@@ -70,6 +70,7 @@ export default async function CartPage({ params, searchParams }: Props) {
   const vat = vatFor({
     country: view.country,
     ossEnabled: await getSetting<boolean>('oss_enabled', false),
+    smallBusiness: await getSetting<boolean>('small_business', false),
     rates: country ? { [view.country]: country.vat_rate_bp } : undefined,
   });
 
@@ -184,7 +185,11 @@ export default async function CartPage({ params, searchParams }: Props) {
               {formatEuro(view.check.total ?? view.check.goodsSubtotal, locale)}
             </dd>
           </dl>
-          <p className="muted small">{t('vat', { rate: formatRate(vat.rate, locale) })}</p>
+          <p className="muted small">
+            {vat.regime === 'small_business'
+              ? t('noVat')
+              : t('vat', { rate: formatRate(vat.rate, locale) })}
+          </p>
           {ship?.method === 'insured' && country && threshold !== null && (
             <p className="small">
               {t('insuredNote', {

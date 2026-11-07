@@ -6,7 +6,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
-import { getCompany } from '@/server/shop';
 import { config } from '@/server/config';
 
 export function generateStaticParams() {
@@ -49,14 +48,13 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
-  const company = await getCompany().catch(() => ({ name: 'Antalyse GmbH' }));
   return (
     <html lang={locale === 'de' ? 'de-AT' : 'en'}>
       <body>
         <NextIntlClientProvider>
           <SiteHeader />
           <main id="main">{children}</main>
-          <SiteFooter companyName={company.name} />
+          <SiteFooter />
         </NextIntlClientProvider>
       </body>
     </html>

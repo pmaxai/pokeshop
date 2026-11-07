@@ -5,7 +5,7 @@ As of November 2026. This is a translation for your convenience; only the German
 ## 1. Scope and contracting party
 
 1. These terms and conditions apply to all orders placed in the online shop pokemonkarten.at.
-2. Your contracting party is {{company.name}}, {{company.address}}, {{company.register}}, VAT ID {{company.vat_id}}, e-mail: {{company.email}} ("we", "us").
+2. Your contracting party is the operator of {{company.public_name}}, {{company.address}}, e-mail: {{company.email}} ("we", "us"). The operator's name and all further details are given in the legal notice: {{imprint_url}}.
 3. A consumer within the meaning of these terms is anyone who does not buy the cards for their business (§ 1 KSchG). Provisions that apply to consumers only are marked as such. Differing terms of customers apply only if we expressly agree to them in writing.
 
 ## 2. Ordering and conclusion of the contract
@@ -26,9 +26,9 @@ As of November 2026. This is a translation for your convenience; only the German
 
 ## 4. Prices, shipping costs and minimum order
 
-1. All prices are final prices in euros and include the statutory VAT.
-2. Shipping is free. If your order contains a card priced at more than € 20, we ship it insured and charge 10 % of the goods value for this, at least € 5. Orders with a goods value of more than € 500 cannot be shipped insured; they are sent with tracking at no extra charge. The shipping costs are shown in the cart and before you place the order.
-3. Each delivery country has a minimum order value for the goods. The delivery countries and minimum order values are listed on the page "Shipping and payment" ({{shipping_url}}) and in the cart. We do not deliver to other countries.
+1. All prices are final prices in euros. As a small business we are exempt from VAT under § 6 (1) Z 27 of the Austrian VAT Act (UStG); no VAT is charged or shown.
+2. Shipping is free. If your order contains a card priced at more than € 50, we ship it insured and charge 5 % of the goods value for this, at least € 5. Orders with a goods value of more than € 500 cannot be shipped insured. The shipping costs are shown in the cart and before you place the order.
+3. Each delivery country has a minimum order value for the goods. The delivery countries and minimum order values are listed on the page "Shipping and payment" ({{shipping_url}}) and in the cart. Delivery to other countries is currently available on request only, by separate agreement.
 
 ## 5. Payment
 
@@ -44,7 +44,7 @@ As of November 2026. This is a translation for your convenience; only the German
 
 ## 7. Right of withdrawal
 
-Consumers have a right of withdrawal of 14 days. Details, including the consequences of withdrawal, are given in the withdrawal instructions ({{withdrawal_url}}). You can also declare the withdrawal online with the function "Withdraw from contract": {{withdraw_url}}. You bear the direct cost of returning the cards.
+Consumers have a right of withdrawal of 14 days. Details, including the consequences of withdrawal, are given in the withdrawal instructions ({{withdrawal_url}}). You can also declare the withdrawal online with the function "Return an order (withdraw from contract)": {{withdraw_url}}. You bear the direct cost of returning the cards.
 
 ## 8. Warranty
 

@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 
-export async function SiteFooter({ companyName }: { companyName: string }) {
+export async function SiteFooter() {
   const t = await getTranslations('Footer');
   const nav = await getTranslations('Nav');
   return (
@@ -51,9 +51,7 @@ export async function SiteFooter({ companyName }: { companyName: string }) {
             </Link>
           </div>
         </div>
-        <p className="fine">
-          {t('company', { name: companyName })}. {t('trademark')}
-        </p>
+        <p className="fine">{t('trademark')}</p>
       </div>
     </footer>
   );

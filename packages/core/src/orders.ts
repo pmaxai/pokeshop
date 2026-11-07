@@ -12,7 +12,7 @@ import { newOrderNumber } from './numbering.ts';
 import { alertShop, enqueueMail, enqueueShopMail } from './outbox.ts';
 import type { PaymentEvent, PaymentProvider, SessionInfo } from './payments.ts';
 import { reservedUntil, stripeSessionExpiresAt } from './reservation.ts';
-import { orderVat } from './vat.ts';
+import { orderVat, type VatRegime } from './vat.ts';
 
 // ---------------------------------------------------------------------------
 // Checkout form
@@ -117,6 +117,8 @@ export async function createCheckoutOrder(
     details: CheckoutDetails;
     reservationMinutes: number;
     ossEnabled: boolean;
+    /** Setting `small_business`: no VAT (Kleinunternehmerregelung). */
+    smallBusiness?: boolean;
     now?: Date;
   },
 ): Promise<CreatedOrder> {
@@ -154,6 +156,7 @@ export async function createCheckoutOrder(
       const vat = orderVat([{ gross: view.check.total }], {
         country: view.country,
         ossEnabled: input.ossEnabled,
+        smallBusiness: input.smallBusiness ?? false,
         rates: { [view.country]: country.vat_rate_bp },
       });
       const legal = await currentLegalVersions(tx);
@@ -704,6 +707,7 @@ export type CustomerOrder = {
   totalCents: number;
   vatCents: number;
   vatRateBp: number;
+  vatRegime: VatRegime;
   shippingAddress: Address;
   billingAddress: Address | null;
   trackingNumber: string | null;
@@ -748,12 +752,13 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       total_cents: number;
       vat_cents: number;
       vat_rate_bp: number;
+      vat_regime: VatRegime;
       shipping_address: Address;
       billing_address: Address | null;
       tracking_number: string | null;
     }[]
   >`SELECT id, number, status, locale, email, created_at, paid_at, shipped_at, reserved_until, payment_url,
-           shipping_method, goods_cents, shipping_cents, total_cents, vat_cents, vat_rate_bp,
+           shipping_method, goods_cents, shipping_cents, total_cents, vat_cents, vat_rate_bp, vat_regime,
            shipping_address, billing_address, tracking_number
       FROM orders WHERE id = ${id}`;
   if (!o) return null;
@@ -792,6 +797,7 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
     totalCents: o.total_cents,
     vatCents: o.vat_cents,
     vatRateBp: o.vat_rate_bp,
+    vatRegime: o.vat_regime,
     shippingAddress: o.shipping_address,
     billingAddress: o.billing_address,
     trackingNumber: o.tracking_number,

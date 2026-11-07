@@ -79,6 +79,11 @@ export type VatContext = {
   country: string;
   /** OSS switch from the admin settings. */
   ossEnabled: boolean;
+  /**
+   * Small business scheme (Kleinunternehmerregelung, § 6 Abs. 1 Z 27 UStG): no VAT at all.
+   * Setting `small_business`.
+   */
+  smallBusiness?: boolean;
   /** Current rates table from the database; falls back to the seed values. */
   rates?: Partial<Record<string, BasisPoints>>;
 };
@@ -87,11 +92,20 @@ export type VatDecision = {
   rate: BasisPoints;
   /** Country whose VAT is charged; null for a tax-free export. */
   taxCountry: string | null;
-  regime: 'domestic' | 'oss' | 'export';
+  regime: VatRegime;
 };
+
+export type VatRegime = 'domestic' | 'oss' | 'export' | 'small_business';
+
+/** Invoice note for a sale under the small business scheme. */
+export const SMALL_BUSINESS_NOTE = {
+  de: 'Umsatzsteuerbefreit, Kleinunternehmer gemäß § 6 Abs. 1 Z 27 UStG',
+  en: 'VAT-exempt small business pursuant to § 6 (1) Z 27 UStG (Austrian VAT Act)',
+} as const;
 
 /**
  * Decides which VAT applies to a consumer sale shipped from Austria.
+ * - Small business scheme: no VAT, whatever the destination.
  * - Non-EU destination: tax-free export (0 %).
  * - EU destination with OSS off: Austrian VAT.
  * - EU destination other than Austria with OSS on: destination standard rate.
@@ -99,6 +113,9 @@ export type VatDecision = {
 export function vatFor(ctx: VatContext): VatDecision {
   const country = ctx.country.toUpperCase();
   const rateOf = (c: EuCountry): BasisPoints => ctx.rates?.[c] ?? STANDARD_VAT_RATES[c];
+  if (ctx.smallBusiness) {
+    return { rate: 0, taxCountry: HOME_COUNTRY, regime: 'small_business' };
+  }
   if (!isEuCountry(country)) {
     return { rate: 0, taxCountry: null, regime: 'export' };
   }

@@ -6,7 +6,7 @@ We process personal data only as far as the shop, your order and our legal oblig
 
 ## 1. Controller
 
-{{company.name}}, {{company.address}}, e-mail: {{company.email}}. We have not appointed a data protection officer because we are not required to; please send any questions to the e-mail address above.
+The controller is the operator of {{company.public_name}}, {{company.address}}, e-mail: {{company.email}}. The operator's name and all further details are given in the legal notice: {{imprint_url}}. We have not appointed a data protection officer because we are not required to; please send any questions to the e-mail address above.
 
 ## 2. Visiting the shop
 
@@ -40,7 +40,7 @@ We send order confirmations, invoices and replies to your messages with Microsof
 
 ## 7. Withdrawal through the online form
 
-If you withdraw from the contract with "Withdraw from contract", we store your details and the time of receipt, send you an acknowledgement of receipt and process the withdrawal (Art. 6 (1) (c) GDPR in conjunction with § 13a FAGG). We keep this data as long as claims may arise from it, usually three years.
+If you withdraw from the contract with "Return an order (withdraw from contract)", we store your details and the time of receipt, send you an acknowledgement of receipt and process the withdrawal (Art. 6 (1) (c) GDPR in conjunction with § 13a FAGG). We keep this data as long as claims may arise from it, usually three years.
 
 ## 8. Hosting
 

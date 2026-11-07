@@ -5,7 +5,7 @@ Stand: November 2026
 ## 1. Geltungsbereich und Vertragspartner
 
 1. Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Bestellungen über den Onlineshop pokemonkarten.at.
-2. Ihr Vertragspartner ist die {{company.name}}, {{company.address}}, {{company.register}}, UID-Nr. {{company.vat_id}}, E-Mail: {{company.email}} („wir“, „uns“).
+2. Ihr Vertragspartner ist der Betreiber von {{company.public_name}}, {{company.address}}, E-Mail: {{company.email}} („wir“, „uns“). Den Namen und alle weiteren Angaben zum Betreiber finden Sie im Impressum: {{imprint_url}}.
 3. Verbraucher im Sinne dieser AGB ist, wer die Karten nicht für sein Unternehmen kauft (§ 1 KSchG). Bestimmungen, die nur für Verbraucher gelten, sind als solche gekennzeichnet. Abweichende Bedingungen von Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich zustimmen.
 
 ## 2. Bestellung und Vertragsschluss
@@ -26,9 +26,9 @@ Stand: November 2026
 
 ## 4. Preise, Versandkosten und Mindestbestellwert
 
-1. Alle Preise sind Endpreise in Euro und enthalten die gesetzliche Umsatzsteuer.
-2. Der Versand ist kostenlos. Enthält Ihre Bestellung eine Karte mit einem Preis von mehr als 20 €, versenden wir versichert und berechnen dafür 10 % des Warenwerts, mindestens 5 €. Für Bestellungen mit einem Warenwert von mehr als 500 € ist kein versicherter Versand möglich; sie werden ohne Aufpreis mit Sendungsverfolgung versendet. Die Versandkosten werden im Warenkorb und vor dem Absenden der Bestellung angezeigt.
-3. Für jedes Lieferland gilt ein Mindestbestellwert für den Warenwert. Die Lieferländer und Mindestbestellwerte finden Sie auf der Seite „Versand und Zahlung“ ({{shipping_url}}) und im Warenkorb. In andere Länder liefern wir nicht.
+1. Alle Preise sind Endpreise in Euro. Als Kleinunternehmer sind wir gemäß § 6 Abs. 1 Z 27 UStG von der Umsatzsteuer befreit; Umsatzsteuer wird daher weder berechnet noch ausgewiesen.
+2. Der Versand ist kostenlos. Enthält Ihre Bestellung eine Karte mit einem Preis von mehr als 50 €, versenden wir versichert und berechnen dafür 5 % des Warenwerts, mindestens 5 €. Für Bestellungen mit einem Warenwert von mehr als 500 € ist kein versicherter Versand möglich. Die Versandkosten werden im Warenkorb und vor dem Absenden der Bestellung angezeigt.
+3. Für jedes Lieferland gilt ein Mindestbestellwert für den Warenwert. Die Lieferländer und Mindestbestellwerte finden Sie auf der Seite „Versand und Zahlung“ ({{shipping_url}}) und im Warenkorb. In andere Länder liefern wir derzeit nur auf Anfrage und nach gesonderter Vereinbarung.
 
 ## 5. Zahlung
 
@@ -44,7 +44,7 @@ Stand: November 2026
 
 ## 7. Widerrufsrecht
 
-Verbrauchern steht ein Widerrufsrecht von 14 Tagen zu. Einzelheiten, auch zu den Folgen des Widerrufs, finden Sie in der Widerrufsbelehrung ({{withdrawal_url}}). Sie können den Widerruf auch online über die Funktion „Vertrag widerrufen“ erklären: {{withdraw_url}}. Die unmittelbaren Kosten der Rücksendung tragen Sie.
+Verbrauchern steht ein Widerrufsrecht von 14 Tagen zu. Einzelheiten, auch zu den Folgen des Widerrufs, finden Sie in der Widerrufsbelehrung ({{withdrawal_url}}). Sie können den Widerruf auch online über die Funktion „Bestellung retournieren (Vertrag widerrufen)“ erklären: {{withdraw_url}}. Die unmittelbaren Kosten der Rücksendung tragen Sie.
 
 ## 8. Gewährleistung
 

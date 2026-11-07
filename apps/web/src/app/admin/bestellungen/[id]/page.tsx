@@ -197,7 +197,9 @@ export default async function OrderDetail({
                   <td colSpan={3}>
                     <strong>Gesamt</strong>{' '}
                     <span className="muted">
-                      inkl. {formatRate(o.vat_rate_bp)} USt. ({formatEuro(o.vat_cents)})
+                      {o.vat_regime === 'small_business'
+                        ? 'ohne USt. (Kleinunternehmer)'
+                        : `inkl. ${formatRate(o.vat_rate_bp)} USt. (${formatEuro(o.vat_cents)})`}
                     </span>
                   </td>
                   <td className="r">

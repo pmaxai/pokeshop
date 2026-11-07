@@ -193,8 +193,14 @@ export default async function OrderPage({ params, searchParams }: Props) {
             <dd className="totals__total">{formatEuro(order.totalCents, locale)}</dd>
           </dl>
           <p className="muted small">
-            {tCart('vat', { rate: formatRate(order.vatRateBp, locale) })}:{' '}
-            {formatEuro(order.vatCents, locale)}
+            {order.vatRegime === 'small_business' ? (
+              tCart('noVat')
+            ) : (
+              <>
+                {tCart('vat', { rate: formatRate(order.vatRateBp, locale) })}:{' '}
+                {formatEuro(order.vatCents, locale)}
+              </>
+            )}
           </p>
         </div>
         <div>

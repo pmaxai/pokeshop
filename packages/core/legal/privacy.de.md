@@ -6,7 +6,7 @@ Wir verarbeiten personenbezogene Daten nur, soweit es für den Shop, Ihre Bestel
 
 ## 1. Verantwortlicher
 
-{{company.name}}, {{company.address}}, E-Mail: {{company.email}}. Einen Datenschutzbeauftragten haben wir nicht bestellt, weil wir dazu nicht verpflichtet sind; wenden Sie sich mit allen Fragen an die genannte E-Mail-Adresse.
+Verantwortlich ist der Betreiber von {{company.public_name}}, {{company.address}}, E-Mail: {{company.email}}. Den Namen und alle weiteren Angaben zum Betreiber finden Sie im Impressum: {{imprint_url}}. Einen Datenschutzbeauftragten haben wir nicht bestellt, weil wir dazu nicht verpflichtet sind; wenden Sie sich mit allen Fragen an die genannte E-Mail-Adresse.
 
 ## 2. Besuch des Shops
 
@@ -40,7 +40,7 @@ Bestellbestätigungen, Rechnungen und Antworten auf Ihre Nachrichten verschicken
 
 ## 7. Widerruf über das Online-Formular
 
-Wenn Sie den Vertrag über „Vertrag widerrufen“ widerrufen, speichern wir Ihre Angaben und den Zeitpunkt des Eingangs, schicken Ihnen eine Eingangsbestätigung und bearbeiten den Widerruf (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 13a FAGG). Wir bewahren diese Daten auf, solange daraus Ansprüche entstehen können, in der Regel drei Jahre.
+Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ widerrufen, speichern wir Ihre Angaben und den Zeitpunkt des Eingangs, schicken Ihnen eine Eingangsbestätigung und bearbeiten den Widerruf (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 13a FAGG). Wir bewahren diese Daten auf, solange daraus Ansprüche entstehen können, in der Regel drei Jahre.
 
 ## 8. Hosting
 

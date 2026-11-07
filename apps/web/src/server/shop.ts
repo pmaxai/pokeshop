@@ -3,16 +3,21 @@ import { cache } from 'react';
 import { getSetting } from './config';
 
 export type Company = {
+  /** Legal name: legal notice, invoices and e-mail footers only. */
   name: string;
+  /** How shop pages and legal texts name the operator. */
+  public_name?: string;
   street: string;
   postcode: string;
   city: string;
   country: string;
   email: string;
-  register_number: string;
-  register_court: string;
-  vat_id: string;
-  managing_director: string;
+  /** Business activity (Gewerbe), e.g. "Handel mit Waren aller Art". */
+  trade?: string | null;
+  register_number?: string | null;
+  register_court?: string | null;
+  vat_id?: string | null;
+  managing_director?: string | null;
   chamber: string;
   supervisory_authority: string;
   trade_licence: string | null;
@@ -20,7 +25,8 @@ export type Company = {
 
 export const getCompany = cache(() =>
   getSetting<Company>('company', {
-    name: 'Antalyse GmbH',
+    name: '',
+    public_name: 'pokemonkarten.at',
     street: '',
     postcode: '',
     city: '',

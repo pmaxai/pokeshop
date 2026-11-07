@@ -50,6 +50,8 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
   const c = ctx.company as Record<string, string | undefined>;
   const values: Record<string, string> = {
     'company.name': c.name ?? '',
+    // Shop pages and legal texts name the shop, not its owner (that is in the legal notice).
+    'company.public_name': c.public_name || 'pokemonkarten.at',
     'company.address': [
       c.street,
       [c.postcode, c.city].filter(Boolean).join(' '),
@@ -68,6 +70,7 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     withdrawal_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/widerrufsbelehrung' : '/en/right-of-withdrawal'}`,
     shipping_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/versand-und-zahlung' : '/en/shipping-and-payment'}`,
     conditions_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/zustand' : '/en/condition-guide'}`,
+    imprint_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/impressum' : '/en/legal-notice'}`,
   };
   return md.replace(/\{\{\s*([a-z_.]+)\s*\}\}/g, (m, k: string) => values[k] ?? m);
 }

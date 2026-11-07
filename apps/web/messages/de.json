@@ -25,8 +25,8 @@
     "events": "Veranstaltungen"
   },
   "Home": {
-    "title": "Pokémon-Einzelkarten, deren Zustand du kennst, bevor du bestellst",
-    "lead": "Karten aus allen Serien und vielen Sprachen, jede einzeln eingescannt und nach Zustand eingestuft. Versandkostenfrei nach Österreich und Deutschland.",
+    "title": "Pokémon-Einzelkarten aus allen Serien und Sprachen",
+    "lead": "Versandkostenfrei nach Österreich und Deutschland.",
     "newest": "Neu eingetroffen",
     "allCards": "Alle Karten ansehen",
     "bySet": "Nach Set stöbern",
@@ -98,7 +98,9 @@
     "close": "Schließen",
     "quantity": "Anzahl",
     "addToCart": "In den Warenkorb",
-    "inclVatInsured": "inkl. MwSt., zzgl. versichertem Versand"
+    "inclVatInsured": "inkl. MwSt., zzgl. versichertem Versand",
+    "noVat": "Endpreis, keine USt. (Kleinunternehmer)",
+    "noVatInsured": "Endpreis, keine USt. (Kleinunternehmer), zzgl. versichertem Versand"
   },
   "Sets": {
     "title": "Sets",
@@ -116,10 +118,9 @@
     "imprint": "Impressum",
     "privacy": "Datenschutz",
     "trademark": "pokemonkarten.at ist nicht mit Nintendo, Creatures, GAME FREAK oder The Pokémon Company verbunden. Pokémon und alle Kartennamen sind Marken ihrer Inhaber.",
-    "company": "Ein Shop der {name}",
     "terms": "AGB",
     "withdrawalInfo": "Widerrufsbelehrung",
-    "withdraw": "Vertrag widerrufen",
+    "withdraw": "Bestellung retournieren (Vertrag widerrufen)",
     "events": "Veranstaltungen"
   },
   "Conditions": {
@@ -133,12 +134,12 @@
     "M_text": "Wie frisch aus dem Booster: keine Kratzer, keine weißen Stellen, Ecken und Kanten makellos, gut zentriert.",
     "NM_text": "Fast makellos. Bei genauem Hinsehen höchstens ein, zwei winzige weiße Pünktchen an Kanten oder Rückseite.",
     "EX_text": "Leichte Gebrauchsspuren: einzelne weiße Stellen an den Kanten, feine Kratzer im Licht. Keine Knicke.",
-    "GD_text": "Deutliche Gebrauchsspuren an Kanten und Ecken, leichte Kratzer auf der Vorderseite. Keine Knicke.",
+    "GD_text": "Deutliche Gebrauchsspuren an Kanten und Ecken, leichte Kratzer auf der Vorderseite.",
     "LP_text": "Sichtbar bespielt: abgestoßene Ecken, Kratzer, eventuell ein kleiner Knick, der die Karte nicht verformt.",
     "PL_text": "Stark bespielt: Knicke, deutliche Kratzer oder Verfärbungen. Gut für Sammlungen, in denen die Karte nur fehlt.",
     "PO_text": "Schwer beschädigt: Risse, Wasserschäden, Beschriftungen oder starke Knicke.",
     "title": "Zustandsstufen",
-    "lead": "Jede Karte wird einzeln angesehen und einer dieser Stufen zugeordnet. Besonderheiten wie eine schiefe Zentrierung stehen zusätzlich in der Beschreibung der Karte."
+    "lead": "Jede Karte wird einzeln angesehen und einer dieser Stufen zugeordnet. Besonderheiten stehen zusätzlich in der Beschreibung der Karte."
   },
   "Finishes": {
     "normal": "Normal",
@@ -178,19 +179,24 @@
     "minimum": "Mindestbestellwert {amount}",
     "deliveryTime": "Lieferzeit {time}",
     "free": "Wir verschicken mit der Österreichischen Post. Der Versand ist kostenlos.",
-    "insured": "Ist in deiner Bestellung eine Karte über {threshold}, verschicken wir versichert. Dafür berechnen wir {rate} des Warenwerts, mindestens {minimum}. Für Bestellungen über {limit} gibt es keinen versicherten Versand: Sie gehen kostenlos mit Sendungsverfolgung zu dir.",
+    "insured": "Ist in deiner Bestellung eine Karte über {threshold}, verschicken wir versichert. Dafür berechnen wir {rate} des Warenwerts, mindestens {minimum}. Für Bestellungen über {limit} gibt es keinen versicherten Versand.",
+    "otherCountries": "In andere Länder liefern wir derzeit nur auf Anfrage. Schreib uns dafür an <mail>{email}</mail>.",
     "payment": "Bezahlen kannst du mit Kreditkarte, Apple Pay, Google Pay, EPS und PayPal. Die Zahlung läuft über Stripe."
   },
   "Imprint": {
     "title": "Impressum",
-    "law": "Angaben gemäß § 5 ECG, § 14 UGB und § 25 MedienG",
+    "law": "Angaben gemäß § 5 ECG und § 25 MedienG",
     "owner": "Medieninhaber und Betreiber",
+    "trade": "Unternehmensgegenstand",
+    "smallBusiness": "Umsatzsteuer",
+    "law_trade": "Gewerberecht",
+    "law_trade_text": "Gewerbeordnung (GewO), abrufbar unter <link>www.ris.bka.gv.at</link>",
     "register": "Firmenbuch",
     "court": "Firmenbuchgericht",
     "vat": "UID-Nummer",
     "director": "Geschäftsführer",
     "chamber": "Mitglied der",
-    "authority": "Aufsichtsbehörde",
+    "authority": "Gewerbebehörde",
     "contact": "Kontakt"
   },
   "Privacy": {
@@ -227,6 +233,7 @@
     "trackedNote": "Über {limit} ist kein versicherter Versand möglich; wir verschicken kostenlos mit Sendungsverfolgung.",
     "total": "Gesamt",
     "vat": "inkl. {rate} MwSt.",
+    "noVat": "Umsatzsteuerbefreit, Kleinunternehmer gemäß § 6 Abs. 1 Z 27 UStG",
     "belowMinimum": "Der Mindestbestellwert für {country} ist {minimum}. Es fehlen noch {missing}.",
     "notDelivered": "In dieses Land liefern wir leider nicht.",
     "toCheckout": "Zur Kasse",
@@ -281,7 +288,7 @@
     "items": "Karten",
     "deliverTo": "Lieferadresse",
     "orderedOn": "Bestellt am {date}",
-    "withdraw": "Vertrag widerrufen",
+    "withdraw": "Bestellung retournieren (Vertrag widerrufen)",
     "backToShop": "Weiter einkaufen",
     "track": "Sendung verfolgen",
     "trackingNumber": "Sendungsnummer {number}",
@@ -292,17 +299,17 @@
     "version": "Fassung {version}"
   },
   "Withdraw": {
-    "title": "Vertrag widerrufen",
-    "intro": "Hier kannst du einen Kauf ganz oder teilweise widerrufen. Du musst keinen Grund angeben und brauchst kein Kundenkonto. Wir schicken dir sofort eine Eingangsbestätigung per E-Mail.",
+    "title": "Bestellung retournieren",
+    "intro": "Hier kannst du eine Bestellung ganz oder teilweise retournieren, rechtlich heißt das: den Vertrag widerrufen. Du musst keinen Grund angeben und brauchst kein Kundenkonto. Wir schicken dir sofort eine Eingangsbestätigung per E-Mail.",
     "name": "Name",
     "email": "E-Mail-Adresse für die Eingangsbestätigung",
     "orderNumber": "Bestellnummer (z. B. PK-2611-7KQ4M)",
     "orderDate": "Bestellt am oder erhalten am (freiwillig)",
-    "items": "Welche Karten? Leer lassen, wenn du die ganze Bestellung widerrufst.",
+    "items": "Welche Karten? Leer lassen, wenn du die ganze Bestellung retournierst.",
     "message": "Nachricht (freiwillig)",
     "submit": "Widerruf bestätigen",
-    "done": "Dein Widerruf ist eingegangen.",
-    "doneText": "Eingang: {time}. Die Eingangsbestätigung mit dem Inhalt deiner Erklärung ist per E-Mail unterwegs. Bitte schick die Karten innerhalb von 14 Tagen an {address} zurück.",
+    "done": "Deine Retoure ist angemeldet.",
+    "doneText": "Dein Widerruf ist am {time} eingegangen. Die Eingangsbestätigung mit dem Inhalt deiner Erklärung ist per E-Mail unterwegs. Bitte schick die Karten innerhalb von 14 Tagen an {address} zurück.",
     "info": "Die Einzelheiten stehen in der <link>Widerrufsbelehrung</link>.",
     "errorsTitle": "Bitte prüfe die markierten Felder."
   },

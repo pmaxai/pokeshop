@@ -8,6 +8,7 @@ import { ConfidentialClientApplication } from '@azure/msal-node';
 import type { Db, Sql } from './db.ts';
 import { cardNames, cardNameText } from './catalog.ts';
 import { formatEuro, formatRate } from './money.ts';
+import { SMALL_BUSINESS_NOTE, type VatRegime } from './vat.ts';
 import { currentLegal, type LegalKind } from './legal.ts';
 import {
   claimMail,
@@ -228,7 +229,7 @@ ${names.translations.length ? `<span style="color:${C.muted};font-size:13px">${n
 ${line(t.goods, formatEuro(o.goodsCents, locale))}
 ${line(t.shippingLabel(o.shippingMethod), o.shippingCents ? formatEuro(o.shippingCents, locale) : t.free)}
 ${line(t.total, formatEuro(o.totalCents, locale), true)}
-<tr><td colspan="2" style="color:${C.muted};font-size:13px">${esc(t.vatIncluded(formatRate(o.vatRateBp, locale), formatEuro(o.vatCents, locale)))}</td></tr></table>`;
+<tr><td colspan="2" style="color:${C.muted};font-size:13px">${esc(o.vatRegime === 'small_business' ? SMALL_BUSINESS_NOTE[locale] : t.vatIncluded(formatRate(o.vatRateBp, locale), formatEuro(o.vatCents, locale)))}</td></tr></table>`;
 }
 
 const TEXT = {
@@ -253,7 +254,7 @@ const TEXT = {
     viewOrder: 'Bestellung ansehen',
     withdrawalTitle: 'Widerrufsrecht',
     withdrawal: (url: string) =>
-      `Du kannst den Vertrag innerhalb von 14 Tagen ab Erhalt der Karten ohne Angabe von Gründen widerrufen, auch online unter <a href="${esc(url)}" style="color:${C.accent}">Vertrag widerrufen</a>. Unsere AGB und die Widerrufsbelehrung mit dem Muster-Widerrufsformular findest du im Anhang.`,
+      `Du kannst den Vertrag innerhalb von 14 Tagen ab Erhalt der Karten ohne Angabe von Gründen widerrufen, auch online unter <a href="${esc(url)}" style="color:${C.accent}">Bestellung retournieren (Vertrag widerrufen)</a>. Unsere AGB und die Widerrufsbelehrung mit dem Muster-Widerrufsformular findest du im Anhang.`,
     questions: 'Fragen zu deiner Bestellung? Antworte einfach auf diese E-Mail.',
     unavailableSubject: (n: string) => `Deine Bestellung ${n}: Karten leider vergriffen`,
     unavailable: (amount: string) =>
@@ -303,7 +304,7 @@ const TEXT = {
     viewOrder: 'View order',
     withdrawalTitle: 'Right of withdrawal',
     withdrawal: (url: string) =>
-      `You may withdraw from the contract within 14 days of receiving the cards without giving any reason, also online at <a href="${esc(url)}" style="color:${C.accent}">Withdraw from contract</a>. Our terms and the withdrawal instructions with the model withdrawal form are attached.`,
+      `You may withdraw from the contract within 14 days of receiving the cards without giving any reason, also online at <a href="${esc(url)}" style="color:${C.accent}">Return an order (withdraw from contract)</a>. Our terms and the withdrawal instructions with the model withdrawal form are attached.`,
     questions: 'Questions about your order? Just reply to this e-mail.',
     unavailableSubject: (n: string) => `Your order ${n}: cards sold out`,
     unavailable: (amount: string) =>
@@ -592,7 +593,7 @@ export async function documentData(
   const o = await orderById(db, d.order_id);
   const [x] = await db<
     {
-      vat_regime: 'domestic' | 'oss' | 'export';
+      vat_regime: VatRegime;
       tax_country: string | null;
       payment_method_type: string | null;
     }[]
