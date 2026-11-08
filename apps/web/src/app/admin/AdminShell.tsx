@@ -5,6 +5,7 @@ const LINKS = [
   { href: '/admin', label: 'Übersicht', key: 'home' },
   { href: '/admin/bestellungen', label: 'Bestellungen', key: 'orders' },
   { href: '/admin/produkte', label: 'Produkte', key: 'products' },
+  { href: '/admin/kategorien', label: 'Kategorien', key: 'categories' },
   { href: '/admin/widerrufe', label: 'Widerrufe', key: 'withdrawals' },
   { href: '/admin/veranstaltungen', label: 'Veranstaltungen', key: 'events' },
   { href: '/admin/einstellungen', label: 'Einstellungen', key: 'settings', owner: true },

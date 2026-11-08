@@ -69,7 +69,7 @@ export default async function CardPage({ params }: Props) {
   const more = (
     await listCatalog(db(), { sets: [p.setCode], pageSize: 9, sort: 'number' }, locale)
   ).items
-    .filter((c) => c.id !== p.id)
+    .filter((c) => !c.variants.some((v) => v.id === p.id))
     .slice(0, 8);
   const big = largeImage(p);
   const alt = `${namesText(p.name, p.nameTranslations)}, ${p.setName ?? p.setCode} ${p.cardNumber}`;
@@ -163,8 +163,45 @@ export default async function CardPage({ params }: Props) {
             </li>
             {p.grading && <li className="tag">{p.grading}</li>}
           </ul>
+          {p.categories.length > 0 && (
+            <ul className="tags cat-tags" aria-label={t('categories')}>
+              {p.categories.map((c) => (
+                <li key={c.slug}>
+                  <Link
+                    className="tag tag--link"
+                    href={{ pathname: '/karten', query: { cat: c.slug } }}
+                  >
+                    {c.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="buybox">
+            {p.variants.length > 1 && (
+              <nav className="cond-links" aria-label={t('otherConditions')}>
+                <span className="cond-links__label">{t('condition')}</span>
+                <ul>
+                  {p.variants.map((v) => (
+                    <li key={v.id}>
+                      <Link
+                        href={{ pathname: '/karten/[slug]', params: { slug: v.slug } }}
+                        className={v.available > 0 ? 'cond-link' : 'cond-link cond-link--out'}
+                        aria-current={v.id === p.id ? 'page' : undefined}
+                        scroll={false}
+                      >
+                        <span className="cond-link__code">{v.condition}</span>
+                        <span className="cond-link__name">{tc(v.condition as never)}</span>
+                        <span className="cond-link__price">
+                          {v.available > 0 ? formatEuro(v.priceCents, locale) : t('soldOut')}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
             <span className="price">{formatEuro(p.priceCents, locale)}</span>
             <small>
               {smallBusiness

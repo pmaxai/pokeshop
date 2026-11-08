@@ -62,6 +62,17 @@ const fieldsShape = {
   description_de: z.string().trim().max(5000).optional(),
   description_en: z.string().trim().max(5000).optional(),
   images: z.array(ImageInput).max(10).optional(),
+  /** Category slugs (GET /categories); replaces the product's categories when sent. */
+  categories: z
+    .array(
+      z
+        .string()
+        .trim()
+        .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'category slug')
+        .max(60),
+    )
+    .max(20)
+    .optional(),
   status: z.enum(['draft', 'active', 'archived']).optional(),
 };
 

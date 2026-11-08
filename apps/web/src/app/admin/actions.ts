@@ -47,6 +47,7 @@ const FIELD_NAMES: Record<string, string> = {
   name_en: 'Name (Englisch)',
   name_local: 'Name auf der Karte',
   price: 'Preis',
+  categories: 'Kategorien',
 };
 
 function messageOf(e: unknown): string {
@@ -85,6 +86,10 @@ export async function saveProduct(form: FormData) {
       description_en: str(form, 'description_en'),
       price: cents === undefined ? undefined : { amount: cents, currency: 'EUR' },
       status: str(form, 'status') || undefined,
+      categories:
+        form.get('categories_sent') === '1'
+          ? form.getAll('categories').filter((v): v is string => typeof v === 'string')
+          : undefined,
     });
     const r = await patchProduct(db(), sku, patch, { source: 'admin', id: user.email });
     warnings = r.warnings;

@@ -13,6 +13,7 @@ import {
 import { ApiError, notFound } from './errors.ts';
 import type { IntakeRequest, ProductInput, ProductPatch, StockChange } from './api-schemas.ts';
 import { syncCardDetails, syncLocalName, type TcgdexClient } from './tcgdex.ts';
+import { setProductCategories } from './categories.ts';
 
 /** Who changes stock: written to the stock ledger and the audit log. */
 export type Actor = { source: 'api' | 'admin' | 'import'; id: string; reference?: string | null };
@@ -342,6 +343,7 @@ export async function intake(
       await tx`SELECT stock_change(${id}, ${input.storage_location}, ${input.delta}, ${actor.source},
                                    ${actor.id}, ${actor.reference ?? null}, 'intake')`;
       await addImages(tx, id, input.images);
+      if (input.categories !== undefined) await setProductCategories(tx, id, input.categories);
       const wanted = input.status ?? (created ? (input.price ? 'active' : 'draft') : undefined);
       const warnings = [
         ...fieldWarnings(input),
@@ -413,6 +415,8 @@ export async function replaceProduct(
                    AND source_url <> ALL(${(input.images ?? []).map((i) => i.url)}::text[])`;
       }
       await addImages(tx, id!, input.images);
+      // PUT replaces: no `categories` means none
+      await setProductCategories(tx, id!, input.categories ?? []);
       const warnings = [
         ...fieldWarnings(input),
         ...(await applyStatus(tx, id!, input.status ?? (input.price ? 'active' : 'draft'))),
@@ -456,6 +460,7 @@ export async function patchProduct(
         }
       }
       await addImages(tx, p.id, patch.images);
+      if (patch.categories !== undefined) await setProductCategories(tx, p.id, patch.categories);
       if (patch.status) warnings.push(...(await applyStatus(tx, p.id, patch.status)));
       return { product: (await getProduct(tx, sku, opts))!, warnings };
     });
@@ -537,6 +542,8 @@ export type ApiProduct = {
   url: string;
   stock: Stock;
   images: { id: number; role: string; status: string; url: string | null }[];
+  /** Category slugs (GET /categories). */
+  categories: string[];
   updated_at: string;
 };
 
@@ -566,6 +573,7 @@ type ProductRow = {
   status: string;
   updated_at: Date;
   images: { id: number; role: string; status: string; storage_key: string | null }[];
+  categories: string[];
 };
 
 /** Public URL of a processed image in its largest size. */
@@ -614,6 +622,7 @@ async function toApi(db: Db, r: ProductRow, opts: ProductOptions): Promise<ApiPr
       status: i.status,
       url: imageUrl(i.storage_key, 1200, base),
     })),
+    categories: r.categories,
     updated_at: new Date(r.updated_at).toISOString(),
   };
 }
@@ -625,7 +634,10 @@ const PRODUCT_SELECT = (db: Db) => db`
          p.price_cents, p.high_value, p.status, p.updated_at,
          coalesce((SELECT json_agg(json_build_object('id', i.id, 'role', i.role, 'status', i.status,
                                                      'storage_key', i.storage_key) ORDER BY i.position, i.id)
-                     FROM product_images i WHERE i.product_id = p.id), '[]') AS images
+                     FROM product_images i WHERE i.product_id = p.id), '[]') AS images,
+         coalesce((SELECT json_agg(c.slug ORDER BY c.position, c.name_de, c.id)
+                     FROM product_categories pc JOIN categories c ON c.id = pc.category_id
+                    WHERE pc.product_id = p.id), '[]') AS categories
     FROM products p`;
 
 export async function getProduct(

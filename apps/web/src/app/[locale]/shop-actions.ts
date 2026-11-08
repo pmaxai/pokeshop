@@ -44,7 +44,9 @@ export async function addToCartAction(form: FormData) {
 
 export type QuickAddState = {
   status: 'idle' | 'added' | 'limited' | 'unavailable';
-  /** Copies of this card in the cart after the action. */
+  /** The product (condition) the action was for. */
+  productId?: number;
+  /** Copies of this product in the cart after the action. */
   quantity: number;
 };
 
@@ -54,10 +56,12 @@ export type QuickAddState = {
  */
 export async function quickAddAction(_prev: QuickAddState, form: FormData): Promise<QuickAddState> {
   const cart = await ensureCartId(localeOf(form));
-  const r = await addToCart(db(), cart, Number(str(form, 'product_id')), 1);
+  const productId = Number(str(form, 'product_id'));
+  const r = await addToCart(db(), cart, productId, 1);
   revalidatePath('/', 'layout');
   return {
     status: r.unavailable ? 'unavailable' : r.limited ? 'limited' : 'added',
+    productId,
     quantity: r.quantity,
   };
 }

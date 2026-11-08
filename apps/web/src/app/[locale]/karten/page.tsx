@@ -22,6 +22,7 @@ function euroToCents(v?: string): number | undefined {
 function stateFrom(sp: Search): FilterState {
   return {
     q: one(sp.q)?.trim().slice(0, 100) || undefined,
+    cat: many(sp.cat),
     lang: many(sp.lang),
     series: many(sp.series),
     set: many(sp.set),
@@ -84,6 +85,7 @@ export default async function Cards({
     db(),
     {
       q: state.q,
+      categories: state.cat,
       languages: state.lang,
       series: state.series,
       sets: state.set,

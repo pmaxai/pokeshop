@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { formatEuro } from '@pokeshop/core';
 import { rowNames, translationText } from '@pokeshop/core/catalog';
 import { getProduct } from '@pokeshop/core/products';
+import { listCategories } from '@pokeshop/core/categories';
+import { generalSettings } from '@pokeshop/core/shop-settings';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
@@ -50,6 +52,11 @@ export default async function ProductEdit({
     }[]
   >`
     SELECT id, description_de, description_en, slug, purchase_price_cents FROM products WHERE sku = ${sku}`;
+  const [categories, general] = await Promise.all([listCategories(db()), generalSettings(db())]);
+  const threshold =
+    general.high_value_threshold_cents === null
+      ? null
+      : formatEuro(general.high_value_threshold_cents);
   const [ledger, images] = await Promise.all([
     db()<
       {
@@ -221,7 +228,7 @@ export default async function ProductEdit({
           </label>
         )}
         <label className="field">
-          <span>Preis in € (inkl. USt.)</span>
+          <span>Preis in € (Endpreis)</span>
           <input name="price" defaultValue={price} inputMode="decimal" placeholder="z. B. 129,00" />
         </label>
         <label className="field">
@@ -234,8 +241,8 @@ export default async function ProductEdit({
         </label>
         <span className="muted">
           {p.high_value
-            ? 'Wertvolle Karte (über 20 €): versicherter Versand'
-            : 'Keine wertvolle Karte (bis 20 €)'}
+            ? `Wertvolle Karte${threshold ? ` (über ${threshold})` : ''}: versicherter Versand`
+            : `Keine wertvolle Karte${threshold ? ` (bis ${threshold})` : ''}`}
         </span>
         <span className="muted">
           Einkaufspreis:{' '}
@@ -254,6 +261,37 @@ export default async function ProductEdit({
           <span>Beschreibung (Englisch)</span>
           <textarea name="description_en" defaultValue={row!.description_en ?? ''} />
         </label>
+        <fieldset className="field categories-pick" style={{ gridColumn: '1 / -1' }}>
+          <legend>Kategorien</legend>
+          <small className="muted" style={{ display: 'block', marginBottom: 'var(--s-2)' }}>
+            Im Shop gilt eine Kategorie für die Karte in allen Zuständen.
+          </small>
+          <input type="hidden" name="categories_sent" value="1" />
+          {categories.length === 0 ? (
+            <span className="muted">
+              Noch keine Kategorien.{' '}
+              {user.role === 'owner' ? (
+                <a href="/admin/kategorien">Kategorien anlegen</a>
+              ) : (
+                'Der Inhaber kann sie anlegen.'
+              )}
+            </span>
+          ) : (
+            <div className="categories-pick__list">
+              {categories.map((c) => (
+                <label key={c.slug} className="check">
+                  <input
+                    type="checkbox"
+                    name="categories"
+                    value={c.slug}
+                    defaultChecked={p.categories.includes(c.slug)}
+                  />
+                  {c.nameDe}
+                </label>
+              ))}
+            </div>
+          )}
+        </fieldset>
         <div>
           <button className="btn btn--accent" type="submit">
             Speichern
