@@ -118,11 +118,23 @@ jobs:
           # the worker starts the card-data sync on the empty database; it must stay healthy meanwhile
           sleep 5 && docker exec worker node apps/worker/src/healthcheck.ts
           sleep 20 && docker exec worker node apps/worker/src/healthcheck.ts
+          # license service: own database, migrates on start; issue a licence and activate it
+          docker run --rm --network host -e PGPASSWORD=pokeshop postgres:16 \
+            psql -h localhost -U pokeshop -d pokeshop -qc 'CREATE DATABASE pokeshop_license'
+          LIC="-e LICENSE_DATABASE_URL=postgres://pokeshop:pokeshop@localhost:5432/pokeshop_license -e DATABASE_SSL=disable -e LICENSE_MASTER_KEY=$(openssl rand -base64 32) -e LICENSE_SHOP_TOKEN=$(openssl rand -hex 32)"
+          docker run -d --name license --network host $LIC pokeshop:ci node apps/license/src/main.ts
+          for i in $(seq 1 30); do curl -sf http://localhost:3100/health && break; sleep 2; done
+          KEY=$(docker exec license node apps/license/src/cli.ts issue --email ci@example.com --note "CI smoke test" | grep -o 'CS-[0-9A-Z-]*' | head -1)
+          test -n "$KEY"
+          curl -sf -X POST http://localhost:3100/v1/activate -H 'content-type: application/json' \
+            -d "{\"key\":\"$KEY\",\"device_id\":\"ci\",\"device_name\":\"CI\"}" | grep -q '"token"'
+          echo "license service: issued and activated a licence"
       - name: Container logs
         if: always()
         run: |
           docker logs web 2>&1 | tail -80 || true
           docker logs worker 2>&1 | tail -40 || true
+          docker logs license 2>&1 | tail -40 || true
       - if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:

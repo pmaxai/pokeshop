@@ -3,6 +3,7 @@
 #   migrate: node packages/core/scripts/migrate.ts
 #   web:     pnpm --filter @pokeshop/web start
 #   worker:  node apps/worker/src/main.ts
+#   license: node apps/license/src/main.ts
 # TypeScript files run directly on Node's built-in type stripping.
 
 ARG NODE_VERSION=26
@@ -55,6 +56,8 @@ COPY --chown=app:app apps/web/public ./apps/web/public
 COPY --chown=app:app apps/web/next.config.ts apps/web/
 COPY --chown=app:app apps/web/messages ./apps/web/messages
 COPY --chown=app:app apps/worker/src ./apps/worker/src
+COPY --chown=app:app apps/license/src ./apps/license/src
+COPY --chown=app:app apps/license/migrations ./apps/license/migrations
 COPY --chown=app:app packages/core ./packages/core
 USER app
 EXPOSE 3000
