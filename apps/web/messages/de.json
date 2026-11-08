@@ -32,10 +32,7 @@
     "bySet": "Nach Set stöbern",
     "allSets": "Alle Sets",
     "byLanguage": "Nach Kartensprache",
-    "empty": "Gerade werden die ersten Karten eingescannt. Schau bald wieder vorbei.",
-    "promiseShipping": "Versandkostenfrei nach Österreich und Deutschland",
-    "promiseCondition": "Zustand nach klaren Stufen, mit Beschreibung",
-    "promisePayment": "Bezahlen mit Karte, Apple Pay, Google Pay, EPS oder PayPal"
+    "empty": "Gerade werden die ersten Karten eingescannt. Schau bald wieder vorbei."
   },
   "Catalog": {
     "title": "Alle Karten",

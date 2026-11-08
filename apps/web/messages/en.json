@@ -32,10 +32,7 @@
     "bySet": "Browse by set",
     "allSets": "All sets",
     "byLanguage": "By card language",
-    "empty": "The first cards are being scanned right now. Come back soon.",
-    "promiseShipping": "Free shipping to Austria and Germany",
-    "promiseCondition": "Condition in clear grades, with notes",
-    "promisePayment": "Pay by card, Apple Pay, Google Pay, EPS or PayPal"
+    "empty": "The first cards are being scanned right now. Come back soon."
   },
   "Catalog": {
     "title": "All cards",

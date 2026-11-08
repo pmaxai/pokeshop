@@ -10,6 +10,9 @@ import { SetList } from '@/components/SetList';
 
 export const dynamic = 'force-dynamic';
 
+/** Cards under "Neu eingetroffen"; the hero fan picks from a few more. */
+const NEWEST_SHOWN = 4;
+
 export async function generateMetadata({
   params,
 }: {
@@ -39,7 +42,7 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
     setsForSale(db(), locale),
     listCatalog(db(), { pageSize: 1 }, locale),
   ]);
-  // The fan: the three most valuable cards that have a picture.
+  // The fan: the three most valuable of the recent cards that have a picture.
   const fan = [...cards]
     .filter((c) => c.image.kind !== 'none')
     .sort((a, b) => b.priceCents - a.priceCents)
@@ -77,12 +80,6 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
         )}
       </section>
 
-      <ul className="promises">
-        <li>{t('promiseShipping')}</li>
-        <li>{t('promiseCondition')}</li>
-        <li>{t('promisePayment')}</li>
-      </ul>
-
       <section className="section" aria-labelledby="newest">
         <div className="section__head">
           <h2 id="newest">{t('newest')}</h2>
@@ -91,9 +88,9 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
         {cards.length === 0 ? (
           <p className="empty">{t('empty')}</p>
         ) : (
-          <ul className="card-grid">
-            {cards.map((c, i) => (
-              <CardTile key={c.id} card={c} locale={locale} priority={i < 4} />
+          <ul className="card-grid card-grid--four">
+            {cards.slice(0, NEWEST_SHOWN).map((c) => (
+              <CardTile key={c.id} card={c} locale={locale} priority />
             ))}
           </ul>
         )}
