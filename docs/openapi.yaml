@@ -342,6 +342,24 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/MasterCard' }
 
+  /categories:
+    get:
+      tags: [Master data]
+      operationId: categories
+      summary: Categories products can be put in
+      description: Managed in the admin (Kategorien). Needs scope products:read.
+      responses:
+        '200':
+          description: All categories, in display order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Category' }
+
   /health:
     get:
       tags: [System]
@@ -511,6 +529,16 @@ components:
           type: array
           maxItems: 10
           items: { $ref: '#/components/schemas/ImageInput' }
+        categories:
+          type: array
+          maxItems: 20
+          items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', example: cute }
+          description: |
+            Category slugs from `GET /categories` (created in the admin). The product ends up in
+            exactly these categories: on intake and PATCH only when the field is sent (an empty
+            list removes all); PUT replaces the whole product, so leaving it out there removes
+            all. An unknown slug fails with 422 `validation`, field `categories`. In the shop a
+            category applies to the card in all its conditions.
         status: { $ref: '#/components/schemas/Status' }
 
     IntakeRequest:
@@ -611,7 +639,22 @@ components:
         images:
           type: array
           items: { $ref: '#/components/schemas/Image' }
-        updated_at: { type: string, format: date-time }
+        categories:
+          type: array
+          items: { type: string }
+          description: Category slugs, in the order set in the admin
+        updated_at:
+          type: string
+          format: date-time
+          description: Also changes when the product's categories change
+
+    Category:
+      type: object
+      properties:
+        slug: { type: string, example: cute, description: Send this in `categories` }
+        name_de: { type: string, example: Süße Karten }
+        name_en: { type: string, example: Cute cards }
+        position: { type: integer, description: Smaller first }
 
     MasterCard:
       type: object

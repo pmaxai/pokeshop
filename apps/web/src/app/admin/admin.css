@@ -138,6 +138,24 @@
   align-items: center;
   font-weight: 600;
 }
+.categories-pick {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s-3) var(--s-4);
+  margin: 0;
+}
+.categories-pick legend {
+  font-weight: 600;
+  padding: 0 var(--s-1);
+}
+.categories-pick__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+}
+.categories-pick__list .check {
+  font-weight: 400;
+}
 .notice {
   padding: var(--s-3) var(--s-4);
   border-radius: var(--radius);

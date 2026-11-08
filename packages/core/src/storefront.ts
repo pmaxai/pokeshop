@@ -1,7 +1,13 @@
-import { cardNames, type CardNames } from './catalog.ts';
+import { cardNames, CONDITIONS, type CardNames } from './catalog.ts';
 import type { Db } from './db.ts';
 
-/** Read queries for the public shop. Only active products are ever returned. */
+/**
+ * Read queries for the public shop. Only active products are ever returned.
+ *
+ * Copies of the same card (print, card language, finish, grading) in different conditions are
+ * separate products with their own SKU, price and stock. The catalog shows them as one tile
+ * with the conditions to choose from; each product keeps its own page.
+ */
 
 export type Locale = 'de' | 'en';
 
@@ -14,6 +20,8 @@ export type CatalogFilters = {
   conditions?: string[];
   finishes?: string[];
   supertypes?: string[];
+  /** Category slugs; a card matches when any of its conditions is in one of them. */
+  categories?: string[];
   graded?: boolean;
   priceMin?: number | undefined; // cents
   priceMax?: number | undefined; // cents
@@ -38,7 +46,18 @@ export type CardImage = {
   height: number | null;
 };
 
+/** One condition of a card, as offered on its tile and product page. */
+export type TileVariant = {
+  id: number;
+  sku: string;
+  slug: string;
+  condition: string;
+  priceCents: number;
+  available: number;
+};
+
 export type CatalogTile = {
+  /** The variant the tile leads with: the cheapest one in stock. */
   id: number;
   sku: string;
   slug: string;
@@ -60,6 +79,8 @@ export type CatalogTile = {
   available: number;
   highValue: boolean;
   image: CardImage;
+  /** The conditions on this tile (best condition first), including the lead one. */
+  variants: TileVariant[];
 };
 
 type TileRow = {
@@ -134,8 +155,32 @@ function tile(r: TileRow, locale: Locale): CatalogTile {
       : sample
         ? { kind: 'sample', key: null, samplePath: sample, width: 600, height: 825 }
         : { kind: 'none', key: null, samplePath: null, width: null, height: null },
+    variants: [variant(r, locale)],
   };
 }
+
+function variant(r: TileRow, locale: Locale): TileVariant {
+  return {
+    id: r.id,
+    sku: r.sku,
+    slug: locale === 'en' ? (r.slug_en ?? r.slug) : r.slug,
+    condition: r.condition,
+    priceCents: r.price_cents,
+    available: r.available,
+  };
+}
+
+const CONDITION_ORDER = Object.keys(CONDITIONS);
+
+/** Best condition first (Mint, Near Mint …). */
+export function byCondition(a: { condition: string }, b: { condition: string }): number {
+  return CONDITION_ORDER.indexOf(a.condition) - CONDITION_ORDER.indexOf(b.condition);
+}
+
+/** Products with the same key are one card in different conditions. */
+const GROUP_KEY = (db: Db) => db`
+  concat_ws('|', p.set_code, p.card_number, p.card_language, p.finish,
+            coalesce(p.grading_company, ''), coalesce(p.grading_grade, ''))`;
 
 const TILE_COLUMNS = (db: Db) => db`
   p.id, p.sku, p.slug, p.slug_en, p.name_de, p.name_en, p.name_local, p.set_code, p.set_name_de, p.set_name_en,
@@ -171,28 +216,35 @@ function whereClause(db: Db, f: CatalogFilters, locale: Locale) {
     ${nonEmpty(f.conditions) ? db`AND p.condition = ANY(${f.conditions!}::text[])` : db``}
     ${nonEmpty(f.finishes) ? db`AND p.finish = ANY(${f.finishes!}::text[])` : db``}
     ${nonEmpty(f.supertypes) ? db`AND p.supertype = ANY(${f.supertypes!}::text[])` : db``}
+    ${
+      nonEmpty(f.categories)
+        ? db`AND ${GROUP_KEY(db)} IN (
+               SELECT ${GROUP_KEY(db)} FROM products p
+                 JOIN product_categories pc ON pc.product_id = p.id
+                 JOIN categories c ON c.id = pc.category_id
+                WHERE c.slug = ANY(${f.categories!}::text[]))`
+        : db``
+    }
     ${f.graded ? db`AND p.grading_company IS NOT NULL` : db``}
     ${f.priceMin !== undefined ? db`AND p.price_cents >= ${f.priceMin}` : db``}
     ${f.priceMax !== undefined ? db`AND p.price_cents <= ${f.priceMax}` : db``}`;
 }
 
+/** Order of the card groups (columns of `g` in listCatalog). */
 function orderBy(db: Db, f: CatalogFilters, locale: Locale) {
   const q = f.q?.trim().toLowerCase();
-  const byNumber = db`cs.release_date DESC NULLS LAST, p.set_code,
-                      nullif(substring(p.card_number from '^[0-9]+'), '')::int NULLS LAST, p.card_number, p.id`;
   switch (f.sort) {
     case 'price_asc':
-      return db`p.price_cents ASC, p.id`;
+      return db`g.min_price ASC, g.min_id`;
     case 'price_desc':
-      return db`p.price_cents DESC, p.id`;
+      return db`g.max_price DESC, g.min_id`;
     case 'number':
-      return byNumber;
+      return db`g.release_date DESC NULLS LAST, g.set_code,
+                nullif(substring(g.card_number from '^[0-9]+'), '')::int NULLS LAST, g.card_number, g.min_id`;
     case 'name':
-      return locale === 'en' ? db`p.name_en, p.id` : db`p.name_de, p.id`;
+      return locale === 'en' ? db`g.name_en, g.min_id` : db`g.name_de, g.min_id`;
     default:
-      return q
-        ? db`word_similarity(${q}, p.search_text) DESC, p.created_at DESC, p.id DESC`
-        : db`p.created_at DESC, p.id DESC`;
+      return q ? db`g.sim DESC, g.newest DESC, g.max_id DESC` : db`g.newest DESC, g.max_id DESC`;
   }
 }
 
@@ -200,11 +252,19 @@ export type Facet = { value: string; label: string; count: number };
 
 export type CatalogResult = {
   items: CatalogTile[];
+  /** Number of tiles (cards), not of products. */
   total: number;
   page: number;
   pages: number;
   facets: Record<
-    'languages' | 'series' | 'sets' | 'rarities' | 'conditions' | 'finishes' | 'supertypes',
+    | 'languages'
+    | 'series'
+    | 'sets'
+    | 'rarities'
+    | 'conditions'
+    | 'finishes'
+    | 'supertypes'
+    | 'categories',
     Facet[]
   >;
 };
@@ -217,21 +277,57 @@ export async function listCatalog(
   const pageSize = Math.min(Math.max(f.pageSize ?? 36, 1), 120);
   const page = Math.max(1, Math.floor(f.page ?? 1));
   const where = whereClause(db, f, locale);
+  const q = f.q?.trim().toLowerCase().slice(0, 100);
 
-  const [rows, [{ total } = { total: 0 }], facets] = await Promise.all([
-    db<TileRow[]>`
-      SELECT ${TILE_COLUMNS(db)}
-        FROM products p ${TILE_JOINS(db)}
-        LEFT JOIN card_sets cs ON cs.set_code = p.set_code
-       WHERE ${where}
+  // Products matching the filters, grouped into cards. Each group lists its product ids with
+  // the lead variant first: in stock, cheapest, best condition.
+  const [groups, [{ total } = { total: 0 }], facets] = await Promise.all([
+    db<{ ids: number[] }[]>`
+      WITH m AS (
+        SELECT p.id, ${GROUP_KEY(db)} AS gkey, p.set_code, p.card_number, p.condition,
+               p.price_cents, p.created_at, p.name_de, p.name_en, ps.available, cs.release_date,
+               ${q ? db`word_similarity(${q}, p.search_text)` : db`0::real`} AS sim
+          FROM products p JOIN product_stock ps ON ps.product_id = p.id
+          LEFT JOIN card_sets cs ON cs.set_code = p.set_code
+         WHERE ${where}
+      ), g AS (
+        SELECT array_agg(id ORDER BY (available > 0) DESC, price_cents,
+                         array_position(${CONDITION_ORDER}::text[], condition), id) AS ids,
+               min(price_cents) AS min_price, max(price_cents) AS max_price,
+               max(created_at) AS newest, max(id) AS max_id, min(id) AS min_id,
+               max(release_date) AS release_date, min(set_code) AS set_code,
+               min(card_number) AS card_number, min(name_de) AS name_de, min(name_en) AS name_en,
+               max(sim) AS sim
+          FROM m GROUP BY gkey
+      )
+      SELECT g.ids FROM g
        ORDER BY ${orderBy(db, f, locale)}
        LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`,
     db<{ total: number }[]>`
-      SELECT count(*)::int AS total FROM products p JOIN product_stock ps ON ps.product_id = p.id WHERE ${where}`,
+      SELECT count(DISTINCT ${GROUP_KEY(db)})::int AS total
+        FROM products p JOIN product_stock ps ON ps.product_id = p.id WHERE ${where}`,
     catalogFacets(db, locale),
   ]);
+
+  const ids = groups.flatMap((g) => g.ids.map(Number));
+  const rows = ids.length
+    ? await db<TileRow[]>`
+        SELECT ${TILE_COLUMNS(db)} FROM products p ${TILE_JOINS(db)}
+         WHERE p.id = ANY(${ids}::bigint[])`
+    : [];
+  const byId = new Map(rows.map((r) => [Number(r.id), r]));
+  const items: CatalogTile[] = [];
+  for (const g of groups) {
+    const members = g.ids.map((id) => byId.get(Number(id))).filter((r) => r !== undefined);
+    const lead = members[0];
+    if (!lead) continue;
+    items.push({
+      ...tile(lead, locale),
+      variants: members.map((r) => variant(r, locale)).sort(byCondition),
+    });
+  }
   return {
-    items: rows.map((r) => tile(r, locale)),
+    items,
     total,
     page,
     pages: Math.max(1, Math.ceil(total / pageSize)),
@@ -239,29 +335,39 @@ export async function listCatalog(
   };
 }
 
-/** Filter options with counts over everything that is for sale right now. */
+/** Filter options with counts (of cards, not products) over everything for sale right now. */
 async function catalogFacets(db: Db, locale: Locale): Promise<CatalogResult['facets']> {
-  const rows = await db<{ dim: string; value: string; label: string | null; count: number }[]>`
+  const rows = await db<
+    { dim: string; value: string; label: string | null; count: number; ord: number | null }[]
+  >`
     WITH sale AS (
-      SELECT p.* FROM products p JOIN product_stock ps ON ps.product_id = p.id
+      SELECT p.*, ${GROUP_KEY(db)} AS gkey FROM products p JOIN product_stock ps ON ps.product_id = p.id
        WHERE p.status = 'active' AND p.price_cents IS NOT NULL AND ps.available > 0)
-    SELECT 'languages' AS dim, card_language AS value, NULL AS label, count(*)::int FROM sale GROUP BY 2
-    UNION ALL
-    SELECT 'series', s, s, count(*)::int FROM (
-      SELECT ${locale === 'en' ? db`coalesce(series_en, series_de)` : db`coalesce(series_de, series_en)`} AS s FROM sale) x
-     WHERE s IS NOT NULL GROUP BY 2
-    UNION ALL
-    SELECT 'sets', set_code, max(${locale === 'en' ? db`coalesce(set_name_en, set_name_de)` : db`coalesce(set_name_de, set_name_en)`}), count(*)::int
+    SELECT 'languages' AS dim, card_language AS value, NULL AS label, count(DISTINCT gkey)::int AS count, NULL::int AS ord
       FROM sale GROUP BY 2
     UNION ALL
-    SELECT 'rarities', sale.rarity, max(${locale === 'de' ? db`coalesce(rl.label_de, sale.rarity)` : db`sale.rarity`}), count(*)::int
+    SELECT 'series', s, s, count(DISTINCT gkey)::int, NULL FROM (
+      SELECT ${locale === 'en' ? db`coalesce(series_en, series_de)` : db`coalesce(series_de, series_en)`} AS s, gkey FROM sale) x
+     WHERE s IS NOT NULL GROUP BY 2
+    UNION ALL
+    SELECT 'sets', set_code, max(${locale === 'en' ? db`coalesce(set_name_en, set_name_de)` : db`coalesce(set_name_de, set_name_en)`}), count(DISTINCT gkey)::int, NULL
+      FROM sale GROUP BY 2
+    UNION ALL
+    SELECT 'rarities', sale.rarity, max(${locale === 'de' ? db`coalesce(rl.label_de, sale.rarity)` : db`sale.rarity`}), count(DISTINCT gkey)::int, NULL
       FROM sale LEFT JOIN rarity_labels rl ON rl.rarity = sale.rarity WHERE sale.rarity IS NOT NULL GROUP BY 2
     UNION ALL
-    SELECT 'conditions', condition, NULL, count(*)::int FROM sale GROUP BY 2
+    SELECT 'conditions', condition, NULL, count(DISTINCT gkey)::int, NULL FROM sale GROUP BY 2
     UNION ALL
-    SELECT 'finishes', finish, NULL, count(*)::int FROM sale GROUP BY 2
+    SELECT 'finishes', finish, NULL, count(DISTINCT gkey)::int, NULL FROM sale GROUP BY 2
     UNION ALL
-    SELECT 'supertypes', supertype, NULL, count(*)::int FROM sale WHERE supertype IS NOT NULL GROUP BY 2`;
+    SELECT 'supertypes', supertype, NULL, count(DISTINCT gkey)::int, NULL FROM sale WHERE supertype IS NOT NULL GROUP BY 2
+    UNION ALL
+    SELECT 'categories', c.slug, max(${locale === 'en' ? db`c.name_en` : db`c.name_de`}), count(DISTINCT sale.gkey)::int, min(c.position)
+      FROM sale
+      JOIN (SELECT DISTINCT ${GROUP_KEY(db)} AS gkey, pc.category_id
+              FROM products p JOIN product_categories pc ON pc.product_id = p.id) pcg ON pcg.gkey = sale.gkey
+      JOIN categories c ON c.id = pcg.category_id
+     GROUP BY 2`;
   const out: CatalogResult['facets'] = {
     languages: [],
     series: [],
@@ -270,17 +376,24 @@ async function catalogFacets(db: Db, locale: Locale): Promise<CatalogResult['fac
     conditions: [],
     finishes: [],
     supertypes: [],
+    categories: [],
   };
+  const ord = new Map<string, number>();
   for (const r of rows) {
     out[r.dim as keyof typeof out].push({
       value: r.value,
       label: r.label ?? r.value,
       count: r.count,
     });
+    if (r.dim === 'categories') ord.set(r.value, r.ord ?? 0);
   }
   for (const k of Object.keys(out) as (keyof typeof out)[]) {
     out[k].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   }
+  // Categories in the order set in the admin.
+  out.categories.sort(
+    (a, b) => ord.get(a.value)! - ord.get(b.value)! || a.label.localeCompare(b.label),
+  );
   return out;
 }
 
@@ -302,6 +415,8 @@ export type ProductPage = CatalogTile & {
   images: { key: string; role: string; width: number | null; height: number | null }[];
   setLogo: string | null;
   updatedAt: Date;
+  /** Categories of this card (from any of its conditions), in admin order. */
+  categories: { slug: string; name: string }[];
 };
 
 /** Product by slug in either language (the caller redirects to the canonical one). */
@@ -335,8 +450,29 @@ export async function productBySlug(
      WHERE (p.slug = ${slug} OR p.slug_en = ${slug}) AND p.status = 'active' AND p.price_cents IS NOT NULL
      LIMIT 1`;
   if (!r) return null;
+  const [siblings, categories] = await Promise.all([
+    db<TileRow[]>`
+      SELECT ${TILE_COLUMNS(db)} FROM products p ${TILE_JOINS(db)}
+       WHERE p.status = 'active' AND p.price_cents IS NOT NULL
+         AND p.set_code = ${r.set_code} AND p.card_number = ${r.card_number}
+         AND p.card_language = ${r.card_language} AND p.finish = ${r.finish}
+         AND p.grading_company IS NOT DISTINCT FROM ${r.grading_company}
+         AND p.grading_grade IS NOT DISTINCT FROM ${r.grading_grade}`,
+    db<{ slug: string; name: string }[]>`
+      SELECT c.slug, ${locale === 'en' ? db`c.name_en` : db`c.name_de`} AS name
+        FROM categories c
+       WHERE c.id IN (
+         SELECT pc.category_id FROM product_categories pc JOIN products p ON p.id = pc.product_id
+          WHERE p.set_code = ${r.set_code} AND p.card_number = ${r.card_number}
+            AND p.card_language = ${r.card_language} AND p.finish = ${r.finish}
+            AND p.grading_company IS NOT DISTINCT FROM ${r.grading_company}
+            AND p.grading_grade IS NOT DISTINCT FROM ${r.grading_grade})
+       ORDER BY c.position, c.name_de, c.id`,
+  ]);
   return {
     ...tile(r, locale),
+    variants: siblings.map((s) => variant(s, locale)).sort(byCondition),
+    categories: [...categories],
     slugDe: r.slug,
     slugEn: r.slug_en ?? r.slug,
     nameDe: r.name_de,
@@ -380,7 +516,7 @@ export async function setsForSale(db: Db, locale: Locale): Promise<SetSummary[]>
            max(${locale === 'en' ? db`coalesce(cs.name_en, cs.name_de, p.set_name_en, p.set_name_de)` : db`coalesce(cs.name_de, cs.name_en, p.set_name_de, p.set_name_en)`}) AS name,
            max(${locale === 'en' ? db`coalesce(cs.series_en, cs.series_de)` : db`coalesce(cs.series_de, cs.series_en)`}) AS series,
            max(cs.release_date) AS release_date, max(cs.card_count) AS card_count, max(cs.logo_url) AS logo_url,
-           count(*)::int AS for_sale
+           count(DISTINCT ${GROUP_KEY(db)})::int AS for_sale
       FROM products p JOIN product_stock ps ON ps.product_id = p.id
       LEFT JOIN card_sets cs ON cs.set_code = p.set_code
      WHERE p.status = 'active' AND p.price_cents IS NOT NULL AND ps.available > 0

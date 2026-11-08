@@ -432,6 +432,70 @@ p {
   width: 100%;
   text-align: center;
 }
+.tile__buy {
+  /* price, picker and button line up at the bottom across a row */
+  margin-top: auto;
+  display: grid;
+  gap: var(--s-2);
+}
+.tile__buy .tile__foot {
+  margin-top: 0;
+}
+/* condition picker on a tile: one small toggle per condition */
+.cond-pick {
+  /* above the tile's stretched link */
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.cond-pick__opt {
+  position: relative;
+  cursor: pointer;
+}
+.cond-pick__opt input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: inherit;
+}
+.cond-pick__opt span[aria-hidden] {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.4rem;
+  min-height: 1.75rem;
+  padding: 0 0.45rem;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  font-stretch: 90%;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.cond-pick__opt:hover span[aria-hidden] {
+  border-color: var(--ink);
+}
+.cond-pick__opt input:checked + span {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.cond-pick__opt input:focus-visible + span {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.cond-pick__opt input:disabled + span {
+  color: var(--muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
 .tile__in-cart {
   /* reserved, so tiles below do not move while someone adds card after card */
   min-height: 1.35em;
@@ -868,6 +932,74 @@ p {
   border-block: 1px solid var(--line);
   display: grid;
   gap: var(--s-2);
+}
+/* the other conditions of this card, each its own page */
+.cond-links {
+  display: grid;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+.cond-links__label {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--muted);
+}
+.cond-links ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cond-link {
+  display: grid;
+  gap: 0.1rem;
+  height: 100%;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1.25;
+}
+.cond-link:hover {
+  border-color: var(--ink);
+}
+.cond-link[aria-current='page'] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.cond-link__code {
+  font-weight: 800;
+  font-stretch: 90%;
+}
+.cond-link__name {
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
+.cond-link__price {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cond-link--out .cond-link__price,
+.cond-link--out .cond-link__code {
+  color: var(--muted);
+}
+.cat-tags {
+  margin-top: var(--s-2);
+}
+.tag--link {
+  display: inline-block;
+  color: var(--ink);
+  text-decoration: none;
+  border-style: dashed;
+}
+.tag--link:hover {
+  border-style: solid;
+  border-color: var(--ink);
 }
 .buybox .price {
   font-size: var(--t-2xl);

@@ -5,6 +5,7 @@ import { AutoSubmit } from './AutoSubmit';
 
 export type FilterState = {
   q?: string | undefined;
+  cat: string[];
   lang: string[];
   series: string[];
   set: string[];
@@ -91,6 +92,14 @@ export async function Filters({
       <form action={action} method="get" id="filters">
         {state.q && <input type="hidden" name="q" value={state.q} />}
         {state.sort && <input type="hidden" name="sort" value={state.sort} />}
+        <Group
+          name="cat"
+          legend={t('category')}
+          facets={facets.categories}
+          selected={state.cat}
+          label={(f) => f.label}
+          moreLabel={more}
+        />
         <Group
           name="lang"
           legend={t('language')}
