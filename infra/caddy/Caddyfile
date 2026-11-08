@@ -39,3 +39,29 @@ staging.pokemonkarten.at {
 	}
 	reverse_proxy pokeshop-staging-web:3000
 }
+
+# License service for the scanner app: only the app's endpoints are public;
+# /v1/shop/* is for the shop, which calls the container directly.
+license.pokemonkarten.at {
+	import security_headers
+	header X-Robots-Tag "noindex, nofollow"
+	@app path /health /v1/activate /v1/check
+	handle @app {
+		reverse_proxy pokeshop-license:3100
+	}
+	handle {
+		respond 404
+	}
+}
+
+license.staging.pokemonkarten.at {
+	import security_headers
+	header X-Robots-Tag "noindex, nofollow"
+	@app path /health /v1/activate /v1/check
+	handle @app {
+		reverse_proxy pokeshop-staging-license:3100
+	}
+	handle {
+		respond 404
+	}
+}

@@ -57,6 +57,30 @@ services:
       timeout: 10s
       retries: 3
 
+  # License service for the scanner app (apps/license): its own database (LICENSE_DATABASE_URL),
+  # migrated on start. Caddy routes only /health, /v1/activate and /v1/check to it; the shop
+  # reaches /v1/shop/* directly at http://license:3100 with LICENSE_SHOP_TOKEN.
+  license:
+    <<: *app
+    command: ['node', 'apps/license/src/main.ts']
+    volumes: []
+    networks:
+      default: {}
+      edge:
+        aliases:
+          - ${COMPOSE_PROJECT_NAME:-pokeshop}-license
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3100/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 volumes:
   media:
 

@@ -2,6 +2,18 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-08 · Scanner-app licences: own service, one active device, offline never blocks
+
+Licences for the scanner app come from `apps/license`, a small container next to web and worker
+with its own database, so licence checks don't depend on the shop's deploys and the shop's data
+stays separate. A licence is one-off and permanent; it is active on one device at a time
+(a partial unique index enforces it). Activating it elsewhere suspends the old device, which
+learns that on its next online check; offline the app keeps working. A suspended device comes
+back only by scanning a QR code again. Keys are stored encrypted so the shop can send them again
+to a customer who lost the device. The shop talks to the service only inside the stack (bearer
+token); Caddy exposes just `/health`, `/v1/activate` and `/v1/check`. See
+[license-service.md](license-service.md).
+
 ## 2026-11-06 · Image tags per stack: staging follows main, production is promoted
 
 The server runs `ghcr.io/pmaxai/pokeshop:staging` and `:production` instead of a tag written

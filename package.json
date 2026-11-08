@@ -15,8 +15,8 @@
     "test": "pnpm run test:core && pnpm run test:db && pnpm run test:integration",
     "test:core": "node --test \"packages/core/test/*.test.ts\"",
     "test:db": "bash scripts/db-test.sh",
-    "test:integration": "node --test --test-concurrency=4 \"packages/core/test/integration/*.test.ts\" \"apps/worker/test/*.test.ts\"",
-    "typecheck": "tsc -p packages/core --noEmit && tsc -p apps/worker --noEmit",
+    "test:integration": "node --test --test-concurrency=4 \"packages/core/test/integration/*.test.ts\" \"apps/worker/test/*.test.ts\" \"apps/license/test/*.test.ts\"",
+    "typecheck": "tsc -p packages/core --noEmit && tsc -p apps/worker --noEmit && tsc -p apps/license --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
