@@ -123,6 +123,10 @@ other stack). Never run `infra/compose.yaml` without it: without `-p` the projec
 ```sh
 cd /opt/pokeshop/app && git pull
 
+# only when git pull changed infra/caddy/Caddyfile: Caddy reads it only at start, and the
+# container keeps seeing the old file until it is recreated
+docker compose -f infra/caddy/compose.yaml up -d --force-recreate
+
 # staging: newest image from main
 infra/stack.sh staging up -d --pull always
 infra/stack.sh staging version          # image, commit and start time of web
