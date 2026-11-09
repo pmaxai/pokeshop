@@ -24,10 +24,17 @@ export default async function Orders({
     listOrders(db(), { view, q: sp.q, page, pageSize: PAGE }),
     orderCounts(db()),
   ]);
-  const count = (v: OrderView) =>
-    v === 'all'
-      ? Object.values(counts).reduce((a, b) => a + b, 0)
-      : ORDER_VIEWS[v].statuses.reduce((a, s) => a + (counts[s] ?? 0), 0);
+  const count = (v: OrderView) => {
+    if (v === 'all') return Object.values(counts).reduce((a, b) => a + b, 0);
+    const kind = ORDER_VIEWS[v].kind as string | null;
+    return ORDER_VIEWS[v].statuses.reduce(
+      (a, s) =>
+        a +
+        (kind === 'license' ? 0 : (counts[s] ?? 0)) +
+        (kind === 'cards' ? 0 : (counts[`license:${s}`] ?? 0)),
+      0,
+    );
+  };
   const pages = Math.max(1, Math.ceil(total / PAGE));
   const link = (o: Record<string, string>) =>
     `?${new URLSearchParams({ view, ...(sp.q ? { q: sp.q } : {}), ...o })}`;
@@ -81,7 +88,7 @@ export default async function Orders({
                 <th>Status</th>
                 <th>Kunde</th>
                 <th>Versand</th>
-                <th className="r">Karten</th>
+                <th className="r">{view === 'licenses' ? 'Lizenzen' : 'Stück'}</th>
                 <th className="r">Betrag</th>
                 <th>{view === 'open' || view === 'packing' ? 'Bezahlt' : 'Angelegt'}</th>
               </tr>
@@ -118,7 +125,9 @@ export default async function Orders({
                     </span>
                   </td>
                   <td>
-                    {r.shipping_method === 'insured' ? (
+                    {r.kind === 'license' ? (
+                      'App-Lizenz'
+                    ) : r.shipping_method === 'insured' ? (
                       <strong>Versichert</strong>
                     ) : (
                       SHIPPING_LABELS[r.shipping_method]

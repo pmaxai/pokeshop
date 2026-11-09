@@ -8,6 +8,7 @@ import { emptyCart, loadCart, saveCheckoutDraft } from './cart.ts';
 import { cardNames, translationText } from './catalog.ts';
 import type { CheckoutProblem } from './checkout.ts';
 import { currentLegalVersions } from './legal.ts';
+import { licenseOrderPaid, licensePaymentLine, queueLicenseRevoke } from './licenses.ts';
 import { newOrderNumber } from './numbering.ts';
 import { alertShop, enqueueMail, enqueueShopMail } from './outbox.ts';
 import type { PaymentEvent, PaymentProvider, SessionInfo } from './payments.ts';
@@ -285,6 +286,8 @@ async function paymentLines(db: Db, orderId: number, locale: 'de' | 'en') {
       quantity: i.quantity,
     };
   });
+  const license = await licensePaymentLine(db, orderId, locale);
+  if (license) lines.push(license);
   if (o && o.shipping_cents > 0) {
     lines.push({
       name: locale === 'en' ? 'Insured shipping' : 'Versicherter Versand',
@@ -340,6 +343,7 @@ const DONE = ['paid', 'packing', 'shipped', 'completed', 'refunded'];
 type OrderRow = {
   id: number;
   number: string;
+  kind: 'cards' | 'license';
   status: string;
   locale: 'de' | 'en';
   email: string | null;
@@ -372,7 +376,7 @@ export async function processPaidSession(
   if (session.paymentStatus === 'unpaid') return { kind: 'not_paid', orderId: session.orderId };
   const outcome = await sql.begin(async (tx) => {
     const [o] = await tx<OrderRow[]>`
-      SELECT id, number, status, locale, email, total_cents, vat_cents, vat_rate_bp, cart_id,
+      SELECT id, number, kind, status, locale, email, total_cents, vat_cents, vat_rate_bp, cart_id,
              stripe_session_id
         FROM orders
        WHERE stripe_session_id = ${session.id}
@@ -395,6 +399,16 @@ export async function processPaidSession(
         `Stripe meldet ${session.amountTotal} Cent, die Bestellung lautet auf ${o.total_cents} Cent.`,
         `amount_mismatch:${o.id}`,
       );
+    }
+
+    if (o.kind === 'license') {
+      // Nothing to take from stock: the worker fetches the keys and mails them.
+      await licenseOrderPaid(tx, o, now);
+      await orderEvent(tx, o.id, 'paid', {
+        session: session.id,
+        method: session.paymentMethodType,
+      });
+      return { kind: 'paid' as const, orderId: o.id };
     }
 
     const [c] = await tx<{ result: string }[]>`
@@ -613,8 +627,9 @@ export async function recordExternalRefund(
   eventId: string,
 ): Promise<'recorded' | 'known' | 'ignored'> {
   return sql.begin(async (tx) => {
-    const [o] = await tx<{ id: number; number: string }[]>`
-      SELECT id, number FROM orders WHERE stripe_payment_intent_id = ${paymentIntentId} FOR UPDATE`;
+    const [o] = await tx<{ id: number; number: string; kind: string; total_cents: number }[]>`
+      SELECT id, number, kind, total_cents FROM orders
+       WHERE stripe_payment_intent_id = ${paymentIntentId} FOR UPDATE`;
     if (!o) return 'ignored';
     const [k] = await tx<{ s: number }[]>`
       SELECT coalesce(sum(amount_cents), 0)::int AS s FROM refunds
@@ -627,10 +642,16 @@ export async function recordExternalRefund(
                     status = CASE WHEN refunded_cents + ${diff} >= total_cents THEN 'refunded' ELSE status END
               WHERE id = ${o.id}`;
     await orderEvent(tx, o.id, 'refunded_in_stripe', { amount: diff });
+    if (o.kind === 'license' && amountRefunded >= o.total_cents) {
+      // Refunded in full: the licence keys stop working.
+      await queueLicenseRevoke(tx, o.id, `refunded in Stripe (${eventId})`);
+    }
     await alertShop(
       tx,
       `Erstattung in Stripe: ${o.number}`,
-      `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet. Bestand und Gutschrift bitte im Admin prüfen – der Shop hat keine Karten zurückgebucht.`,
+      o.kind === 'license'
+        ? `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet.${amountRefunded >= o.total_cents ? ' Die Lizenzschlüssel werden gesperrt.' : ' Teilerstattung: die Lizenzen bleiben aktiv.'} Eine Rechnungskorrektur bitte im Admin prüfen.`
+        : `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet. Bestand und Gutschrift bitte im Admin prüfen – der Shop hat keine Karten zurückgebucht.`,
       `stripe_refund:${eventId}`,
     );
     return 'recorded';

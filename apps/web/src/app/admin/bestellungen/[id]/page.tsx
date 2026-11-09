@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { formatEuro, formatRate } from '@pokeshop/core';
 import { cardNameText, rowNames } from '@pokeshop/core/catalog';
 import { orderAdmin } from '@pokeshop/core/fulfilment';
+import { licenseClientFromEnv, type License } from '@pokeshop/core/license-client';
+import { APP_NAME } from '@pokeshop/core/licenses';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
@@ -12,6 +14,7 @@ import {
   renderDocumentAction,
   shipAction,
 } from '../../order-actions';
+import { refundLicenseAction, resendLicenseMailAction } from '../../app-actions';
 import { dateTime, EVENT_LABELS, MAIL_LABELS, SHIPPING_LABELS, STATUS_LABELS } from '../../labels';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +33,13 @@ function AddressBlock({ a }: { a: Address | null }) {
   if (!a) return <span className="muted">–</span>;
   return (
     <address>
-      {[a.company, a.name, a.street, `${a.postcode ?? ''} ${a.city ?? ''}`, countryName(a.country)]
+      {[
+        a.company,
+        a.name,
+        a.street,
+        [a.postcode, a.city].filter(Boolean).join(' '),
+        countryName(a.country),
+      ]
         .filter(Boolean)
         .map((l, i) => (
           <span key={i}>
@@ -54,11 +63,30 @@ export default async function OrderDetail({
   if (!Number.isSafeInteger(id)) notFound();
   const data = await orderAdmin(db(), id);
   if (!data) notFound();
-  const { order: o, items, allocations, events, documents, refunds, mails, withdrawals } = data;
+  const {
+    order: o,
+    items,
+    allocations,
+    events,
+    documents,
+    refunds,
+    mails,
+    withdrawals,
+    license,
+  } = data;
   const sp = await searchParams;
-  const canShip = ['paid', 'packing'].includes(o.status);
+  const isLicense = o.kind === 'license';
+  const canShip = !isLicense && ['paid', 'packing'].includes(o.status);
   const canRefund =
-    ['paid', 'packing', 'shipped', 'completed'].includes(o.status) && user.role === 'owner';
+    !isLicense &&
+    ['paid', 'packing', 'shipped', 'completed'].includes(o.status) &&
+    user.role === 'owner';
+  // Live state of the keys (active device, revoked) from the licence service.
+  let keys: (License | null)[] = [];
+  const client = isLicense && license?.license_ids.length ? licenseClientFromEnv() : null;
+  if (client && license) {
+    keys = await Promise.all(license.license_ids.map((id) => client.get(id).catch(() => null)));
+  }
   const boxesOf = (itemId: number) =>
     allocations
       .filter((a) => a.order_item_id === itemId)
@@ -144,72 +172,142 @@ export default async function OrderDetail({
       )}
 
       <div className="two-col">
-        <section>
-          <h2>Karten</h2>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Box</th>
-                  <th>Karte</th>
-                  <th className="r">Menge</th>
-                  <th className="r">Preis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((i) => (
-                  <tr key={i.id}>
-                    <td>
-                      <strong>{boxesOf(i.id) || '–'}</strong>
-                    </td>
-                    <td>
-                      <a href={`/admin/produkte/${encodeURIComponent(i.sku)}`}>
-                        {cardNameText(rowNames(i, 'de'))}
-                      </a>{' '}
-                      {i.card_number}
-                      <br />
-                      <span className="muted">
-                        {i.set_name_de} · {i.card_language} · {i.condition} ·{' '}
-                        {FINISH[i.finish] ?? i.finish}
-                        {i.high_value ? ' · wertvoll' : ''}
-                      </span>
-                      {i.refunded_quantity > 0 && (
-                        <>
-                          <br />
-                          <span className="warn">
-                            {i.refunded_quantity} erstattet
-                            {i.restocked_quantity
-                              ? `, ${i.restocked_quantity} zurück ins Lager`
-                              : ''}
-                          </span>
-                        </>
-                      )}
-                    </td>
-                    <td className="r">{i.quantity}</td>
-                    <td className="r">{formatEuro(i.unit_price_cents * i.quantity)}</td>
+        {isLicense && license ? (
+          <section>
+            <h2>{APP_NAME}-Lizenzen</h2>
+            <p>
+              {license.quantity} × {formatEuro(license.unit_price_cents)} · Sofortlieferung verlangt
+              am {dateTime(license.immediate_delivery_consent_at)}
+            </p>
+            <p>
+              {license.issued_at ? (
+                <>Verschickt {dateTime(license.issued_at)}</>
+              ) : (
+                <span className="muted">
+                  Noch nicht verschickt (kommt direkt nach der Zahlung).
+                </span>
+              )}
+              {license.revoked_at && <> · gesperrt {dateTime(license.revoked_at)}</>}
+              {' · '}
+              {license.downloads} Download{license.downloads === 1 ? '' : 's'}
+              {license.last_download_at && <>, zuletzt {dateTime(license.last_download_at)}</>}
+            </p>
+            {license.license_ids.length > 0 && (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Lizenz</th>
+                      <th>Schlüssel</th>
+                      <th>Aktiv auf</th>
+                      <th>Geräte bisher</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {license.license_ids.map((id, i) => {
+                      const k = keys[i];
+                      return (
+                        <tr key={id}>
+                          <td>
+                            <code>{id}</code>
+                          </td>
+                          <td>
+                            {k ? <code>…{k.key.slice(-5)}</code> : <span className="muted">–</span>}
+                          </td>
+                          <td>
+                            {k?.revoked_at ? (
+                              <strong>gesperrt</strong>
+                            ) : k?.active_device ? (
+                              `${k.active_device.name ?? 'Gerät'} seit ${dateTime(k.active_device.since)}`
+                            ) : (
+                              <span className="muted">noch nicht aktiviert</span>
+                            )}
+                          </td>
+                          <td>{k?.activations ?? '–'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {license.issued_at && !license.revoked_at && (
+              <form action={resendLicenseMailAction} className="actions">
+                <input type="hidden" name="id" value={o.id} />
+                <button className="btn" type="submit">
+                  Lizenz-E-Mail erneut senden
+                </button>
+              </form>
+            )}
+          </section>
+        ) : (
+          <section>
+            <h2>Karten</h2>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Box</th>
+                    <th>Karte</th>
+                    <th className="r">Menge</th>
+                    <th className="r">Preis</th>
                   </tr>
-                ))}
-                <tr>
-                  <td colSpan={3}>{SHIPPING_LABELS[o.shipping_method]}</td>
-                  <td className="r">{formatEuro(o.shipping_cents)}</td>
-                </tr>
-                <tr>
-                  <td colSpan={3}>
-                    <strong>Gesamt</strong>{' '}
-                    <span className="muted">
-                      {o.vat_regime === 'small_business'
-                        ? 'ohne USt. (Kleinunternehmer)'
-                        : `inkl. ${formatRate(o.vat_rate_bp)} USt. (${formatEuro(o.vat_cents)})`}
-                    </span>
-                  </td>
-                  <td className="r">
-                    <strong>{formatEuro(o.total_cents)}</strong>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {items.map((i) => (
+                    <tr key={i.id}>
+                      <td>
+                        <strong>{boxesOf(i.id) || '–'}</strong>
+                      </td>
+                      <td>
+                        <a href={`/admin/produkte/${encodeURIComponent(i.sku)}`}>
+                          {cardNameText(rowNames(i, 'de'))}
+                        </a>{' '}
+                        {i.card_number}
+                        <br />
+                        <span className="muted">
+                          {i.set_name_de} · {i.card_language} · {i.condition} ·{' '}
+                          {FINISH[i.finish] ?? i.finish}
+                          {i.high_value ? ' · wertvoll' : ''}
+                        </span>
+                        {i.refunded_quantity > 0 && (
+                          <>
+                            <br />
+                            <span className="warn">
+                              {i.refunded_quantity} erstattet
+                              {i.restocked_quantity
+                                ? `, ${i.restocked_quantity} zurück ins Lager`
+                                : ''}
+                            </span>
+                          </>
+                        )}
+                      </td>
+                      <td className="r">{i.quantity}</td>
+                      <td className="r">{formatEuro(i.unit_price_cents * i.quantity)}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td colSpan={3}>{SHIPPING_LABELS[o.shipping_method]}</td>
+                    <td className="r">{formatEuro(o.shipping_cents)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={3}>
+                      <strong>Gesamt</strong>{' '}
+                      <span className="muted">
+                        {o.vat_regime === 'small_business'
+                          ? 'ohne USt. (Kleinunternehmer)'
+                          : `inkl. ${formatRate(o.vat_rate_bp)} USt. (${formatEuro(o.vat_cents)})`}
+                      </span>
+                    </td>
+                    <td className="r">
+                      <strong>{formatEuro(o.total_cents)}</strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
         <section>
           <h2>Kunde</h2>
           <p>
@@ -221,8 +319,12 @@ export default async function OrderDetail({
               </>
             )}
           </p>
-          <h3>Lieferadresse</h3>
-          <AddressBlock a={o.shipping_address as Address} />
+          {!isLicense && (
+            <>
+              <h3>Lieferadresse</h3>
+              <AddressBlock a={o.shipping_address as Address} />
+            </>
+          )}
           {JSON.stringify(o.billing_address) !== JSON.stringify(o.shipping_address) && (
             <>
               <h3>Rechnungsadresse</h3>
@@ -334,11 +436,41 @@ export default async function OrderDetail({
         </section>
       )}
 
+      {isLicense && user.role === 'owner' && ['paid', 'completed'].includes(o.status) && (
+        <section className="panel">
+          <h2>Erstatten</h2>
+          <form action={refundLicenseAction} className="stack-admin">
+            <input type="hidden" name="id" value={o.id} />
+            <p>
+              Erstattet den vollen Betrag ({formatEuro(o.total_cents - o.refunded_cents)}) über
+              Stripe und sperrt die Lizenzschlüssel: Die App hört beim nächsten Online-Check auf.
+            </p>
+            <label className="field">
+              <span>Grund (intern)</span>
+              <input name="reason" maxLength={500} />
+            </label>
+            <label className="check">
+              <input type="checkbox" name="confirm" required /> Ich will erstatten und die Lizenz
+              sperren.
+            </label>
+            <p>
+              <button className="btn btn--accent" type="submit">
+                Erstatten und sperren
+              </button>
+            </p>
+          </form>
+        </section>
+      )}
+
       <div className="two-col">
         <section>
           <h2>Dokumente</h2>
           {documents.length === 0 ? (
-            <p className="muted">Die Rechnung entsteht beim Versenden.</p>
+            <p className="muted">
+              {isLicense
+                ? 'Die Rechnung entsteht, sobald die Lizenz verschickt ist.'
+                : 'Die Rechnung entsteht beim Versenden.'}
+            </p>
           ) : (
             <ul className="plain">
               {documents.map((d) => (
@@ -411,7 +543,9 @@ export default async function OrderDetail({
             {events.map((e, i) => (
               <li key={i}>
                 <span className="muted">{dateTime(e.created_at)}</span>{' '}
-                {EVENT_LABELS[e.kind] ?? e.kind}
+                {e.kind === 'created' && isLicense
+                  ? 'Bestellung angelegt'
+                  : (EVENT_LABELS[e.kind] ?? e.kind)}
                 {e.actor !== 'system' && <span className="muted"> · {e.actor}</span>}
               </li>
             ))}

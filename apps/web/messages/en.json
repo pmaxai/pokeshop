@@ -22,7 +22,8 @@
     "skip": "Skip to content",
     "cart": "Cart",
     "cartCount": "Cart, {count, plural, =0 {empty} one {# card} other {# cards}}",
-    "events": "Events"
+    "events": "Events",
+    "app": "App"
   },
   "Home": {
     "title": "Single Pokémon cards from every series and language",
@@ -126,7 +127,8 @@
     "terms": "Terms and conditions",
     "withdrawalInfo": "Right of withdrawal",
     "withdraw": "Return an order (withdraw from contract)",
-    "events": "Events"
+    "events": "Events",
+    "app": "ScanPM app"
   },
   "Conditions": {
     "M": "Mint",
@@ -332,5 +334,139 @@
     "more": "Details",
     "all": "All events",
     "until": "until"
+  },
+  "App": {
+    "metaTitle": "ScanPM – scan Pokémon cards, see prices",
+    "metaDescription": "The Android app by pokemonkarten.at: hold a card to the camera and see the Cardmarket price of the right printing, offline too. Beta, one-off licence for € 80.",
+    "beta": "Beta",
+    "tagline": "Card in front of the camera, price on the screen. No signal needed.",
+    "lead": "ScanPM recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
+    "price": "{price} one-off",
+    "priceNote": "One-off licence, updates included",
+    "buy": "Buy a licence",
+    "seeFeatures": "What the app does",
+    "platformApk": "Android only (Android 8 or newer). ScanPM isn’t in the Play Store yet: you get the app as an APK file.",
+    "platformStore": "For Android (Android 8 or newer), on Google Play.",
+    "mock": {
+      "label": "What a scan looks like: the card sits in the green frame, below it name, set and Cardmarket price.",
+      "sure": "Card recognised",
+      "trend": "Cardmarket trend",
+      "change": "▲ 12 % in 30 days",
+      "avg": "30 days",
+      "low": "from"
+    },
+    "featuresTitle": "What ScanPM does",
+    "features": {
+      "recognise": {
+        "title": "Recognise",
+        "text": "Hold the card inside the frame: when it turns green, the app is sure. It also reads the language and the card number, so it finds the right set, in English, German, French, Spanish, Italian, Portuguese and Japanese. Take uncertain cards with a double tap, and find anything else with the search."
+      },
+      "prices": {
+        "title": "Prices",
+        "text": "Cardmarket trend, 30-day average and lowest price for each printing (normal, holo, reverse holo, 1st edition), TCGplayer as a second opinion and PSA 10, 9 and 8 for graded cards. If a more valuable printing of the same card exists, the app tells you."
+      },
+      "history": {
+        "title": "Price history",
+        "text": "Under the price you see the last 90 days; a tap opens the chart for up to a year."
+      },
+      "offline": {
+        "title": "Offline",
+        "text": "Recognition and prices work without the internet, even in exhibition halls with no signal. Fresh prices arrive every night with an app update."
+      },
+      "alert": {
+        "title": "Price alert",
+        "text": "Set a limit, say € 5. The phone vibrates as soon as a card above it shows up, so you can sweep through a whole box and only stop when it buzzes."
+      },
+      "trading": {
+        "title": "Trading Mode",
+        "text": "For card shows: market value by condition, a verdict on the vendor’s price with an opening offer and a walk-away price, a cart per booth, bundles, trades with a balance, a day budget and your deals as CSV."
+      },
+      "youtube": {
+        "title": "YouTube mode",
+        "text": "A clean screen for opening videos: a big price that counts up, a hit effect above your alert price and the pack total as CSV."
+      }
+    },
+    "betaTitle": "What beta means",
+    "betaIntro": "ScanPM is already used every day, but it isn’t finished. For you that means:",
+    "betaPoints": {
+      "recognition": "Recognition is right most of the time, not always, especially when cards touch each other or sit in binders. The app then shows you the most likely matches to pick from.",
+      "prices": "Prices come from public data and can be missing or off for some cards. The app warns you about uncertain prices; check valuable cards before you buy.",
+      "english": "The app is in English for now.",
+      "updates": "Updates come all the time. Feedback to <mail>{email}</mail> helps."
+    },
+    "licenceTitle": "The licence",
+    "licencePoints": {
+      "once": "{price} one-off, no subscription. During the beta this one-off licence is the only option.",
+      "updates": "All updates are included for as long as we offer ScanPM.",
+      "device": "A licence is active on one device at a time. New phone? A QR code from the app moves it, and the old device stops.",
+      "online": "The app needs the internet once, to activate."
+    },
+    "howTitle": "How you get the app",
+    "steps": {
+      "buy": "Buy a licence here in the shop.",
+      "mail": "Right after payment you get an e-mail with the licence key, a QR code and a download link.",
+      "installApk": "Open the APK file on your phone. Android asks once whether your browser may install apps: allow it.",
+      "installStore": "Install ScanPM from Google Play.",
+      "activate": "Start ScanPM, scan the QR code, done."
+    },
+    "storeTarget": "We aim to have ScanPM on Google Play by the end of November 2026. Until then you install the app as an APK file; the app announces new versions itself.",
+    "needsTitle": "What you need",
+    "needs": {
+      "android": "An Android phone with Android 8 or newer and a camera",
+      "space": "About {size} for the download and about 80 MB for the card database",
+      "spaceUnknown": "About 80 MB of space for the card database, plus the app itself",
+      "internet": "Internet only for activating, card pictures and updates"
+    },
+    "form": {
+      "title": "Buy a licence",
+      "quantity": "Number of licences",
+      "quantityHint": "One licence per device, up to {max} per order.",
+      "name": "Name",
+      "company": "Company (optional)",
+      "email": "E-mail address",
+      "emailHint": "We send the licence key and the invoice here.",
+      "country": "Country",
+      "total": "Total",
+      "each": "{count} × {price}",
+      "consent": "I expressly ask you to deliver right after payment (licence key and download) and know that my right of withdrawal ends with it.",
+      "submitNote": "Next you pay with Stripe: card, Apple Pay, Google Pay, EPS or PayPal. The key arrives by e-mail right after payment.",
+      "closed": "Sales start shortly.",
+      "errorsTitle": "Please check the marked fields.",
+      "paymentUnavailable": "Payment isn’t possible right now. Please try again in a few minutes.",
+      "errors": {
+        "required": "Please fill this in.",
+        "invalid_email": "Please enter a valid e-mail address.",
+        "too_long": "That’s too long.",
+        "terms": "Please accept the terms.",
+        "consent": "Without this consent we can’t send the key right away.",
+        "too_many": "At most {max} licences per order.",
+        "invalid": "Please check this.",
+        "country": "Licences are only available in the EU for now."
+      }
+    },
+    "lost": {
+      "title": "Lost your licence e-mail?",
+      "text": "Enter the e-mail address you bought with. If there is a licence for it, we send it to you again.",
+      "email": "E-mail address",
+      "submit": "Send my licence again",
+      "done": "Thank you! If there is a licence for this address, it will be in your inbox in a few minutes."
+    },
+    "thanks": {
+      "title": "Thank you! Your licence is on its way.",
+      "text": "We are sending the licence key and QR code to {email}. The e-mail arrives within a few minutes; please check your spam folder too.",
+      "pendingTitle": "Confirming your payment …",
+      "pendingText": "This usually takes only seconds. Reload the page in a moment.",
+      "reload": "Reload",
+      "unpaidTitle": "This order isn’t paid.",
+      "unpaidText": "The payment was cancelled or ran out. You can try again any time.",
+      "refundedTitle": "This order was refunded.",
+      "refundedText": "Its licence no longer works.",
+      "back": "Back to the app page",
+      "facts": "Order {number} · {count, plural, one {# licence} other {# licences}} · {total}",
+      "download": "Download ScanPM",
+      "downloadMeta": "APK, version {version}, {size}",
+      "store": "ScanPM on Google Play",
+      "installHint": "Open the file on your Android phone. Android asks once whether your browser may install apps: allow it. Then start ScanPM and scan the QR code from the e-mail."
+    }
   }
 }

@@ -16,7 +16,13 @@
 pokemonkarten.at {
 	import security_headers
 	encode zstd gzip
-	request_body {
+	# The app's APK (admin upload) is large; everything else stays small.
+	@apk_upload path /admin/app/upload
+	request_body @apk_upload {
+		max_size 400MB
+	}
+	@not_apk_upload not path /admin/app/upload
+	request_body @not_apk_upload {
 		max_size 12MB
 	}
 	reverse_proxy pokeshop-web:3000

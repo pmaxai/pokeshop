@@ -26,6 +26,10 @@ You will have to bear the direct cost of returning the goods.
 
 You are only liable for any diminished value of the goods resulting from the handling other than what is necessary to establish the nature, characteristics and functioning of the goods.
 
+## End of the right of withdrawal for app licences
+
+When you buy a licence for the app ScanPM (digital content not supplied on a tangible medium), the withdrawal period starts on the day the contract is concluded. The right of withdrawal ends as soon as we have begun the supply (sending the licence key and the download link) after you have expressly agreed that we begin before the withdrawal period ends and have acknowledged that you thereby lose your right of withdrawal (§ 18 (1) 11 FAGG). You receive the confirmation of this with the licence e-mail.
+
 ---
 
 ## Model withdrawal form

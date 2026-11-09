@@ -28,11 +28,15 @@ export async function enqueueJob(
   }
 }
 
-/** Takes the next due job; SKIP LOCKED lets several workers share the queue. */
-export async function claimJob(db: Db): Promise<Job | null> {
+/**
+ * Takes the next due job (of the given kinds, if any); SKIP LOCKED lets several workers and
+ * loops share the queue.
+ */
+export async function claimJob(db: Db, kinds?: readonly string[]): Promise<Job | null> {
   const [job] = await db<Job[]>`
     UPDATE jobs SET status = 'running', locked_at = now(), attempts = attempts + 1
      WHERE id = (SELECT id FROM jobs WHERE status = 'pending' AND run_after <= now()
+                  ${kinds ? db`AND kind = ANY(${kinds as string[]}::text[])` : db``}
                   ORDER BY run_after, id FOR UPDATE SKIP LOCKED LIMIT 1)
     RETURNING id, kind, payload, attempts, max_attempts`;
   return job ?? null;

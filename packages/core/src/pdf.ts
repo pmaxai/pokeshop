@@ -91,9 +91,10 @@ export type InvoiceData = {
   billing: {
     name: string;
     company?: string | undefined;
-    street: string;
-    postcode: string;
-    city: string;
+    /** App licences are billed with name and country only. */
+    street?: string | undefined;
+    postcode?: string | undefined;
+    city?: string | undefined;
     country: string;
   };
   items: { description: string; quantity: number; unitCents: number }[];
@@ -206,7 +207,7 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
     .fontSize(10.5)
     .fillColor(INK)
     .text(
-      [b.company, b.name, b.street, `${b.postcode} ${b.city}`, countryName]
+      [b.company, b.name, b.street, [b.postcode, b.city].filter(Boolean).join(' '), countryName]
         .filter(Boolean)
         .join('\n'),
       left,

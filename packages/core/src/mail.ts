@@ -5,11 +5,14 @@ import { readFileSync } from 'node:fs';
 import { createHash, X509Certificate } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { ConfidentialClientApplication } from '@azure/msal-node';
+import QRCode from 'qrcode';
 import type { Db, Sql } from './db.ts';
 import { cardNames, cardNameText } from './catalog.ts';
 import { formatEuro, formatRate } from './money.ts';
 import { SMALL_BUSINESS_NOTE, type VatRegime } from './vat.ts';
 import { currentLegal, type LegalKind } from './legal.ts';
+import type { License, LicenseClient } from './license-client.ts';
+import { APP_NAME, downloadPath } from './licenses.ts';
 import {
   claimMail,
   markMailFailed,
@@ -25,7 +28,13 @@ import {
   type InvoiceData,
 } from './pdf.ts';
 
-export type Attachment = { name: string; contentType: string; content: Buffer };
+export type Attachment = {
+  name: string;
+  contentType: string;
+  content: Buffer;
+  /** Shown inside the mail (<img src="cid:…">) instead of as a file to download. */
+  contentId?: string;
+};
 export type Mail = {
   to: string;
   replyTo?: string | null;
@@ -44,6 +53,8 @@ export type MailContext = {
   mediaDir: string;
   company: Record<string, string | null | undefined>;
   replyTo: string;
+  /** Licence service: the licence mails ask it for the keys (they are not kept in the shop). */
+  licenses?: LicenseClient | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -73,6 +84,7 @@ export function graphMessage(mail: Mail) {
         name: a.name,
         contentType: a.contentType,
         contentBytes: a.content.toString('base64'),
+        ...(a.contentId ? { isInline: true, contentId: a.contentId } : {}),
       })),
     },
     saveToSentItems: true,
@@ -137,9 +149,14 @@ export function fileTransport(dir: string): MailTransport {
     async send(mail) {
       await mkdir(dir, { recursive: true });
       const base = `${new Date().toISOString().replace(/[:.]/g, '-')}-${mail.to.replace(/[^a-z0-9@.-]/gi, '_')}`;
+      // Inline images point at the saved files, so the HTML can be opened in a browser.
+      let html = mail.html;
+      for (const a of mail.attachments) {
+        if (a.contentId) html = html.split(`cid:${a.contentId}`).join(`${base}-${a.name}`);
+      }
       await writeFile(
         join(dir, `${base}.html`),
-        `<!-- To: ${mail.to} | Subject: ${mail.subject} | Attachments: ${mail.attachments.map((a) => a.name).join(', ')} -->\n${mail.html}`,
+        `<!-- To: ${mail.to} | Subject: ${mail.subject} | Attachments: ${mail.attachments.map((a) => a.name).join(', ')} -->\n${html}`,
       );
       for (const a of mail.attachments) await writeFile(join(dir, `${base}-${a.name}`), a.content);
     },
@@ -354,7 +371,7 @@ const orderUrl = (ctx: MailContext, locale: 'de' | 'en', token: string) =>
 const withdrawUrl = (ctx: MailContext, locale: 'de' | 'en') =>
   `${ctx.baseUrl}${locale === 'de' ? '/vertrag-widerrufen' : '/en/withdraw'}`;
 
-type Rendered = { subject: string; html: string };
+type Rendered = { subject: string; html: string; inline?: Attachment[] };
 
 export async function renderTemplate(
   db: Db,
@@ -446,11 +463,16 @@ export async function renderTemplate(
         .join('');
       const shippingRow =
         r.shipping_cents > 0 ? `<li>${esc(t.shippingLabel(o.shippingMethod))}</li>` : '';
+      const [lic] = await db<{ quantity: number }[]>`
+        SELECT quantity FROM order_licenses WHERE order_id = ${o.id}`;
+      const licenseRow = lic
+        ? `<li>${lic.quantity} × ${esc(L === 'de' ? `${APP_NAME}-Lizenz (der Schlüssel ist damit gesperrt)` : `${APP_NAME} licence (the key no longer works)`)}</li>`
+        : '';
       const body = [
-        p(esc(t.hello(o.shippingAddress.name))),
+        p(esc(t.hello((o.shippingAddress ?? o.billingAddress)?.name ?? ''))),
         p(t.refundIntro(formatEuro(r.amount_cents, L))),
-        rows || shippingRow
-          ? `${h2(t.refundedItems)}<ul style="margin:0 0 14px;padding-left:20px">${rows}${shippingRow}</ul>`
+        rows || shippingRow || licenseRow
+          ? `${h2(t.refundedItems)}<ul style="margin:0 0 14px;padding-left:20px">${rows}${shippingRow}${licenseRow}</ul>`
           : '',
         credit ? p(esc(t.refundCredit)) : '',
         p(esc(t.questions)),
@@ -557,7 +579,229 @@ export async function renderTemplate(
       const subject = `[pokemonkarten.at] ${String(payload.subject ?? 'Hinweis')}`;
       return { subject, html: layout('de', ctx, subject, p(esc(payload.text ?? ''))) };
     }
+    case 'license_delivery':
+    case 'license_resend':
+      return renderLicenseMail(db, mail, ctx);
   }
+}
+
+// ---------------------------------------------------------------------------
+// App licences
+// ---------------------------------------------------------------------------
+
+const LICENSE_TEXT = {
+  de: {
+    subject: `Deine ${APP_NAME}-Lizenz`,
+    subjectMany: (n: number) => `Deine ${n} ${APP_NAME}-Lizenzen`,
+    subjectAgain: `Deine ${APP_NAME}-Lizenz (erneut gesendet)`,
+    intro: (n: number) =>
+      n === 1
+        ? `danke für deinen Kauf! Hier ist dein Lizenzschlüssel für ${APP_NAME}.`
+        : `danke für deinen Kauf! Hier sind deine ${n} Lizenzschlüssel für ${APP_NAME}. Jede Lizenz ist auf einem Gerät aktiv.`,
+    introAgain: `du hast deine Lizenz neu angefordert. Hier sind die Lizenzschlüssel zu deiner E-Mail-Adresse.`,
+    introResent: `hier ist deine Lizenz-E-Mail noch einmal.`,
+    licence: (i: number, n: number) => (n === 1 ? 'Lizenzschlüssel' : `Lizenz ${i} von ${n}`),
+    activeOn: (device: string) => `Derzeit aktiv auf: ${device}`,
+    howTitle: "So geht's",
+    stepDownload:
+      'App herunterladen und öffnen. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben.',
+    stepStore: 'App aus dem Google Play Store installieren.',
+    downloadButton: (v: string | null) =>
+      v ? `${APP_NAME} herunterladen (Version ${v})` : `${APP_NAME} herunterladen`,
+    storeButton: `${APP_NAME} im Play Store`,
+    stepStart: `${APP_NAME} starten und die Kamera erlauben. Beim ersten Start entpackt die App ihre Kartendatenbank, das dauert ein paar Sekunden.`,
+    stepActivate:
+      'Den QR-Code oben scannen oder den Schlüssel eintippen (Groß- und Kleinschreibung, Leerzeichen und Bindestriche sind egal). Für die Aktivierung braucht die App einmal Internet.',
+    goodTitle: 'Gut zu wissen',
+    good: [
+      'Eine Lizenz ist auf einem Gerät gleichzeitig aktiv. Für ein neues Handy öffnest du in der App ⚙ → Licence → „Show the licence QR code“ und scannst ihn mit dem neuen Gerät. Das alte hört dann auf.',
+      'Updates sind in der Lizenz enthalten, solange wir die App anbieten. Die App meldet neue Versionen selbst (Leiste oben → Update), mit frischen Preisen.',
+      `${APP_NAME} ist in der Beta: Die Erkennung ist nicht perfekt und Preise können fehlen oder abweichen. Prüf wertvolle Karten vor dem Kauf.`,
+      'Heb diese E-Mail auf. Auf der App-Seite im Shop kannst du sie jederzeit neu anfordern.',
+    ],
+    facts: (n: string, total: string) => `Bestellnummer <strong>${esc(n)}</strong> · ${esc(total)}`,
+    invoice: 'Die Rechnung findest du im Anhang.',
+    withdrawalTitle: 'Widerrufsrecht',
+    withdrawal: (at: string) =>
+      `Du hast beim Kauf am ${esc(at)} ausdrücklich verlangt, dass wir vor Ablauf der Widerrufsfrist liefern, und bestätigt, dass dein Widerrufsrecht damit erlischt (§ 18 Abs. 1 Z 11 FAGG). Mit dieser E-Mail ist die Lizenz geliefert. Unsere AGB und die Widerrufsbelehrung liegen als PDF bei.`,
+    questions: 'Fragen oder Probleme? Antworte einfach auf diese E-Mail.',
+    qrAlt: 'QR-Code der Lizenz',
+  },
+  en: {
+    subject: `Your ${APP_NAME} licence`,
+    subjectMany: (n: number) => `Your ${n} ${APP_NAME} licences`,
+    subjectAgain: `Your ${APP_NAME} licence (sent again)`,
+    intro: (n: number) =>
+      n === 1
+        ? `thank you for your purchase! Here is your licence key for ${APP_NAME}.`
+        : `thank you for your purchase! Here are your ${n} licence keys for ${APP_NAME}. Each licence is active on one device.`,
+    introAgain: `you asked for your licence again. Here are the licence keys for your e-mail address.`,
+    introResent: `here is your licence e-mail once more.`,
+    licence: (i: number, n: number) => (n === 1 ? 'Licence key' : `Licence ${i} of ${n}`),
+    activeOn: (device: string) => `Currently active on: ${device}`,
+    howTitle: 'How it works',
+    stepDownload:
+      'Download the app and open the file. Android asks once whether your browser may install apps: allow it.',
+    stepStore: 'Install the app from the Google Play Store.',
+    downloadButton: (v: string | null) =>
+      v ? `Download ${APP_NAME} (version ${v})` : `Download ${APP_NAME}`,
+    storeButton: `${APP_NAME} on Google Play`,
+    stepStart: `Start ${APP_NAME} and allow the camera. On the first start the app unpacks its card database, which takes a few seconds.`,
+    stepActivate:
+      'Scan the QR code above or type the key (case, spaces and dashes don’t matter). Activating needs the internet once.',
+    goodTitle: 'Good to know',
+    good: [
+      'A licence is active on one device at a time. For a new phone, open ⚙ → Licence → “Show the licence QR code” in the app and scan it with the new device. The old one then stops.',
+      'Updates are included for as long as we offer the app. The app announces new versions itself (bar at the top → Update), with fresh prices.',
+      `${APP_NAME} is in beta: recognition isn’t perfect and prices can be missing or off. Check valuable cards before you buy.`,
+      'Keep this e-mail. You can ask for it again any time on the app page in the shop.',
+    ],
+    facts: (n: string, total: string) => `Order number <strong>${esc(n)}</strong> · ${esc(total)}`,
+    invoice: 'The invoice is attached.',
+    withdrawalTitle: 'Right of withdrawal',
+    withdrawal: (at: string) =>
+      `When you bought on ${esc(at)} you expressly asked us to deliver before the withdrawal period ends and confirmed that your right of withdrawal ends with it (§ 18 (1) 11 FAGG). With this e-mail the licence is delivered. Our terms and the withdrawal information are attached as a PDF.`,
+    questions: 'Questions or problems? Just reply to this e-mail.',
+    qrAlt: 'Licence QR code',
+  },
+};
+
+async function appDownload(
+  db: Db,
+): Promise<{ playStoreUrl: string | null; version: string | null }> {
+  const [s] = await db<{ value: unknown }[]>`
+    SELECT value FROM settings WHERE key = 'app_play_store_url'`;
+  const [r] = await db<{ version: string }[]>`
+    SELECT version FROM app_releases ORDER BY created_at DESC, id DESC LIMIT 1`;
+  return {
+    playStoreUrl: typeof s?.value === 'string' && s.value.startsWith('https://') ? s.value : null,
+    version: r?.version ?? null,
+  };
+}
+
+async function renderLicenseMail(db: Db, mail: OutboxMail, ctx: MailContext): Promise<Rendered> {
+  const L = mail.locale;
+  const t = LICENSE_TEXT[L];
+  const payload = mail.payload as Record<string, unknown>;
+  if (!ctx.licenses) throw new Error('licence service not configured (LICENSE_SERVICE_URL)');
+
+  let ids: string[];
+  let order: {
+    id: number;
+    number: string;
+    customer_name: string | null;
+    lookup_token: string;
+    total_cents: number;
+    consent: Date;
+  } | null = null;
+  if (mail.template === 'license_delivery') {
+    const [o] = await db<
+      {
+        id: number;
+        number: string;
+        customer_name: string | null;
+        lookup_token: string;
+        total_cents: number;
+        consent: Date;
+        license_ids: string[];
+      }[]
+    >`
+      SELECT o.id, o.number, o.customer_name, o.lookup_token, o.total_cents,
+             l.immediate_delivery_consent_at AS consent, l.license_ids
+        FROM orders o JOIN order_licenses l ON l.order_id = o.id
+       WHERE o.id = ${Number(payload.order_id)}`;
+    if (!o) throw new Error('licence order not found');
+    order = o;
+    ids = o.license_ids;
+  } else {
+    ids = Array.isArray(payload.license_ids) ? payload.license_ids.map(String) : [];
+  }
+  const licenses: License[] = [];
+  for (const id of ids) {
+    const l = await ctx.licenses.get(id);
+    if (l && !l.revoked_at) licenses.push(l);
+  }
+  if (!licenses.length) throw new Error('no active licences to send');
+
+  // Download link: the order's own link (its token is the credential).
+  const refs = [...new Set(licenses.map((l) => l.order_ref).filter((r): r is string => !!r))];
+  const tokens = refs.length
+    ? await db<{ number: string; lookup_token: string }[]>`
+        SELECT o.number, o.lookup_token FROM orders o JOIN order_licenses l ON l.order_id = o.id
+         WHERE o.number = ANY(${refs}::text[]) AND o.status IN ('paid', 'completed')
+           AND l.revoked_at IS NULL
+         ORDER BY o.paid_at DESC`
+    : [];
+  const token = order?.lookup_token ?? tokens[0]?.lookup_token ?? null;
+  const app = await appDownload(db);
+
+  const inline: Attachment[] = [];
+  const boxes: string[] = [];
+  for (const [i, l] of licenses.entries()) {
+    const png = await QRCode.toBuffer(l.qr, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 320,
+      color: { dark: '#161c33', light: '#ffffff' },
+    });
+    const cid = `licence-qr-${i + 1}`;
+    inline.push({ name: `${cid}.png`, contentType: 'image/png', content: png, contentId: cid });
+    boxes.push(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.line};border-radius:6px;margin:0 0 14px"><tr>
+<td style="padding:14px 16px;vertical-align:middle">
+<div style="color:${C.muted};font-size:13px;margin-bottom:4px">${esc(t.licence(i + 1, licenses.length))}</div>
+<div style="font-family:'Courier New',Courier,monospace;font-size:18px;font-weight:bold;letter-spacing:0.04em;word-break:break-all">${esc(l.key)}</div>
+${l.active_device?.name ? `<div style="color:${C.muted};font-size:13px;margin-top:6px">${esc(t.activeOn(l.active_device.name))}</div>` : ''}
+</td>
+<td width="140" style="padding:10px;vertical-align:middle;text-align:right"><img src="cid:${cid}" width="130" height="130" alt="${esc(t.qrAlt)}" style="display:block;border:0"></td></tr></table>`);
+  }
+
+  const name = order?.customer_name ?? licenses[0]!.name ?? '';
+  const intro =
+    mail.template === 'license_resend'
+      ? t.introAgain
+      : payload.again
+        ? t.introResent
+        : t.intro(licenses.length);
+  const first = app.playStoreUrl
+    ? esc(t.stepStore) + button(app.playStoreUrl, t.storeButton)
+    : esc(t.stepDownload) +
+      (token ? button(`${ctx.baseUrl}${downloadPath(token)}`, t.downloadButton(app.version)) : '');
+  const steps = [first, esc(t.stepStart), esc(t.stepActivate)];
+  const body = [
+    p(
+      esc(
+        name
+          ? L === 'de'
+            ? `Hallo ${name},`
+            : `Hello ${name},`
+          : L === 'de'
+            ? 'Hallo,'
+            : 'Hello,',
+      ),
+    ),
+    p(esc(intro)),
+    ...boxes,
+    h2(t.howTitle),
+    `<ol style="margin:0 0 14px;padding-left:20px">${steps.map((s) => `<li style="margin:0 0 8px">${s}</li>`).join('')}</ol>`,
+    h2(t.goodTitle),
+    `<ul style="margin:0 0 14px;padding-left:20px">${t.good.map((g) => `<li style="margin:0 0 6px">${esc(g)}</li>`).join('')}</ul>`,
+    order && !payload.again
+      ? [
+          p(t.facts(order.number, formatEuro(order.total_cents, L))),
+          p(esc(t.invoice)),
+          h2(t.withdrawalTitle),
+          p(t.withdrawal(dateTime(order.consent, L))),
+        ].join('\n')
+      : '',
+    p(esc(t.questions)),
+  ].join('\n');
+  const subject =
+    mail.template === 'license_resend' || payload.again
+      ? t.subjectAgain
+      : licenses.length === 1
+        ? t.subject
+        : t.subjectMany(licenses.length);
+  return { subject, html: layout(L, ctx, subject, body), inline };
 }
 
 // ---------------------------------------------------------------------------
@@ -678,7 +922,7 @@ async function resolveAttachment(
 
 export async function buildMail(db: Db, m: OutboxMail, ctx: MailContext): Promise<Mail> {
   const r = await renderTemplate(db, m, ctx);
-  const attachments: Attachment[] = [];
+  const attachments: Attachment[] = [...(r.inline ?? [])];
   for (const a of m.attachments ?? [])
     attachments.push(await resolveAttachment(db, a, m.locale, ctx));
   return {

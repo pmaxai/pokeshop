@@ -34,7 +34,7 @@ Stand: November 2026
 
 1. Sie können mit Kredit- oder Debitkarte, Apple Pay, Google Pay, EPS-Überweisung oder PayPal bezahlen. Die Zahlung wird über Stripe abgewickelt (Stripe Payments Europe, Ltd., Dublin, Irland). Bei Zahlung mit PayPal gelten zusätzlich die Nutzungsbedingungen von PayPal.
 2. Der Kaufpreis ist mit der Bestellung fällig und wird mit Abschluss der Zahlung belastet.
-3. Die Rechnung erhalten Sie per E-Mail, sobald wir Ihre Bestellung versenden.
+3. Die Rechnung erhalten Sie per E-Mail, sobald wir Ihre Bestellung versenden, bei App-Lizenzen mit der Lizenz-E-Mail.
 
 ## 6. Lieferung und Gefahrübergang
 
@@ -68,3 +68,13 @@ Beschwerden richten Sie bitte an {{company.email}}; wir antworten so schnell wie
 
 1. Es gilt österreichisches Recht unter Ausschluss des UN-Kaufrechts und der Verweisungsnormen des internationalen Privatrechts. Für Verbraucher gilt diese Rechtswahl nur, soweit ihnen dadurch nicht der Schutz entzogen wird, den ihnen die zwingenden Bestimmungen des Rechts des Staates gewähren, in dem sie ihren gewöhnlichen Aufenthalt haben.
 2. Für Klagen gegen Verbraucher mit Wohnsitz oder gewöhnlichem Aufenthalt in Österreich ist das Gericht zuständig, in dessen Sprengel der Verbraucher wohnt oder sich gewöhnlich aufhält (§ 14 KSchG). Für Unternehmer ist Gerichtsstand das für 2440 Moosbrunn sachlich zuständige Gericht.
+
+## 13. App-Lizenzen (ScanPM)
+
+1. Wir bieten die Android-App ScanPM an. Mit dem Kauf einer Lizenz erhalten Sie das zeitlich unbegrenzte Recht, die App für eigene Zwecke auf jeweils einem Gerät gleichzeitig zu nutzen. Updates sind enthalten, solange wir die App anbieten. Ein Abonnement entsteht nicht.
+2. So kaufen Sie eine Lizenz: Auf der App-Seite ({{app_url}}) wählen Sie die Anzahl der Lizenzen, geben Name, E-Mail-Adresse und Land an, akzeptieren diese AGB, verlangen die sofortige Lieferung (Ziffer 6) und klicken auf „Zahlungspflichtig bestellen“. Bis zu diesem Klick können Sie alle Eingaben prüfen und berichtigen. Anschließend schließen Sie die Zahlung bei Stripe ab. Der Vertrag kommt mit Eingang der Zahlung zustande. Lizenzschlüssel, Download-Link und Rechnung erhalten Sie unmittelbar danach per E-Mail. Lizenzen verkaufen wir derzeit nur an Kunden mit Sitz oder Wohnsitz in der Europäischen Union.
+3. Die App befindet sich in einer Testphase (Beta). Kartenerkennung und angezeigte Preise können unvollständig oder ungenau sein; die Preise stammen aus öffentlich verfügbaren Daten Dritter und sind unverbindliche Richtwerte. Die App ist derzeit nur für Android (ab Version 8) und auf Englisch verfügbar und wird bis zur Aufnahme in den Google Play Store als Installationsdatei (APK) bereitgestellt. Diese Eigenschaften sind Teil der vereinbarten Beschaffenheit.
+4. Für die Aktivierung, Kartenbilder und Updates braucht die App eine Internetverbindung; Erkennung und Preise funktionieren ohne Verbindung. Beim Aktivieren wird die Lizenz an ein Gerät gebunden. Aktivieren Sie sie auf einem anderen Gerät, endet die Nutzung auf dem bisherigen.
+5. Wir dürfen eine Lizenz sperren, wenn der Kaufpreis erstattet oder eine Zahlung zurückgebucht wurde.
+6. Widerrufsrecht: Bei Verträgen über digitale Inhalte, die nicht auf einem körperlichen Datenträger geliefert werden, erlischt das Widerrufsrecht, wenn wir mit der Lieferung begonnen haben, nachdem Sie ausdrücklich zugestimmt haben, dass wir vor Ablauf der Widerrufsfrist damit beginnen, Sie Ihre Kenntnis davon bestätigt haben, dass Sie damit Ihr Widerrufsrecht verlieren, und wir Ihnen eine Bestätigung zur Verfügung gestellt haben (§ 18 Abs. 1 Z 11 FAGG). Die Zustimmung geben Sie beim Kauf ab; die Bestätigung erhalten Sie mit der Lizenz-E-Mail.
+7. Gewährleistung: Es gilt das gesetzliche Gewährleistungsrecht für digitale Leistungen (für Verbraucher das Verbrauchergewährleistungsgesetz), für Updates, solange wir sie bereitstellen. Bitte melden Sie Fehler an {{company.email}}.

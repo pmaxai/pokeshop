@@ -27,6 +27,8 @@ export const routing = defineRouting({
     '/warenkorb': { de: '/warenkorb', en: '/cart' },
     '/kasse': { de: '/kasse', en: '/checkout' },
     '/bestellung/[token]': { de: '/bestellung/[token]', en: '/order/[token]' },
+    '/app': '/app',
+    '/app/lizenz/[token]': { de: '/app/lizenz/[token]', en: '/app/license/[token]' },
   },
 });
 

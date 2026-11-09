@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro, formatRate } from '@pokeshop/core';
 import { cardNames } from '@pokeshop/core/catalog';
 import { orderByToken, syncSession } from '@pokeshop/core/orders';
-import { Link } from '@/i18n/navigation';
+import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { payments } from '@/server/payments';
@@ -27,6 +27,15 @@ export default async function OrderPage({ params, searchParams }: Props) {
   setRequestLocale(locale);
   let order = await orderByToken(db(), token);
   if (!order) notFound();
+  // App licences have their own page (download instead of shipping).
+  const [kind] = await db()<{ kind: string }[]>`SELECT kind FROM orders WHERE id = ${order.id}`;
+  if (kind?.kind === 'license') {
+    const sid = (await searchParams).session_id;
+    redirect(
+      getPathname({ href: { pathname: '/app/lizenz/[token]', params: { token } }, locale }) +
+        (sid ? `?session_id=${encodeURIComponent(sid)}` : ''),
+    );
+  }
 
   // Back from Stripe before the webhook: ask Stripe directly instead of waiting.
   const sessionId = (await searchParams).session_id;

@@ -10,7 +10,9 @@ export type MailTemplate =
   | 'refund_issued'
   | 'withdrawal_ack'
   | 'withdrawal_notification'
-  | 'admin_alert';
+  | 'admin_alert'
+  | 'license_delivery'
+  | 'license_resend';
 
 export type MailAttachment =
   { kind: 'document'; id: number } | { kind: 'legal'; kinds: ('agb' | 'withdrawal' | 'privacy')[] };
