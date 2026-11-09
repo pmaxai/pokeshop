@@ -15,7 +15,10 @@ export type MailTemplate =
   | 'license_resend';
 
 export type MailAttachment =
-  { kind: 'document'; id: number } | { kind: 'legal'; kinds: ('agb' | 'withdrawal' | 'privacy')[] };
+  | { kind: 'document'; id: number }
+  | { kind: 'legal'; kinds: ('agb' | 'withdrawal' | 'privacy' | 'license_terms')[] }
+  /** Invoice or credit note of the GmbH, fetched from its Stripe account when sending. */
+  | { kind: 'stripe'; seller: 'gmbh'; doc: 'invoice' | 'credit_note'; id: string; number: string };
 
 export type OutboxMail = {
   id: number;

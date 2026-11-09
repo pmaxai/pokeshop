@@ -44,11 +44,7 @@ Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ wi
 
 ## 8. App-Lizenzen (ScanPM)
 
-Wenn Sie eine Lizenz für die App ScanPM kaufen, verarbeiten wir Name, gegebenenfalls Firma, E-Mail-Adresse, Land, Anzahl der Lizenzen und den Zahlungsstatus (wie unter 3 und 4) und zählen, wie oft die App über Ihren Download-Link geladen wurde.
-
-Die Lizenzschlüssel verwaltet unser Lizenzdienst, der auf unserem eigenen Server läuft (siehe 9). Er speichert zu jeder Lizenz Name, E-Mail-Adresse und Bestellnummer, den Schlüssel verschlüsselt, und bei jeder Aktivierung eine zufällige Gerätekennung, die die App erzeugt, die Gerätebezeichnung (etwa das Handymodell), die App-Version sowie die Zeitpunkte der Aktivierung und der letzten Prüfung. Die App fragt beim Start und höchstens einmal pro Stunde nach, ob die Lizenz noch gilt; dabei überträgt sie nur ein Lizenz-Token und die App-Version. Ihre IP-Adresse verwendet der Dienst nur kurzzeitig im Arbeitsspeicher, um zu viele Aktivierungsversuche abzuwehren; sie wird nicht gespeichert.
-
-Rechtsgrundlagen sind die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) und unser berechtigtes Interesse am Schutz vor Missbrauch der Lizenzen (Art. 6 Abs. 1 lit. f DSGVO). Die Lizenzdaten speichern wir, solange die Lizenz besteht; Bestell- und Rechnungsdaten sieben Jahre (§ 132 BAO).
+Lizenzen für die App ScanPM verkauft die {{seller.name}}. Für die Daten des Lizenzkaufs und des Lizenzdienstes ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Lizenzbedingungen ({{license_terms_url}}). Wir betreiben dafür die App-Seite, das Bestellformular und den Server, auf dem auch der Lizenzdienst läuft, und verarbeiten die Daten dabei in ihrem Auftrag (Art. 28 DSGVO).
 
 ## 9. Hosting
 

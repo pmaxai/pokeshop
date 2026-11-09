@@ -37,9 +37,9 @@ staging.pokemonkarten.at {
 	header X-Robots-Tag "noindex, nofollow"
 	encode zstd gzip
 
-	# Staging is password-protected, except the two machine endpoints that
-	# authenticate themselves (Stripe webhook signature, HMAC product API).
-	@protected not path /api/stripe/webhook /api/v1/*
+	# Staging is password-protected, except the machine endpoints that authenticate
+	# themselves (Stripe webhook signatures of both accounts, HMAC product API).
+	@protected not path /api/stripe/webhook /api/stripe/webhook-licenses /api/v1/*
 	basic_auth @protected {
 		{$STAGING_USER} {$STAGING_PASSWORD_HASH}
 	}

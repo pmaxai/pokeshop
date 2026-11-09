@@ -604,6 +604,12 @@ export async function orderAdmin(db: Db, id: number) {
       lookup_token: string;
       agb_version: number | null;
       kind: 'cards' | 'license';
+      seller: 'shop' | 'gmbh';
+      buyer_business: boolean;
+      buyer_tax_id: string | null;
+      buyer_tax_id_type: string | null;
+      stripe_customer_id: string | null;
+      tax_country: string | null;
     })[]
   >`SELECT * FROM orders WHERE id = ${id}`;
   if (!order) return null;
@@ -638,9 +644,12 @@ export async function orderAdmin(db: Db, id: number) {
         created_by: string | null;
         created_at: Date;
         error: string | null;
+        credit_note_number: string | null;
+        credit_note_pdf_url: string | null;
       }[]
     >`
-      SELECT id, amount_cents, shipping_cents, reason, status, created_by, created_at, error
+      SELECT id, amount_cents, shipping_cents, reason, status, created_by, created_at, error,
+             credit_note_number, credit_note_pdf_url
         FROM refunds WHERE order_id = ${id} ORDER BY id`,
     db<
       {
@@ -667,9 +676,15 @@ export async function orderAdmin(db: Db, id: number) {
       revoked_at: Date | null;
       downloads: number;
       last_download_at: Date | null;
+      stripe_invoice_id: string | null;
+      invoice_number: string | null;
+      invoice_url: string | null;
+      invoice_pdf_url: string | null;
+      terms_version: number | null;
     }[]
   >`SELECT quantity, unit_price_cents, immediate_delivery_consent_at, license_ids, issued_at,
-           revoked_at, downloads, last_download_at
+           revoked_at, downloads, last_download_at, stripe_invoice_id, invoice_number,
+           invoice_url, invoice_pdf_url, terms_version
       FROM order_licenses WHERE order_id = ${id}`;
   return {
     order,

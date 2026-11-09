@@ -7,7 +7,7 @@ import { syncSession } from '@pokeshop/core/orders';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, licenseServiceConfigured } from '@/server/config';
-import { payments } from '@/server/payments';
+import { paymentsForOrder } from '@/server/payments';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +30,8 @@ export default async function LicenceOrderPage({ params, searchParams }: Props) 
 
   // Back from Stripe before the webhook: ask Stripe directly instead of waiting.
   const sessionId = (await searchParams).session_id;
-  const provider = payments();
+  const provider =
+    order.status === 'checkout' && sessionId ? await paymentsForOrder(order.id) : null;
   if (order.status === 'checkout' && sessionId && provider) {
     const [own] =
       await db()`SELECT 1 FROM orders WHERE id = ${order.id} AND stripe_session_id = ${sessionId}`;

@@ -4,17 +4,19 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   appSales,
+  checkLicenseBuyer,
   createLicenseOrder,
   LicenseCheckoutRejected,
   requestLicenseResend,
+  startLicensePayment,
   validateLicenseCheckout,
 } from '@pokeshop/core/licenses';
-import { startPayment } from '@pokeshop/core/orders';
+import { CustomerRejected } from '@pokeshop/core/payments';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { APP_FORM_FLASH } from '@/server/app-form';
-import { config, db, getSetting, licenseServiceConfigured } from '@/server/config';
-import { payments } from '@/server/payments';
+import { config, db, licenseSalesConfigured } from '@/server/config';
+import { payments, viesCheck } from '@/server/payments';
 
 const str = (f: FormData, k: string) => {
   const v = f.get(k);
@@ -45,8 +47,10 @@ async function back(
 export async function buyLicenseAction(form: FormData) {
   const locale = localeOf(form);
   const values = {
+    buyer: str(form, 'buyer') === 'business' ? 'business' : 'consumer',
     name: str(form, 'name'),
     company: str(form, 'company'),
+    vatId: str(form, 'vatId'),
     email: str(form, 'email'),
     street: str(form, 'street'),
     postcode: str(form, 'postcode'),
@@ -61,31 +65,44 @@ export async function buyLicenseAction(form: FormData) {
   });
   if (!v.ok) return back(locale, values, v.errors);
 
-  const sales = await appSales(db(), licenseServiceConfigured());
-  const provider = payments();
+  // Licences are sold by Antalyse GmbH and paid to its own Stripe account.
+  const sales = await appSales(db(), licenseSalesConfigured());
+  const provider = payments('gmbh');
   if (!sales.open || !provider) return back(locale, values, { _: 'payment_unavailable' });
+
+  const checked = await checkLicenseBuyer(db(), v.data, {
+    grossCents: sales.priceCents,
+    vies: viesCheck(),
+  });
+  if (!checked.ok) return back(locale, values, checked.errors);
 
   let url: string;
   try {
     const order = await createLicenseOrder(db(), {
       locale,
       details: v.data,
-      priceCents: sales.priceCents,
-      ossEnabled: await getSetting<boolean>('oss_enabled', false),
-      smallBusiness: await getSetting<boolean>('small_business', false),
+      buyer: checked.buyer,
     });
     const thanks = getPathname({
       href: { pathname: '/app/lizenz/[token]', params: { token: order.token } },
       locale,
     });
-    url = await startPayment(db(), provider, order, {
-      email: v.data.email,
+    url = await startLicensePayment(db(), provider, order, {
+      details: v.data,
+      buyer: checked.buyer,
       locale,
       successUrl: `${config.baseUrl}${thanks}?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${config.baseUrl}/api/checkout/cancel?o=${order.token}&l=${locale}&app=1`,
     });
   } catch (e) {
     if (e instanceof LicenseCheckoutRejected) return back(locale, values, { country: 'country' });
+    if (e instanceof CustomerRejected) {
+      return back(
+        locale,
+        values,
+        e.field === 'tax_id' ? { vatId: 'invalid_tax_id' } : { postcode: 'invalid_address' },
+      );
+    }
     console.error('[app checkout]', (e as Error).message);
     return back(locale, values, { _: 'payment_unavailable' });
   }

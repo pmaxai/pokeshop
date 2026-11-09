@@ -11,7 +11,7 @@ import { currentLegalVersions } from './legal.ts';
 import { licenseOrderPaid, licensePaymentLine, queueLicenseRevoke } from './licenses.ts';
 import { newOrderNumber } from './numbering.ts';
 import { alertShop, enqueueMail, enqueueShopMail } from './outbox.ts';
-import type { PaymentEvent, PaymentProvider, SessionInfo } from './payments.ts';
+import type { PaymentEvent, PaymentProvider, SessionInfo, SessionInput } from './payments.ts';
 import { reservedUntil, stripeSessionExpiresAt } from './reservation.ts';
 import { orderVat, type VatRegime } from './vat.ts';
 
@@ -311,7 +311,13 @@ export async function startPayment(
   sql: Sql,
   provider: PaymentProvider,
   order: CreatedOrder,
-  input: { email: string; locale: 'de' | 'en'; successUrl: string; cancelUrl: string; now?: Date },
+  input: {
+    email: string;
+    locale: 'de' | 'en';
+    successUrl: string;
+    cancelUrl: string;
+    now?: Date;
+  } & Pick<SessionInput, 'customerId' | 'tax' | 'invoice'>,
 ): Promise<string> {
   for (const s of order.replacedSessions) {
     const r = await provider.expireSession(s).catch(() => null);
@@ -327,6 +333,9 @@ export async function startPayment(
       successUrl: input.successUrl,
       cancelUrl: input.cancelUrl,
       expiresAt: stripeSessionExpiresAt(input.now ?? new Date()),
+      customerId: input.customerId,
+      tax: input.tax,
+      invoice: input.invoice,
     });
     await sql`UPDATE orders SET stripe_session_id = ${session.id}, payment_url = ${session.url}
                WHERE id = ${order.id}`;
@@ -348,6 +357,7 @@ type OrderRow = {
   id: number;
   number: string;
   kind: 'cards' | 'license';
+  seller: 'shop' | 'gmbh';
   status: string;
   locale: 'de' | 'en';
   email: string | null;
@@ -380,14 +390,15 @@ export async function processPaidSession(
   if (session.paymentStatus === 'unpaid') return { kind: 'not_paid', orderId: session.orderId };
   const outcome = await sql.begin(async (tx) => {
     const [o] = await tx<OrderRow[]>`
-      SELECT id, number, kind, status, locale, email, total_cents, vat_cents, vat_rate_bp, cart_id,
-             stripe_session_id
+      SELECT id, number, kind, seller, status, locale, email, total_cents, vat_cents, vat_rate_bp,
+             cart_id, stripe_session_id
         FROM orders
        WHERE stripe_session_id = ${session.id}
           OR (${session.orderId}::bigint IS NOT NULL AND id = ${session.orderId}::bigint
               AND stripe_session_id IS NULL)
        FOR UPDATE`;
-    if (!o) return { kind: 'unknown_order' as const };
+    // Each seller's sessions come from its own Stripe account (and webhook).
+    if (!o || o.seller !== provider.seller) return { kind: 'unknown_order' as const };
     if (DONE.includes(o.status)) return { kind: 'already' as const, orderId: o.id };
     const [pending] =
       await tx`SELECT 1 FROM refunds WHERE order_id = ${o.id} AND status = 'pending'`;
@@ -397,6 +408,7 @@ export async function processPaidSession(
                                payment_method_type = ${session.paymentMethodType}
               WHERE id = ${o.id}`;
     if (session.amountTotal !== null && session.amountTotal !== o.total_cents) {
+      // GmbH: Stripe Tax decides; a difference means the VAT came out other than expected.
       await alertShop(
         tx,
         `Betrag stimmt nicht: ${o.number}`,
@@ -407,7 +419,7 @@ export async function processPaidSession(
 
     if (o.kind === 'license') {
       // Nothing to take from stock: the worker fetches the keys and mails them.
-      await licenseOrderPaid(tx, o, now);
+      await licenseOrderPaid(tx, o, session, now);
       await orderEvent(tx, o.id, 'paid', {
         session: session.id,
         method: session.paymentMethodType,
@@ -483,7 +495,9 @@ export async function runPendingRefunds(
   >`
     SELECT r.id, r.order_id, r.amount_cents, o.stripe_payment_intent_id AS pi, o.email, o.locale, o.number
       FROM refunds r JOIN orders o ON o.id = r.order_id
-     WHERE r.status = 'pending' AND r.reason = 'cards_sold_out_after_payment' AND (${orderId ?? null}::bigint IS NULL OR r.order_id = ${orderId ?? null}::bigint)
+     WHERE r.status = 'pending' AND r.reason = 'cards_sold_out_after_payment'
+       AND o.seller = ${provider.seller}
+       AND (${orderId ?? null}::bigint IS NULL OR r.order_id = ${orderId ?? null}::bigint)
      ORDER BY r.id LIMIT 20`;
   let allDone = rows.length > 0;
   for (const r of rows) {
@@ -631,8 +645,10 @@ export async function recordExternalRefund(
   eventId: string,
 ): Promise<'recorded' | 'known' | 'ignored'> {
   return sql.begin(async (tx) => {
-    const [o] = await tx<{ id: number; number: string; kind: string; total_cents: number }[]>`
-      SELECT id, number, kind, total_cents FROM orders
+    const [o] = await tx<
+      { id: number; number: string; kind: string; seller: string; total_cents: number }[]
+    >`
+      SELECT id, number, kind, seller, total_cents FROM orders
        WHERE stripe_payment_intent_id = ${paymentIntentId} FOR UPDATE`;
     if (!o) return 'ignored';
     const [k] = await tx<{ s: number }[]>`
@@ -654,7 +670,7 @@ export async function recordExternalRefund(
       tx,
       `Erstattung in Stripe: ${o.number}`,
       o.kind === 'license'
-        ? `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet.${amountRefunded >= o.total_cents ? ' Die Lizenzschlüssel werden gesperrt.' : ' Teilerstattung: die Lizenzen bleiben aktiv.'} Eine Rechnungskorrektur bitte im Admin prüfen.`
+        ? `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet.${amountRefunded >= o.total_cents ? ' Die Lizenzschlüssel werden gesperrt.' : ' Teilerstattung: die Lizenzen bleiben aktiv.'}${o.seller === 'gmbh' ? ' Bitte im Stripe-Dashboard der GmbH eine Gutschrift zur Rechnung erstellen, falls das nicht schon mit der Erstattung geschehen ist.' : ' Eine Rechnungskorrektur bitte im Admin prüfen.'}`
         : `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet. Bestand und Gutschrift bitte im Admin prüfen – der Shop hat keine Karten zurückgebucht.`,
       `stripe_refund:${eventId}`,
     );
@@ -695,7 +711,8 @@ export async function expireHolds(
 ): Promise<number> {
   const due = await sql<{ id: number; stripe_session_id: string | null }[]>`
     SELECT id, stripe_session_id FROM orders
-     WHERE status = 'checkout' AND reserved_until < now() - make_interval(secs => ${graceSeconds})
+     WHERE status = 'checkout' AND seller = ${provider.seller}
+       AND reserved_until < now() - make_interval(secs => ${graceSeconds})
      ORDER BY reserved_until LIMIT 25`;
   let released = 0;
   for (const o of due) {

@@ -41,7 +41,9 @@ const mediaDir = process.env.MEDIA_DIR ?? './.media';
 const baseUrl = (process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const sql = createSql(process.env.DATABASE_URL, { max: 4, applicationName: 'pokeshop-worker' });
 const tcgdex = httpTcgdexClient();
-const payments = paymentsFromEnv();
+// Two Stripe accounts: the shop's (cards) and Antalyse GmbH's (app licences).
+const payments = paymentsFromEnv(process.env, 'shop');
+const gmbhPayments = paymentsFromEnv(process.env, 'gmbh');
 const mailer = mailTransportFromEnv();
 const licenses = licenseClientFromEnv();
 let stopping = false;
@@ -71,7 +73,13 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
   // App licences: keys from the licence service after payment, e-mail with invoice.
   'license.issue': async (job) => {
     if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
-    const r = await issueOrderLicenses(sql, licenses, Number(job.payload.order_id));
+    const r = await issueOrderLicenses(
+      sql,
+      licenses,
+      Number(job.payload.order_id),
+      new Date(),
+      gmbhPayments,
+    );
     console.log(`[licence] order ${String(job.payload.order_id)}: ${r}`);
   },
   'license.revoke': async (job) => {
@@ -128,7 +136,7 @@ async function runImages() {
 
 async function mailContext(): Promise<MailContext> {
   const rows = await sql<{ key: string; value: unknown }[]>`
-    SELECT key, value FROM settings WHERE key IN ('company', 'shop_mailbox')`;
+    SELECT key, value FROM settings WHERE key IN ('company', 'shop_mailbox', 'license_seller')`;
   const get = (k: string) => rows.find((r) => r.key === k)?.value;
   return {
     baseUrl,
@@ -136,16 +144,19 @@ async function mailContext(): Promise<MailContext> {
     company: (get('company') ?? {}) as MailContext['company'],
     replyTo: String(get('shop_mailbox') ?? 'bestellung@pokemonkarten.at'),
     licenses,
+    licenseSeller: (get('license_seller') ?? null) as MailContext['licenseSeller'],
+    gmbhPayments,
   };
 }
 
 /** Holds, refunds and mails: own loop every 5 s, so a long card sync never delays them. */
 async function runShop() {
   await runJobs(SHOP_JOBS);
-  if (payments) {
-    const n = await expireHolds(sql, payments);
-    if (n) console.log(`[holds] released ${n} expired reservation(s)`);
-    await runPendingRefunds(sql, payments);
+  for (const p of [payments, gmbhPayments]) {
+    if (!p) continue;
+    const n = await expireHolds(sql, p);
+    if (n) console.log(`[holds] ${p.seller}: released ${n} expired reservation(s)`);
+    await runPendingRefunds(sql, p);
   }
   if (mailer) {
     const sent = await sendDueMails(sql, mailer, await mailContext(), 10, (m) => console.error(m));
@@ -196,7 +207,7 @@ async function schedule() {
 
 async function main() {
   console.log(
-    `[worker] started (payments: ${payments?.name ?? 'off'}, mail: ${mailer?.name ?? 'off – mails stay queued'})`,
+    `[worker] started (payments: ${payments?.name ?? 'off'}, GmbH payments: ${gmbhPayments?.name ?? 'off'}, mail: ${mailer?.name ?? 'off – mails stay queued'})`,
   );
   const shop = (async () => {
     while (!stopping) {

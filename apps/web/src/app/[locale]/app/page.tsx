@@ -2,13 +2,19 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro } from '@pokeshop/core';
-import { appSales, APP_NAME, MAX_LICENSES_PER_ORDER } from '@pokeshop/core/licenses';
-import { SMALL_BUSINESS_NOTE } from '@pokeshop/core/vat';
-import { Link, getPathname } from '@/i18n/navigation';
+import {
+  appSales,
+  APP_NAME,
+  licenseSeller,
+  MAX_LICENSES_PER_ORDER,
+  netLicensePrice,
+} from '@pokeshop/core/licenses';
+import { LICENSE_BUSINESS_COUNTRIES } from '@pokeshop/core/tax-id';
+import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { db, getSetting, licenseServiceConfigured } from '@/server/config';
+import { db, licenseSalesConfigured } from '@/server/config';
 import { getCompany } from '@/server/shop';
-import { LicenseQuantity } from '@/components/LicenseQuantity';
+import { LicenseForm } from '@/components/LicenseForm';
 import { APP_FORM_FLASH } from '@/server/app-form';
 import { buyLicenseAction, resendLicenseAction } from '../app-actions';
 
@@ -58,11 +64,11 @@ export default async function AppPage({ params, searchParams }: Props) {
   setRequestLocale(locale);
   const sp = await searchParams;
   const t = await getTranslations('App');
-  const tc = await getTranslations('Checkout');
-  const sales = await appSales(db(), licenseServiceConfigured());
-  const smallBusiness = await getSetting<boolean>('small_business', false);
+  const sales = await appSales(db(), licenseSalesConfigured());
+  const seller = await licenseSeller(db());
   const { email } = await getCompany();
   const price = formatEuro(sales.priceCents, locale);
+  const netPrice = formatEuro(netLicensePrice(sales.priceCents), locale);
 
   let flash: Flash = {};
   if (sp.e) {
@@ -75,55 +81,28 @@ export default async function AppPage({ params, searchParams }: Props) {
   }
   const values = flash.values ?? {};
   const errors = flash.errors ?? {};
-  const err = (k: string) =>
-    errors[k]
-      ? (t as (key: string, v?: Record<string, number>) => string)(`form.errors.${errors[k]}`, {
-          max: MAX_LICENSES_PER_ORDER,
-        })
-      : null;
+  const errorText = (k: string) =>
+    (t as (key: string, v?: Record<string, number>) => string)(`form.errors.${errors[k]}`, {
+      max: MAX_LICENSES_PER_ORDER,
+    });
+  const errorTexts = Object.fromEntries(
+    Object.keys(errors)
+      .filter((k) => k !== '_')
+      .map((k) => [k, errorText(k)]),
+  );
 
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
-  const countries = (await db()<{ code: string }[]>`SELECT code FROM countries WHERE is_eu`)
-    .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
-    .sort((a, b) => a.name.localeCompare(b.name, locale));
-  const defaultCountry = values.country || (locale === 'de' ? 'AT' : '');
-  const quantity = Math.min(Math.max(Number(values.quantity) || 1, 1), MAX_LICENSES_PER_ORDER);
+  const rows = await db()<{ code: string; is_eu: boolean }[]>`
+    SELECT code, is_eu FROM countries
+     WHERE is_eu OR code = ANY(${LICENSE_BUSINESS_COUNTRIES as unknown as string[]}::text[])`;
+  const byName = (list: { code: string }[]) =>
+    list
+      .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
+      .sort((a, b) => a.name.localeCompare(b.name, locale));
+  const euCountries = byName(rows.filter((r) => r.is_eu));
+  const otherCountries = byName(rows.filter((r) => !r.is_eu));
   const store = sales.playStoreUrl !== null;
-
-  const field = (
-    name: string,
-    label: string,
-    opts: { type?: string; autoComplete?: string; required?: boolean; hint?: string } = {},
-  ) => {
-    const e = err(name);
-    const id = `app-${name}`;
-    return (
-      <label className={e ? 'field field--error' : 'field'} htmlFor={id}>
-        <span>{label}</span>
-        <input
-          id={id}
-          name={name}
-          type={opts.type ?? 'text'}
-          defaultValue={values[name] ?? ''}
-          autoComplete={opts.autoComplete}
-          required={opts.required ?? true}
-          aria-invalid={e ? true : undefined}
-          aria-describedby={e ? `${id}-err` : opts.hint ? `${id}-hint` : undefined}
-        />
-        {e ? (
-          <small id={`${id}-err`} className="field__error">
-            {e}
-          </small>
-        ) : (
-          opts.hint && (
-            <small id={`${id}-hint`} className="muted">
-              {opts.hint}
-            </small>
-          )
-        )}
-      </label>
-    );
-  };
+  const sellerAddress = `${seller.street}, ${seller.postcode} ${seller.city}`;
 
   return (
     <div className="wrap app-page">
@@ -137,6 +116,7 @@ export default async function AppPage({ params, searchParams }: Props) {
           <p className="app-hero__price">
             <strong>{t('price', { price })}</strong>
             <span>{t('priceNote')}</span>
+            <span className="app-hero__net">{t('priceBusiness', { net: netPrice })}</span>
           </p>
           <p className="hero__actions">
             <a className="btn btn--accent" href="#kaufen">
@@ -240,113 +220,24 @@ export default async function AppPage({ params, searchParams }: Props) {
           </p>
         )}
         {sales.open ? (
-          <form action={buyLicenseAction} className="checkout" noValidate>
-            <input type="hidden" name="locale" value={locale} />
-            <div className="checkout__fields">
-              <fieldset>
-                <legend className="visually-hidden">{t('form.title')}</legend>
-                {field('name', t('form.name'), { autoComplete: 'name' })}
-                {field('company', t('form.company'), {
-                  autoComplete: 'organization',
-                  required: false,
-                })}
-                {field('email', t('form.email'), {
-                  type: 'email',
-                  autoComplete: 'email',
-                  hint: t('form.emailHint'),
-                })}
-                {field('street', t('form.street'), {
-                  autoComplete: 'billing street-address',
-                  hint: t('form.streetHint'),
-                })}
-                <div className="field-row">
-                  {field('postcode', t('form.postcode'), { autoComplete: 'billing postal-code' })}
-                  {field('city', t('form.city'), { autoComplete: 'billing address-level2' })}
-                </div>
-                <label
-                  className={err('country') ? 'field field--error' : 'field'}
-                  htmlFor="app-country"
-                >
-                  <span>{t('form.country')}</span>
-                  <select
-                    id="app-country"
-                    name="country"
-                    defaultValue={defaultCountry}
-                    autoComplete="country"
-                    required
-                  >
-                    {!defaultCountry && <option value="">–</option>}
-                    {countries.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  {err('country') && <small className="field__error">{err('country')}</small>}
-                </label>
-              </fieldset>
-            </div>
-            <aside className="summary" aria-labelledby="app-sum-title">
-              <h3 id="app-sum-title">
+          <LicenseForm
+            action={buyLicenseAction}
+            locale={locale}
+            values={values}
+            errors={errorTexts}
+            euCountries={euCountries}
+            otherCountries={otherCountries}
+            grossCents={sales.priceCents}
+            netCents={netLicensePrice(sales.priceCents)}
+            max={MAX_LICENSES_PER_ORDER}
+            sellerName={seller.name}
+            sellerAddress={sellerAddress}
+            title={
+              <>
                 {APP_NAME} <span className="app-beta">{t('beta')}</span>
-              </h3>
-              <p className="small muted">{t('priceNote')}</p>
-              <LicenseQuantity
-                priceCents={sales.priceCents}
-                locale={locale}
-                max={MAX_LICENSES_PER_ORDER}
-                initial={quantity}
-                error={err('quantity')}
-              />
-              {smallBusiness && <p className="small muted">{SMALL_BUSINESS_NOTE[locale]}</p>}
-              <label className={errors.acceptTerms ? 'check check--error' : 'check'}>
-                <input
-                  type="checkbox"
-                  name="accept_terms"
-                  required
-                  aria-invalid={errors.acceptTerms ? true : undefined}
-                />
-                <span>
-                  {tc.rich('terms', {
-                    terms: (c) => (
-                      <Link href="/agb" target="_blank">
-                        {c}
-                      </Link>
-                    ),
-                    withdrawal: (c) => (
-                      <Link href="/widerrufsbelehrung" target="_blank">
-                        {c}
-                      </Link>
-                    ),
-                    privacy: (c) => (
-                      <Link href="/datenschutz" target="_blank">
-                        {c}
-                      </Link>
-                    ),
-                  })}
-                </span>
-              </label>
-              {errors.acceptTerms && (
-                <small className="field__error">{t('form.errors.terms')}</small>
-              )}
-              <label className={errors.immediateDelivery ? 'check check--error' : 'check'}>
-                <input
-                  type="checkbox"
-                  name="immediate_delivery"
-                  required
-                  aria-invalid={errors.immediateDelivery ? true : undefined}
-                />
-                <span>{t('form.consent')}</span>
-              </label>
-              {errors.immediateDelivery && (
-                <small className="field__error">{t('form.errors.consent')}</small>
-              )}
-              <button type="submit" className="btn btn--accent btn--wide">
-                {tc('submit')}
-              </button>
-              <p className="muted small">{t('form.submitNote')}</p>
-            </aside>
-          </form>
+              </>
+            }
+          />
         ) : (
           <p className="notice notice--warn">{t('form.closed')}</p>
         )}

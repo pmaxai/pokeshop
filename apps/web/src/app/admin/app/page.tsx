@@ -1,6 +1,13 @@
 import { formatEuro } from '@pokeshop/core';
-import { appSales, APP_NAME, listReleases } from '@pokeshop/core/licenses';
-import { db, licenseServiceConfigured } from '@/server/config';
+import {
+  appSales,
+  APP_NAME,
+  licenseSeller,
+  listReleases,
+  netLicensePrice,
+} from '@pokeshop/core/licenses';
+import { db, licenseSalesConfigured, licenseServiceConfigured } from '@/server/config';
+import { payments } from '@/server/payments';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../AdminShell';
 import { dateTime } from '../labels';
@@ -34,10 +41,12 @@ export default async function AppAdmin({
 }) {
   const user = await requireAdmin();
   const configured = licenseServiceConfigured();
-  const [sales, releases, health, [stats]] = await Promise.all([
-    appSales(db(), configured),
+  const gmbhStripe = payments('gmbh');
+  const [sales, releases, health, seller, [stats]] = await Promise.all([
+    appSales(db(), licenseSalesConfigured()),
     listReleases(db(), 10),
     serviceHealth(),
+    licenseSeller(db()),
     db()<{ orders: number; licenses: number; revenue: number; downloads: number }[]>`
       SELECT count(*)::int AS orders, coalesce(sum(l.quantity), 0)::int AS licenses,
              coalesce(sum(o.total_cents - o.refunded_cents), 0)::int AS revenue,
@@ -72,7 +81,9 @@ export default async function AppAdmin({
         <p className="notice notice--warn">
           {!configured
             ? 'Der Lizenzdienst ist nicht eingerichtet (LICENSE_SERVICE_URL und LICENSE_SHOP_TOKEN in der .env-Datei). Bis dahin zeigt die App-Seite „Der Verkauf startet in Kürze“.'
-            : 'Es gibt noch keine APK und keinen Play-Store-Link. Lade unten die App hoch, dann ist der Verkauf offen.'}
+            : !gmbhStripe
+              ? 'Das Stripe-Konto der GmbH ist nicht eingerichtet (STRIPE_LICENSE_SECRET_KEY und STRIPE_LICENSE_WEBHOOK_SECRET in der .env-Datei). Bis dahin zeigt die App-Seite „Der Verkauf startet in Kürze“.'
+              : 'Es gibt noch keine APK und keinen Play-Store-Link. Lade unten die App hoch, dann ist der Verkauf offen.'}
         </p>
       )}
       <p>
@@ -83,6 +94,13 @@ export default async function AppAdmin({
           <strong>erreichbar</strong>
         ) : (
           <strong style={{ color: 'var(--warn)' }}>nicht erreichbar</strong>
+        )}
+        {' · '}
+        Stripe der GmbH:{' '}
+        {gmbhStripe ? (
+          <strong>{gmbhStripe.name === 'fake' ? 'Testmodus (lokal)' : 'eingerichtet'}</strong>
+        ) : (
+          <strong style={{ color: 'var(--warn)' }}>nicht eingerichtet</strong>
         )}
         {' · '}
         <a href="/app" target="_blank" rel="noreferrer">
@@ -112,10 +130,15 @@ export default async function AppAdmin({
       </section>
 
       <section className="panel">
-        <h2>Preis und Play Store</h2>
+        <h2>Preis, Absender und Play Store</h2>
+        <p className="muted">
+          Verkäufer ist die {seller.name}. Stripe berechnet die Umsatzsteuer und stellt Rechnung und
+          Gutschrift aus. Unternehmen außerhalb Österreichs zahlen netto (
+          {formatEuro(netLicensePrice(sales.priceCents))}).
+        </p>
         <form action={saveAppSettingsAction} className="form-grid" style={{ alignItems: 'start' }}>
           <label className="field">
-            <span>Preis pro Lizenz (€)</span>
+            <span>Preis pro Lizenz (€, inkl. 20 % USt.)</span>
             <input
               name="price"
               defaultValue={(sales.priceCents / 100).toFixed(2).replace('.', ',')}
@@ -123,6 +146,20 @@ export default async function AppAdmin({
               disabled={!owner}
               required
             />
+          </label>
+          <label className="field">
+            <span>Absender der Lizenz-E-Mails</span>
+            <input
+              name="sender_email"
+              type="email"
+              defaultValue={seller.email}
+              disabled={!owner}
+              required
+            />
+            <small className="muted">
+              Postfach der GmbH im selben Microsoft-365-Konto wie bestellung@. Antworten gehen auch
+              dorthin.
+            </small>
           </label>
           <label className="field">
             <span>Play-Store-Link</span>
