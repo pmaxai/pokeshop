@@ -15,6 +15,7 @@ export const SHIPPING_LABELS: Record<string, string> = {
   standard: 'Standard',
   insured: 'Versichert',
   tracked: 'Nachverfolgt (ohne Versicherung)',
+  none: 'Kein Versand (App-Lizenz)',
 };
 
 export const EVENT_LABELS: Record<string, string> = {
@@ -34,6 +35,9 @@ export const EVENT_LABELS: Record<string, string> = {
   note: 'Notiz geändert',
   withdrawal_received: 'Widerruf eingegangen',
   dispute_opened: 'Zahlung angefochten',
+  licenses_issued: 'Lizenzschlüssel erstellt und verschickt',
+  license_mail_resent: 'Lizenz-E-Mail erneut gesendet',
+  licenses_revoked: 'Lizenzen gesperrt',
 };
 
 export const MAIL_LABELS: Record<string, string> = {
@@ -45,6 +49,8 @@ export const MAIL_LABELS: Record<string, string> = {
   withdrawal_ack: 'Widerruf: Eingangsbestätigung',
   withdrawal_notification: 'Widerruf: Hinweis an den Shop',
   admin_alert: 'Hinweis',
+  license_delivery: 'App-Lizenz mit Rechnung',
+  license_resend: 'App-Lizenz erneut angefordert',
 };
 
 export const dateTime = (d: Date | string | null | undefined) =>

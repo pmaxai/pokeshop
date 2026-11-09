@@ -28,6 +28,13 @@ export async function GET(req: NextRequest) {
     if (closed === 'expired')
       await releaseOrder(db(), { id: order.id }, 'cancelled', 'buyer_cancelled');
   }
+  // A licence purchase goes back to the app page, card orders to the cart.
+  if (req.nextUrl.searchParams.get('app') === '1') {
+    return NextResponse.redirect(
+      `${config.baseUrl}${getPathname({ href: '/app', locale })}?cancelled=1#kaufen`,
+      303,
+    );
+  }
   return NextResponse.redirect(
     `${config.baseUrl}${getPathname({ href: '/warenkorb', locale })}?cancelled=1`,
     303,

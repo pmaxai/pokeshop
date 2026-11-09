@@ -37,6 +37,7 @@ export async function SiteHeader({
           <Link href="/veranstaltungen" aria-current={active === 'events' ? 'page' : undefined}>
             {t('events')}
           </Link>
+          <Link href="/app">{t('app')}</Link>
         </nav>
         <SearchForm
           query={query}

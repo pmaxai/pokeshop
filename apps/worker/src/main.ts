@@ -18,6 +18,12 @@ import {
   type MailContext,
 } from '@pokeshop/core/mail';
 import { expireHolds, runPendingRefunds } from '@pokeshop/core/orders';
+import { licenseClientFromEnv } from '@pokeshop/core/license-client';
+import {
+  issueOrderLicenses,
+  resendLicensesByEmail,
+  revokeOrderLicenses,
+} from '@pokeshop/core/licenses';
 import { paymentsFromEnv } from '@pokeshop/core/payments';
 import {
   fillLocalNames,
@@ -37,6 +43,7 @@ const sql = createSql(process.env.DATABASE_URL, { max: 4, applicationName: 'poke
 const tcgdex = httpTcgdexClient();
 const payments = paymentsFromEnv();
 const mailer = mailTransportFromEnv();
+const licenses = licenseClientFromEnv();
 let stopping = false;
 
 /** Heartbeat for the Docker health check; long jobs call it as they make progress. */
@@ -61,15 +68,44 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
     const lang = Object.values(TCGDEX_LOCAL_LANGS).find((l) => l === job.payload.lang);
     if (lang) await syncLocalName(sql, tcgdex, String(job.payload.card_ref), lang);
   },
+  // App licences: keys from the licence service after payment, e-mail with invoice.
+  'license.issue': async (job) => {
+    if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
+    const r = await issueOrderLicenses(sql, licenses, Number(job.payload.order_id));
+    console.log(`[licence] order ${String(job.payload.order_id)}: ${r}`);
+  },
+  'license.revoke': async (job) => {
+    if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
+    const n = await revokeOrderLicenses(
+      sql,
+      licenses,
+      Number(job.payload.order_id),
+      String(job.payload.reason ?? 'refund'),
+    );
+    console.log(`[licence] order ${String(job.payload.order_id)}: revoked ${n}`);
+  },
+  // "Licence e-mail lost?" on the app page.
+  'license.resend': async (job) => {
+    if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
+    await resendLicensesByEmail(
+      sql,
+      licenses,
+      String(job.payload.email),
+      job.payload.locale === 'en' ? 'en' : 'de',
+    );
+  },
   // Invoice or credit note PDF requested in the admin before its mail went out.
   'document.render': async (job) => {
     await documentPdf(sql, Number(job.payload.document_id), await mailContext());
   },
 };
 
-async function runJobs() {
+/** Customer-facing jobs (licence keys right after payment) also run in the fast shop loop. */
+const SHOP_JOBS = ['license.issue', 'license.revoke', 'license.resend'];
+
+async function runJobs(kinds?: readonly string[]) {
   for (let i = 0; i < 10 && !stopping; i++) {
-    const job = await claimJob(sql);
+    const job = await claimJob(sql, kinds);
     if (!job) return;
     const handler = handlers[job.kind];
     try {
@@ -99,11 +135,13 @@ async function mailContext(): Promise<MailContext> {
     mediaDir,
     company: (get('company') ?? {}) as MailContext['company'],
     replyTo: String(get('shop_mailbox') ?? 'bestellung@pokemonkarten.at'),
+    licenses,
   };
 }
 
 /** Holds, refunds and mails: own loop every 5 s, so a long card sync never delays them. */
 async function runShop() {
+  await runJobs(SHOP_JOBS);
   if (payments) {
     const n = await expireHolds(sql, payments);
     if (n) console.log(`[holds] released ${n} expired reservation(s)`);

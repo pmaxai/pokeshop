@@ -30,6 +30,11 @@ export function tcgdexClient(): TcgdexClient {
 
 export const db = getSql;
 
+/** App licences can be sold only when the shop can reach the licence service. */
+export function licenseServiceConfigured(): boolean {
+  return Boolean(process.env.LICENSE_SERVICE_URL?.trim() && process.env.LICENSE_SHOP_TOKEN?.trim());
+}
+
 /** Admin settings with sensible defaults. */
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const [row] = await db()<{ value: T }[]>`SELECT value FROM settings WHERE key = ${key}`;

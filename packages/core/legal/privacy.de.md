@@ -12,7 +12,7 @@ Verantwortlich ist der Betreiber von {{company.public_name}}, {{company.address}
 
 - **Keine Zugriffsprotokolle, kein Tracking.** Wir speichern beim Aufruf der Seiten keine IP-Adressen und setzen keine Analyse-, Werbe- oder Tracking-Werkzeuge ein.
 - **Alles von unserem Server.** Schriften und Kartenbilder werden von unserem eigenen Server ausgeliefert; Ihr Browser baut dafür keine Verbindung zu Dritten auf. Die Kartenbilder beziehen wir serverseitig von TCGdex, ohne dabei Daten über Sie weiterzugeben.
-- **Cookies.** Wir verwenden nur technisch notwendige Cookies: „pk_cart“ merkt sich Ihren Warenkorb (bis zu 30 Tage) und „pk_admin“ hält die Anmeldung unserer Mitarbeiterinnen und Mitarbeiter im Verwaltungsbereich. Für diese Cookies ist keine Einwilligung nötig (§ 165 Abs. 3 TKG 2021).
+- **Cookies.** Wir verwenden nur technisch notwendige Cookies: „pk_cart“ merkt sich Ihren Warenkorb (bis zu 30 Tage), Formular-Cookies wie „pk_app_form“ behalten Ihre Eingaben für zwei Minuten, wenn ein Feld noch fehlt, und „pk_admin“ hält die Anmeldung unserer Mitarbeiterinnen und Mitarbeiter im Verwaltungsbereich. Für diese Cookies ist keine Einwilligung nötig (§ 165 Abs. 3 TKG 2021).
 
 Rechtsgrundlage ist unser berechtigtes Interesse an einem sicheren, funktionierenden Shop (Art. 6 Abs. 1 lit. f DSGVO).
 
@@ -42,11 +42,19 @@ Bestellbestätigungen, Rechnungen und Antworten auf Ihre Nachrichten verschicken
 
 Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ widerrufen, speichern wir Ihre Angaben und den Zeitpunkt des Eingangs, schicken Ihnen eine Eingangsbestätigung und bearbeiten den Widerruf (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 13a FAGG). Wir bewahren diese Daten auf, solange daraus Ansprüche entstehen können, in der Regel drei Jahre.
 
-## 8. Hosting
+## 8. App-Lizenzen (ScanPM)
+
+Wenn Sie eine Lizenz für die App ScanPM kaufen, verarbeiten wir Name, gegebenenfalls Firma, E-Mail-Adresse, Land, Anzahl der Lizenzen und den Zahlungsstatus (wie unter 3 und 4) und zählen, wie oft die App über Ihren Download-Link geladen wurde.
+
+Die Lizenzschlüssel verwaltet unser Lizenzdienst, der auf unserem eigenen Server läuft (siehe 9). Er speichert zu jeder Lizenz Name, E-Mail-Adresse und Bestellnummer, den Schlüssel verschlüsselt, und bei jeder Aktivierung eine zufällige Gerätekennung, die die App erzeugt, die Gerätebezeichnung (etwa das Handymodell), die App-Version sowie die Zeitpunkte der Aktivierung und der letzten Prüfung. Die App fragt beim Start und höchstens einmal pro Stunde nach, ob die Lizenz noch gilt; dabei überträgt sie nur ein Lizenz-Token und die App-Version. Ihre IP-Adresse verwendet der Dienst nur kurzzeitig im Arbeitsspeicher, um zu viele Aktivierungsversuche abzuwehren; sie wird nicht gespeichert.
+
+Rechtsgrundlagen sind die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) und unser berechtigtes Interesse am Schutz vor Missbrauch der Lizenzen (Art. 6 Abs. 1 lit. f DSGVO). Die Lizenzdaten speichern wir, solange die Lizenz besteht; Bestell- und Rechnungsdaten sieben Jahre (§ 132 BAO).
+
+## 9. Hosting
 
 Der Shop und die Datenbank laufen auf Servern von Exoscale (Akenes SA, Boulevard de Grancy 19A, 1006 Lausanne, Schweiz) in einem Rechenzentrum in Europa. Exoscale verarbeitet die Daten in unserem Auftrag. Für die Schweiz hat die EU-Kommission ein angemessenes Datenschutzniveau festgestellt.
 
-## 9. Ihre Rechte
+## 10. Ihre Rechte
 
 Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung, auf Datenübertragbarkeit sowie das Recht, einer Verarbeitung auf Grundlage unseres berechtigten Interesses zu widersprechen (Art. 15 bis 21 DSGVO). Schreiben Sie uns dazu an {{company.email}}.
 

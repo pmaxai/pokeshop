@@ -34,7 +34,7 @@ As of November 2026. This is a translation for your convenience; only the German
 
 1. You can pay by credit or debit card, Apple Pay, Google Pay, EPS bank transfer or PayPal. Payments are processed by Stripe (Stripe Payments Europe, Ltd., Dublin, Ireland). For payments with PayPal, PayPal's terms of use also apply.
 2. The purchase price is due when you order and is charged when you complete the payment.
-3. You receive the invoice by e-mail as soon as we ship your order.
+3. You receive the invoice by e-mail as soon as we ship your order; for app licences, with the licence e-mail.
 
 ## 6. Delivery and passing of risk
 
@@ -68,3 +68,13 @@ Please send complaints to {{company.email}}; we will reply as quickly as we can.
 
 1. Austrian law applies, excluding the UN Convention on Contracts for the International Sale of Goods and the conflict-of-law rules. For consumers, this choice of law applies only insofar as it does not deprive them of the protection afforded by the mandatory provisions of the law of the country in which they have their habitual residence.
 2. Actions against consumers resident or habitually staying in Austria must be brought before the court in whose district the consumer lives or habitually stays (§ 14 KSchG). For businesses, the place of jurisdiction is the court with subject-matter jurisdiction for 2440 Moosbrunn.
+
+## 13. App licences (ScanPM)
+
+1. We offer the Android app ScanPM. Buying a licence gives you the right, without time limit, to use the app for your own purposes on one device at a time. Updates are included for as long as we offer the app. No subscription is created.
+2. How to buy a licence: on the app page ({{app_url}}) you choose the number of licences, enter name, e-mail address and country, accept these terms, ask for immediate delivery (point 6) and click "Place order and pay". Until that click you can check and correct all entries. You then complete the payment with Stripe. The contract is concluded when the payment arrives. You receive the licence key, the download link and the invoice by e-mail right after. We currently sell licences only to customers resident or established in the European Union.
+3. The app is in a test phase (beta). Card recognition and the prices shown can be incomplete or inaccurate; the prices come from publicly available third-party data and are non-binding guide values. The app is currently available only for Android (version 8 or newer) and in English, and until it is listed in the Google Play Store it is provided as an installation file (APK). These properties are part of the agreed characteristics.
+4. The app needs an internet connection to activate, for card pictures and for updates; recognition and prices work without one. Activating binds the licence to a device. If you activate it on another device, use on the previous one ends.
+5. We may block a licence if the price is refunded or a payment is charged back.
+6. Right of withdrawal: for contracts for digital content not supplied on a tangible medium, the right of withdrawal ends when we have begun the supply after you have expressly agreed that we begin before the withdrawal period ends, you have acknowledged that you thereby lose your right of withdrawal, and we have provided you with a confirmation (§ 18 (1) 11 FAGG). You give this consent when buying; you receive the confirmation with the licence e-mail.
+7. Warranty: the statutory warranty for digital services applies (for consumers, the Austrian Consumer Warranty Act, VGG), for updates for as long as we provide them. Please report faults to {{company.email}}.

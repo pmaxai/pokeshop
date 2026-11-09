@@ -71,6 +71,7 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     shipping_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/versand-und-zahlung' : '/en/shipping-and-payment'}`,
     conditions_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/zustand' : '/en/condition-guide'}`,
     imprint_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/impressum' : '/en/legal-notice'}`,
+    app_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/app' : '/en/app'}`,
   };
   return md.replace(/\{\{\s*([a-z_.]+)\s*\}\}/g, (m, k: string) => values[k] ?? m);
 }

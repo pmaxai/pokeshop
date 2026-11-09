@@ -12,7 +12,7 @@ The controller is the operator of {{company.public_name}}, {{company.address}}, 
 
 - **No access logs, no tracking.** We do not store IP addresses when you visit the pages and we use no analytics, advertising or tracking tools.
 - **Everything from our server.** Fonts and card pictures are delivered by our own server; your browser does not connect to third parties for them. We fetch the card pictures from TCGdex on the server side without passing on any data about you.
-- **Cookies.** We use only technically necessary cookies: "pk_cart" remembers your cart (up to 30 days) and "pk_admin" keeps our staff signed in to the administration area. These cookies need no consent (§ 165 (3) TKG 2021).
+- **Cookies.** We use only technically necessary cookies: "pk_cart" remembers your cart (up to 30 days), form cookies such as "pk_app_form" keep your entries for two minutes when a field still needs fixing, and "pk_admin" keeps our staff signed in to the administration area. These cookies need no consent (§ 165 (3) TKG 2021).
 
 The legal basis is our legitimate interest in a secure, working shop (Art. 6 (1) (f) GDPR).
 
@@ -42,11 +42,19 @@ We send order confirmations, invoices and replies to your messages with Microsof
 
 If you withdraw from the contract with "Return an order (withdraw from contract)", we store your details and the time of receipt, send you an acknowledgement of receipt and process the withdrawal (Art. 6 (1) (c) GDPR in conjunction with § 13a FAGG). We keep this data as long as claims may arise from it, usually three years.
 
-## 8. Hosting
+## 8. App licences (ScanPM)
+
+When you buy a licence for the app ScanPM, we process name, company if given, e-mail address, country, number of licences and the payment status (as under 3 and 4), and count how often the app was downloaded through your download link.
+
+The licence keys are managed by our licence service, which runs on our own server (see 9). For each licence it stores name, e-mail address and order number, the key in encrypted form, and for each activation a random device id created by the app, the device name (such as the phone model), the app version and the times of activation and of the last check. The app asks at start and at most once an hour whether the licence is still valid; it only sends a licence token and the app version. The service uses your IP address only briefly in memory to fend off too many activation attempts; it is not stored.
+
+The legal bases are the performance of the contract (Art. 6(1)(b) GDPR) and our legitimate interest in protecting the licences against misuse (Art. 6(1)(f) GDPR). We keep licence data for as long as the licence exists, order and invoice data for seven years (§ 132 BAO).
+
+## 9. Hosting
 
 The shop and the database run on servers of Exoscale (Akenes SA, Boulevard de Grancy 19A, 1006 Lausanne, Switzerland) in a data centre in Europe. Exoscale processes the data on our behalf. The European Commission has found that Switzerland ensures an adequate level of data protection.
 
-## 9. Your rights
+## 10. Your rights
 
 You have the right of access, rectification, erasure and restriction of processing, the right to data portability and the right to object to processing based on our legitimate interest (Art. 15 to 21 GDPR). To use them, write to us at {{company.email}}.
 

@@ -4,6 +4,7 @@ import type { Db, Sql, Tx } from './db.ts';
 import { cardNameText, compareStorageLocations, rowNames, translationText } from './catalog.ts';
 import { splitGross } from './money.ts';
 import { formatDocumentNumber } from './numbering.ts';
+import { licenseDocumentLine } from './licenses.ts';
 import { enqueueMail } from './outbox.ts';
 import { orderEvent } from './orders.ts';
 import type { PaymentProvider } from './payments.ts';
@@ -130,8 +131,16 @@ export class FulfilmentError extends Error {
 // Documents
 // ---------------------------------------------------------------------------
 
+/** App licences of an order as a document line (licence orders only). */
+async function licenseLines(tx: Db, orderId: number): Promise<DocumentLine[]> {
+  const [l] = await tx<{ quantity: number; unit_price_cents: number }[]>`
+    SELECT quantity, unit_price_cents FROM order_licenses WHERE order_id = ${orderId}`;
+  return l ? [licenseDocumentLine(l.quantity, l.unit_price_cents)] : [];
+}
+
 /**
- * Issues the invoice when the order ships (the invoice states the delivery date, § 11 UStG).
+ * Issues the invoice when the order ships (the invoice states the delivery date, § 11 UStG);
+ * for app licences when the keys are sent.
  * Lines already refunded before shipping are left out. Returns null if nothing is left to bill.
  */
 export async function issueInvoice(
@@ -148,6 +157,7 @@ export async function issueInvoice(
   const lines = items
     .filter((i) => i.quantity > i.refunded_quantity)
     .map((i) => itemLine(i, i.quantity - i.refunded_quantity));
+  lines.push(...(await licenseLines(tx, orderId)));
   const shipping = o.shipping_cents - (await refundedShipping(tx, orderId));
   if (shipping > 0) lines.push(shippingLine(o.shipping_method, shipping));
   const gross = lines.reduce((a, l) => a + l.unit_cents * l.quantity, 0);
@@ -190,6 +200,17 @@ async function issueCreditNote(
             ${invoice.number}, ${tx.json((o.billing_address ?? o.shipping_address) as never)})
     RETURNING id`;
   return { id: doc!.id, number };
+}
+
+/** Credit note for a refunded licence order (all its licences). */
+export async function issueCreditNoteForLicense(
+  tx: Tx,
+  orderId: number,
+  refundId: number,
+  at: Date,
+): Promise<{ id: number; number: string } | null> {
+  const o = await lockOrder(tx, orderId);
+  return issueCreditNote(tx, o, refundId, await licenseLines(tx, orderId), at);
 }
 
 // ---------------------------------------------------------------------------
@@ -484,15 +505,21 @@ export async function pickList(
 // ---------------------------------------------------------------------------
 
 export const ORDER_VIEWS = {
-  open: { label: 'Zu packen', statuses: ['paid'] },
-  packing: { label: 'In Arbeit', statuses: ['packing'] },
-  shipped: { label: 'Versendet', statuses: ['shipped', 'completed'] },
-  refunded: { label: 'Erstattet', statuses: ['refunded'] },
+  open: { label: 'Zu packen', statuses: ['paid'], kind: 'cards' },
+  packing: { label: 'In Arbeit', statuses: ['packing'], kind: 'cards' },
+  shipped: { label: 'Versendet', statuses: ['shipped', 'completed'], kind: 'cards' },
+  licenses: {
+    label: 'App-Lizenzen',
+    statuses: ['paid', 'completed', 'refunded'],
+    kind: 'license',
+  },
+  refunded: { label: 'Erstattet', statuses: ['refunded'], kind: null },
   unpaid: {
     label: 'Nicht bezahlt',
     statuses: ['checkout', 'awaiting_payment', 'expired', 'payment_failed', 'cancelled'],
+    kind: null,
   },
-  all: { label: 'Alle', statuses: [] as string[] },
+  all: { label: 'Alle', statuses: [] as string[], kind: null },
 } as const;
 export type OrderView = keyof typeof ORDER_VIEWS;
 
@@ -509,6 +536,7 @@ export type OrderListRow = {
   refunded_cents: number;
   shipping_method: string;
   copies: number;
+  kind: 'cards' | 'license';
 };
 
 export async function listOrders(
@@ -516,11 +544,13 @@ export async function listOrders(
   input: { view: OrderView; q?: string; page?: number; pageSize?: number },
 ): Promise<{ rows: OrderListRow[]; total: number }> {
   const statuses = ORDER_VIEWS[input.view].statuses as readonly string[];
+  const kind = ORDER_VIEWS[input.view].kind as string | null;
   const q = input.q?.trim().slice(0, 100);
   const size = input.pageSize ?? 50;
   const where = db`
     true
     ${statuses.length ? db`AND o.status = ANY(${statuses as string[]}::text[])` : db``}
+    ${kind ? db`AND o.kind = ${kind}` : db``}
     ${
       q
         ? db`AND (o.number ILIKE ${'%' + q.replace(/[%_\\]/g, '\\$&') + '%'} OR lower(o.email) = ${q.toLowerCase()}
@@ -530,8 +560,9 @@ export async function listOrders(
   const [rows, [count]] = await Promise.all([
     db<OrderListRow[]>`
       SELECT o.id, o.number, o.status, o.created_at, o.paid_at, o.customer_name, o.email, o.country,
-             o.total_cents, o.refunded_cents, o.shipping_method,
-             (SELECT coalesce(sum(quantity), 0)::int FROM order_items i WHERE i.order_id = o.id) AS copies
+             o.total_cents, o.refunded_cents, o.shipping_method, o.kind,
+             (SELECT coalesce(sum(quantity), 0)::int FROM order_items i WHERE i.order_id = o.id)
+             + (SELECT coalesce(sum(quantity), 0)::int FROM order_licenses l WHERE l.order_id = o.id) AS copies
         FROM orders o WHERE ${where}
        ORDER BY ${input.view === 'open' || input.view === 'packing' ? db`o.paid_at ASC NULLS LAST` : db`o.created_at DESC`}, o.id DESC
        LIMIT ${size} OFFSET ${((input.page ?? 1) - 1) * size}`,
@@ -540,10 +571,16 @@ export async function listOrders(
   return { rows, total: count?.n ?? 0 };
 }
 
+/** Orders per status; licence orders count separately ("license:<status>"). */
 export async function orderCounts(db: Db): Promise<Record<string, number>> {
-  const rows = await db<{ status: string; n: number }[]>`
-    SELECT status, count(*)::int AS n FROM orders GROUP BY status`;
-  return Object.fromEntries(rows.map((r) => [r.status, r.n]));
+  const rows = await db<{ status: string; kind: string; n: number }[]>`
+    SELECT status, kind, count(*)::int AS n FROM orders GROUP BY status, kind`;
+  const out: Record<string, number> = {};
+  for (const r of rows) {
+    const k = r.kind === 'license' ? `license:${r.status}` : r.status;
+    out[k] = (out[k] ?? 0) + r.n;
+  }
+  return out;
 }
 
 export async function orderAdmin(db: Db, id: number) {
@@ -566,6 +603,7 @@ export async function orderAdmin(db: Db, id: number) {
       internal_note: string | null;
       lookup_token: string;
       agb_version: number | null;
+      kind: 'cards' | 'license';
     })[]
   >`SELECT * FROM orders WHERE id = ${id}`;
   if (!order) return null;
@@ -619,7 +657,31 @@ export async function orderAdmin(db: Db, id: number) {
     db<{ id: number; received_at: Date; items: string | null; handled_at: Date | null }[]>`
       SELECT id, received_at, items, handled_at FROM withdrawals WHERE order_id = ${id} ORDER BY id`,
   ]);
-  return { order, items, allocations, events, documents, refunds, mails, withdrawals };
+  const [license] = await db<
+    {
+      quantity: number;
+      unit_price_cents: number;
+      immediate_delivery_consent_at: Date;
+      license_ids: string[];
+      issued_at: Date | null;
+      revoked_at: Date | null;
+      downloads: number;
+      last_download_at: Date | null;
+    }[]
+  >`SELECT quantity, unit_price_cents, immediate_delivery_consent_at, license_ids, issued_at,
+           revoked_at, downloads, last_download_at
+      FROM order_licenses WHERE order_id = ${id}`;
+  return {
+    order,
+    items,
+    allocations,
+    events,
+    documents,
+    refunds,
+    mails,
+    withdrawals,
+    license: license ?? null,
+  };
 }
 
 export async function saveInternalNote(sql: Sql, id: number, note: string, actor: string) {

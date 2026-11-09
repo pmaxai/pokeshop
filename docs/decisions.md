@@ -2,6 +2,20 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-09 · App licences are sold as orders of their own kind
+
+ScanPM licences are bought on `/app` through their own short checkout (name, e-mail, EU country,
+number of licences, consent to immediate delivery), not through the card cart. The purchase is
+a row in `orders` with `kind = 'license'` and the quantity in `order_licenses`, so Stripe,
+webhooks, invoice numbers, refunds and the admin order list work as for cards. After payment the
+worker job `license.issue` gets the keys from the licence service (idempotent per order number),
+issues the invoice and mails key, QR code and download link. Keys stay only in the licence
+service; the mail asks for them when it is rendered. A full refund (admin or Stripe dashboard)
+queues `license.revoke`. The APK is uploaded in the admin and served from MEDIA_DIR through the
+order's secret link; once `app_play_store_url` is set, page, mails and that link point to the
+Play Store instead. The consent to immediate delivery (§ 18 Abs. 1 Z 11 FAGG) is stored on the
+order and confirmed in the licence mail.
+
 ## 2026-11-08 · Scanner-app licences: own service, one active device, offline never blocks
 
 Licences for the scanner app come from `apps/license`, a small container next to web and worker
