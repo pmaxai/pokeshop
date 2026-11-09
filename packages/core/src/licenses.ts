@@ -12,15 +12,16 @@ import { enqueueJob } from './jobs.ts';
 import { currentLegalVersions } from './legal.ts';
 import type { LicenseClient } from './license-client.ts';
 import { newOrderNumber } from './numbering.ts';
-import { orderEvent, type CreatedOrder } from './orders.ts';
+import { orderEvent, validPostcode, type CreatedOrder } from './orders.ts';
 import { alertShop, enqueueMail } from './outbox.ts';
 import type { PaymentProvider } from './payments.ts';
 import { STRIPE_MIN_SESSION_MINUTES } from './reservation.ts';
 import { orderVat } from './vat.ts';
 
 export const APP_NAME = 'ScanPM';
-/** Five licences at € 80 stay within a small-amount invoice (≤ € 400). */
-export const MAX_LICENSES_PER_ORDER = 5;
+/** The licence service issues at most 50 keys per order. */
+export const MAX_LICENSES_PER_ORDER = 50;
+export const DEFAULT_LICENSE_PRICE_CENTS = 13900;
 
 // ---------------------------------------------------------------------------
 // Checkout form
@@ -28,29 +29,42 @@ export const MAX_LICENSES_PER_ORDER = 5;
 
 const required = (max: number) => z.string().trim().min(1, 'required').max(max, 'too_long');
 
-export const LicenseCheckout = z.object({
-  name: required(100),
-  company: z
-    .string()
-    .trim()
-    .max(100, 'too_long')
-    .transform((v) => v || undefined)
-    .optional(),
-  email: z.email('invalid_email').trim().toLowerCase().max(200, 'too_long'),
-  country: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{2}$/, 'required'),
-  quantity: z.coerce
-    .number('invalid')
-    .int('invalid')
-    .min(1, 'invalid')
-    .max(MAX_LICENSES_PER_ORDER, 'too_many'),
-  acceptTerms: z.literal(true, 'terms'),
-  /** § 18 Abs. 1 Z 11 FAGG: start right away, the right of withdrawal ends with delivery. */
-  immediateDelivery: z.literal(true, 'consent'),
-});
+/**
+ * The billing address is required: invoices above € 400 must name the buyer's address
+ * (§ 11 UStG), and three licences are already more.
+ */
+export const LicenseCheckout = z
+  .object({
+    name: required(100),
+    company: z
+      .string()
+      .trim()
+      .max(100, 'too_long')
+      .transform((v) => v || undefined)
+      .optional(),
+    email: z.email('invalid_email').trim().toLowerCase().max(200, 'too_long'),
+    street: required(120),
+    postcode: z.string().trim().min(1, 'required').max(10, 'too_long'),
+    city: required(80),
+    country: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/, 'required'),
+    quantity: z.coerce
+      .number('invalid')
+      .int('invalid')
+      .min(1, 'invalid')
+      .max(MAX_LICENSES_PER_ORDER, 'too_many'),
+    acceptTerms: z.literal(true, 'terms'),
+    /** § 18 Abs. 1 Z 11 FAGG: start right away, the right of withdrawal ends with delivery. */
+    immediateDelivery: z.literal(true, 'consent'),
+  })
+  .superRefine((v, ctx) => {
+    if (v.postcode && /^[A-Z]{2}$/.test(v.country) && !validPostcode(v.country, v.postcode)) {
+      ctx.addIssue({ code: 'custom', path: ['postcode'], message: 'invalid_postcode' });
+    }
+  });
 export type LicenseCheckout = z.infer<typeof LicenseCheckout>;
 
 export function validateLicenseCheckout(
@@ -62,6 +76,20 @@ export function validateLicenseCheckout(
   for (const i of r.error.issues) {
     const k = i.path.join('.') || '_';
     errors[k] ??= i.message.startsWith('Invalid') ? 'invalid' : i.message;
+  }
+  // The postcode check needs the whole object to parse first; report it alongside the rest.
+  const raw = (input ?? {}) as Record<string, unknown>;
+  const country = String(raw.country ?? '')
+    .trim()
+    .toUpperCase();
+  const postcode = String(raw.postcode ?? '').trim();
+  if (
+    !errors.postcode &&
+    postcode &&
+    /^[A-Z]{2}$/.test(country) &&
+    !validPostcode(country, postcode)
+  ) {
+    errors.postcode = 'invalid_postcode';
   }
   return { ok: false, errors };
 }
@@ -145,12 +173,12 @@ export async function appSales(db: Db, serviceConfigured: boolean): Promise<AppS
   const rows = await db<{ key: string; value: unknown }[]>`
     SELECT key, value FROM settings WHERE key IN ('app_license_price_cents', 'app_play_store_url')`;
   const get = (k: string) => rows.find((r) => r.key === k)?.value;
-  const price = Number(get('app_license_price_cents') ?? 8000);
+  const price = Number(get('app_license_price_cents') ?? DEFAULT_LICENSE_PRICE_CENTS);
   const store = get('app_play_store_url');
   const playStoreUrl = typeof store === 'string' && store.startsWith('https://') ? store : null;
   const rel = await currentRelease(db);
   return {
-    priceCents: Number.isInteger(price) && price > 0 ? price : 8000,
+    priceCents: Number.isInteger(price) && price > 0 ? price : DEFAULT_LICENSE_PRICE_CENTS,
     playStoreUrl,
     release: rel,
     open: serviceConfigured && (rel !== null || playStoreUrl !== null),
@@ -233,7 +261,14 @@ export async function createLicenseOrder(
     const token = randomBytes(24).toString('base64url');
     // Nothing is held; the order just lives as long as its Stripe page.
     const until = new Date(now.getTime() + (STRIPE_MIN_SESSION_MINUTES + 5) * 60_000);
-    const billing = { name: d.name, company: d.company, country: country.code };
+    const billing = {
+      name: d.name,
+      company: d.company,
+      street: d.street,
+      postcode: d.postcode,
+      city: d.city,
+      country: country.code,
+    };
     const [o] = await tx<{ id: number }[]>`
       INSERT INTO orders (number, lookup_token, kind, status, locale, country, email, customer_name,
                           billing_address, goods_cents, shipping_cents, total_cents,

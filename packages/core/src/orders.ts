@@ -21,6 +21,11 @@ import { orderVat, type VatRegime } from './vat.ts';
 
 const POSTCODE: Record<string, RegExp> = { AT: /^\d{4}$/, DE: /^\d{5}$/ };
 
+/** Postcode format by country (exact for AT and DE, loose elsewhere). */
+export function validPostcode(country: string, postcode: string): boolean {
+  return (POSTCODE[country] ?? /^[A-Z0-9][A-Z0-9 -]{1,9}$/i).test(postcode);
+}
+
 const required = (max: number) => z.string().trim().min(1, 'required').max(max, 'too_long');
 const optional = (max: number) =>
   z
@@ -44,8 +49,7 @@ export const Address = z
       .regex(/^[A-Z]{2}$/, 'required'),
   })
   .superRefine((a, ctx) => {
-    const re = POSTCODE[a.country] ?? /^[A-Z0-9][A-Z0-9 -]{1,9}$/i;
-    if (a.postcode && !re.test(a.postcode))
+    if (a.postcode && !validPostcode(a.country, a.postcode))
       ctx.addIssue({ code: 'custom', path: ['postcode'], message: 'invalid_postcode' });
   });
 export type Address = z.infer<typeof Address>;

@@ -48,6 +48,9 @@ export async function buyLicenseAction(form: FormData) {
     name: str(form, 'name'),
     company: str(form, 'company'),
     email: str(form, 'email'),
+    street: str(form, 'street'),
+    postcode: str(form, 'postcode'),
+    city: str(form, 'city'),
     country: str(form, 'country'),
     quantity: str(form, 'quantity') || '1',
   };
