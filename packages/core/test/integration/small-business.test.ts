@@ -43,7 +43,7 @@ test('the shop runs as sole trader under the small business scheme', async () =>
   );
   assert.equal(settings.small_business, true);
   assert.equal(settings.high_value_threshold_cents, 5000, 'high value above € 50');
-  assert.equal(company.name, 'Maximilian Pinter Sammelkartenverkauf');
+  assert.equal(company.name, 'Maximilian Pinter');
   assert.equal(company.public_name, 'pokemonkarten.at');
   assert.equal(company.trade, 'Handel mit Waren aller Art');
   assert.equal(company.vat_id, '');
@@ -139,7 +139,7 @@ test('no VAT at checkout, in mails and on the invoice', async () => {
   assert.match(confirm.html, /Bestellung retournieren \(Vertrag widerrufen\)/);
   assert.match(
     confirm.html,
-    /Maximilian Pinter Sammelkartenverkauf · Wienerstraße 1, 2440 Moosbrunn<\/p>/,
+    /Maximilian Pinter · Wienerstraße 1, 2440 Moosbrunn<\/p>/,
     'the mail footer identifies the seller (contract confirmation), without register or UID',
   );
 

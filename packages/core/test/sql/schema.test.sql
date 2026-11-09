@@ -18,7 +18,7 @@ BEGIN
   ASSERT (SELECT value::int FROM settings WHERE key = 'reservation_minutes') = 10;
   -- Sole trader under the small business scheme: no UID, no VAT.
   ASSERT (SELECT value->>'name' FROM settings WHERE key = 'company')
-         = 'Maximilian Pinter Sammelkartenverkauf';
+         = 'Maximilian Pinter';
   ASSERT (SELECT value->>'vat_id' FROM settings WHERE key = 'company') = '';
   ASSERT (SELECT value FROM settings WHERE key = 'small_business') = 'true'::jsonb;
 

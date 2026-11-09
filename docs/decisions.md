@@ -55,8 +55,8 @@ number.
 
 ## 2026-11-07 · Sole trader under the small business scheme; name only in the legal notice
 
-The shop is run by Maximilian Pinter Sammelkartenverkauf (sole trader, "Handel mit Waren aller
-Art") under the Kleinunternehmerregelung (§ 6 Abs. 1 Z 27 UStG). The setting `small_business`
+The shop is run by Maximilian Pinter (sole trader, "Handel mit Waren aller Art"; since migration
+0012 without the addition "Sammelkartenverkauf") under the Kleinunternehmerregelung (§ 6 Abs. 1 Z 27 UStG). The setting `small_business`
 makes every order VAT-free (regime `small_business`); invoices and credit notes carry the note
 "Umsatzsteuerbefreit, Kleinunternehmer gemäß § 6 Abs. 1 Z 27 UStG" instead of a VAT breakdown, and
 show no UID. Switching it off brings back domestic/OSS/export VAT.

@@ -19,33 +19,34 @@ export function LicenseQuantity({
   error: string | null;
 }) {
   const t = useTranslations('App.form');
-  const [n, setN] = useState(initial);
-  const price = formatEuro(priceCents, locale);
+  const [value, setValue] = useState(String(initial));
+  const n = Number(value);
+  const valid = Number.isInteger(n) && n >= 1 && n <= max;
   return (
     <>
       <label className={error ? 'field field--error' : 'field'} htmlFor="app-quantity">
         <span>{t('quantity')}</span>
-        <select
+        <input
           id="app-quantity"
           name="quantity"
-          value={String(n)}
-          onChange={(e) => setN(Number(e.target.value))}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={max}
+          step={1}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
           aria-describedby="app-quantity-hint"
-        >
-          {Array.from({ length: max }, (_, i) => i + 1).map((k) => (
-            <option key={k} value={k}>
-              {t('each', { count: k, price })}
-            </option>
-          ))}
-        </select>
+          aria-invalid={error ? true : undefined}
+        />
         <small id="app-quantity-hint" className={error ? 'field__error' : 'muted'}>
-          {error ?? t('quantityHint', { max })}
+          {error ?? t('quantityHint', { max, price: formatEuro(priceCents, locale) })}
         </small>
       </label>
       <dl className="totals">
         <dt className="totals__total">{t('total')}</dt>
         <dd className="totals__total" aria-live="polite">
-          {formatEuro(priceCents * n, locale)}
+          {valid ? formatEuro(priceCents * n, locale) : '–'}
         </dd>
       </dl>
     </>

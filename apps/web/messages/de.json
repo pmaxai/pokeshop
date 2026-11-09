@@ -337,7 +337,7 @@
   },
   "App": {
     "metaTitle": "ScanPM – Pokémon-Karten scannen, Preise sehen",
-    "metaDescription": "Die Android-App von pokemonkarten.at: Karte vor die Kamera halten und den Cardmarket-Preis der richtigen Variante sehen, auch offline. Beta, Einmal-Lizenz um 80 €.",
+    "metaDescription": "Die Android-App von pokemonkarten.at: Karte vor die Kamera halten und den Cardmarket-Preis der richtigen Variante sehen, auch offline. Beta, Einmal-Lizenz mit Updates.",
     "beta": "Beta",
     "tagline": "Karte vor die Kamera, Preis auf den Schirm. Auch ohne Netz.",
     "lead": "ScanPM erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Börsen und Openings.",
@@ -420,14 +420,13 @@
     "form": {
       "title": "Lizenz kaufen",
       "quantity": "Anzahl Lizenzen",
-      "quantityHint": "Eine Lizenz pro Gerät, bis zu {max} pro Bestellung.",
+      "quantityHint": "Je {price}. Eine Lizenz pro Gerät, bis zu {max} pro Bestellung.",
       "name": "Name",
       "company": "Firma (optional)",
       "email": "E-Mail-Adresse",
       "emailHint": "Hierhin schicken wir Lizenzschlüssel und Rechnung.",
       "country": "Land",
       "total": "Gesamt",
-      "each": "{count} × {price}",
       "consent": "Ich verlange ausdrücklich, dass ihr gleich nach der Zahlung liefert (Lizenzschlüssel und Download), und weiß, dass mein Widerrufsrecht damit erlischt.",
       "submitNote": "Danach geht es zur Zahlung bei Stripe: Karte, Apple Pay, Google Pay, EPS oder PayPal. Der Schlüssel kommt direkt nach der Zahlung per E-Mail.",
       "closed": "Der Verkauf startet in Kürze.",
@@ -441,8 +440,13 @@
         "consent": "Ohne diese Zustimmung können wir den Schlüssel nicht sofort schicken.",
         "too_many": "Höchstens {max} Lizenzen pro Bestellung.",
         "invalid": "Bitte prüfen.",
-        "country": "Lizenzen gibt es derzeit nur in der EU."
-      }
+        "country": "Lizenzen gibt es derzeit nur in der EU.",
+        "invalid_postcode": "Diese PLZ passt nicht zum Land."
+      },
+      "street": "Straße und Hausnummer",
+      "postcode": "PLZ",
+      "city": "Ort",
+      "streetHint": "Für die Rechnung."
     },
     "lost": {
       "title": "Lizenz-E-Mail verloren?",

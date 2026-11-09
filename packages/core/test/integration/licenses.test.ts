@@ -45,7 +45,7 @@ const mailCtx = () => ({
   mediaDir,
   replyTo: 'bestellung@pokemonkarten.at',
   company: {
-    name: 'Maximilian Pinter Sammelkartenverkauf',
+    name: 'Maximilian Pinter',
     street: 'Wienerstraße 1',
     postcode: '2440',
     city: 'Moosbrunn',
@@ -57,6 +57,9 @@ const mailCtx = () => ({
 const form = (over: Record<string, unknown> = {}) => ({
   name: 'Misty Waterflower',
   email: 'Misty@Example.com',
+  street: 'Arenaweg 2',
+  postcode: '80331',
+  city: 'München',
   country: 'de',
   quantity: '2',
   acceptTerms: true,
@@ -77,10 +80,15 @@ test('the form needs the consent to immediate delivery and an EU country', async
   assert.equal(ok.data.email, 'misty@example.com');
   assert.equal(ok.data.country, 'DE');
   assert.equal(ok.data.quantity, 2);
-  const bad = validateLicenseCheckout(form({ immediateDelivery: false, quantity: '6' }));
+  const bad = validateLicenseCheckout(
+    form({ immediateDelivery: false, quantity: '51', postcode: '1010', street: '' }),
+  );
   assert.ok(!bad.ok);
   assert.equal(bad.errors.immediateDelivery, 'consent');
-  assert.equal(bad.errors.quantity, 'too_many');
+  assert.equal(bad.errors.quantity, 'too_many', 'the licence service issues at most 50');
+  assert.equal(bad.errors.postcode, 'invalid_postcode', 'German postcodes have five digits');
+  assert.equal(bad.errors.street, 'required', 'invoices above € 400 need the address');
+  assert.ok(validateLicenseCheckout(form({ quantity: '50' })).ok);
   await assert.rejects(
     createLicenseOrder(sql, {
       locale: 'de',
@@ -104,7 +112,7 @@ test('sales open only with the licence service and something to install', async 
   });
   const s = await appSales(sql, true);
   assert.equal(s.open, true);
-  assert.equal(s.priceCents, 8000);
+  assert.equal(s.priceCents, 13900);
   assert.equal(s.release?.version, '1.2.30');
   assert.equal((await appSales(sql, false)).open, false, 'no licence service');
   await saveAppSettings(sql, {

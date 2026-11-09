@@ -255,6 +255,14 @@ export default async function AppPage({ params, searchParams }: Props) {
                   autoComplete: 'email',
                   hint: t('form.emailHint'),
                 })}
+                {field('street', t('form.street'), {
+                  autoComplete: 'billing street-address',
+                  hint: t('form.streetHint'),
+                })}
+                <div className="field-row">
+                  {field('postcode', t('form.postcode'), { autoComplete: 'billing postal-code' })}
+                  {field('city', t('form.city'), { autoComplete: 'billing address-level2' })}
+                </div>
                 <label
                   className={err('country') ? 'field field--error' : 'field'}
                   htmlFor="app-country"

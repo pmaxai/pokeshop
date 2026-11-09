@@ -337,7 +337,7 @@
   },
   "App": {
     "metaTitle": "ScanPM – scan Pokémon cards, see prices",
-    "metaDescription": "The Android app by pokemonkarten.at: hold a card to the camera and see the Cardmarket price of the right printing, offline too. Beta, one-off licence for € 80.",
+    "metaDescription": "The Android app by pokemonkarten.at: hold a card to the camera and see the Cardmarket price of the right printing, offline too. Beta, one-off licence with updates.",
     "beta": "Beta",
     "tagline": "Card in front of the camera, price on the screen. No signal needed.",
     "lead": "ScanPM recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
@@ -420,14 +420,13 @@
     "form": {
       "title": "Buy a licence",
       "quantity": "Number of licences",
-      "quantityHint": "One licence per device, up to {max} per order.",
+      "quantityHint": "{price} each. One licence per device, up to {max} per order.",
       "name": "Name",
       "company": "Company (optional)",
       "email": "E-mail address",
       "emailHint": "We send the licence key and the invoice here.",
       "country": "Country",
       "total": "Total",
-      "each": "{count} × {price}",
       "consent": "I expressly ask you to deliver right after payment (licence key and download) and know that my right of withdrawal ends with it.",
       "submitNote": "Next you pay with Stripe: card, Apple Pay, Google Pay, EPS or PayPal. The key arrives by e-mail right after payment.",
       "closed": "Sales start shortly.",
@@ -441,8 +440,13 @@
         "consent": "Without this consent we can’t send the key right away.",
         "too_many": "At most {max} licences per order.",
         "invalid": "Please check this.",
-        "country": "Licences are only available in the EU for now."
-      }
+        "country": "Licences are only available in the EU for now.",
+        "invalid_postcode": "This postcode doesn’t match the country."
+      },
+      "street": "Street and number",
+      "postcode": "Postcode",
+      "city": "City",
+      "streetHint": "For the invoice."
     },
     "lost": {
       "title": "Lost your licence e-mail?",

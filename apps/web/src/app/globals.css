@@ -1175,6 +1175,8 @@ p {
   display: grid;
   grid-template-columns: 7rem 1fr;
   gap: var(--s-3);
+  /* an error under one field must not stretch its neighbour */
+  align-items: start;
 }
 .check {
   display: flex;
