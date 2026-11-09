@@ -788,18 +788,20 @@ async function renderLicenseMail(db: Db, mail: OutboxMail, ctx: MailContext): Pr
   // Download link: the order's own link (its token is the credential).
   const refs = [...new Set(licenses.map((l) => l.order_ref).filter((r): r is string => !!r))];
   const tokens = refs.length
-    ? await db<{ number: string; lookup_token: string }[]>`
-        SELECT o.number, o.lookup_token FROM orders o JOIN order_licenses l ON l.order_id = o.id
+    ? await db<{ number: string; lookup_token: string; seller: 'shop' | 'gmbh' }[]>`
+        SELECT o.number, o.lookup_token, o.seller FROM orders o JOIN order_licenses l ON l.order_id = o.id
          WHERE o.number = ANY(${refs}::text[]) AND o.status IN ('paid', 'completed')
            AND l.revoked_at IS NULL
          ORDER BY o.paid_at DESC`
     : [];
   const token = order?.lookup_token ?? tokens[0]?.lookup_token ?? null;
   const app = await appDownload(db);
-  // Licences are the GmbH's: its sender and footer (older shop orders keep the shop's).
-  const gmbh = (order ? order.seller === 'gmbh' : !!ctx.licenseSeller?.name)
-    ? gmbhContext(ctx)
-    : null;
+  // Licences are the GmbH's: its sender and footer. Older shop orders keep the shop's, and a
+  // resend goes out as the GmbH unless all its licences were bought from the shop.
+  const fromGmbh = order
+    ? order.seller === 'gmbh'
+    : !!ctx.licenseSeller?.name && (tokens.length === 0 || tokens.some((x) => x.seller === 'gmbh'));
+  const gmbh = fromGmbh ? gmbhContext(ctx) : null;
 
   const inline: Attachment[] = [];
   const boxes: string[] = [];
@@ -1006,6 +1008,8 @@ async function resolveAttachment(
   const content = await renderLegalPdf(docs, {
     company: ctx.company as Record<string, unknown>,
     seller: (ctx.licenseSeller ?? undefined) as Record<string, unknown> | undefined,
+    // The licence terms are the GmbH's contract: its name heads the PDF.
+    issuer: terms && ctx.licenseSeller?.name ? String(ctx.licenseSeller.name) : undefined,
     baseUrl: ctx.baseUrl,
     locale,
     note:

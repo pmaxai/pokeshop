@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { licensePricing, netLicensePrice } from '../src/licenses.ts';
+import { licensePricing, netLicensePrice, stripeTaxProblem } from '../src/licenses.ts';
 import { fakeProvider, paymentsFromEnv, stripeProvider } from '../src/payments.ts';
 import { licenseCountryAllowed, parseTaxId, viesChecker } from '../src/tax-id.ts';
 
@@ -112,4 +112,23 @@ test('the GmbH account comes from its own variables, never from the shop’s', (
   assert.equal(g?.name, 'stripe');
   assert.equal(g?.seller, 'gmbh');
   assert.equal(paymentsFromEnv({ PUBLIC_BASE_URL: 'http://localhost:3000' }, 'gmbh')?.name, 'fake');
+});
+
+test('an alert when Stripe Tax charged other than the buyer was shown', () => {
+  const de = { vat_regime: 'oss', tax_country: 'DE', vat_rate_bp: 1900 };
+  const line = (rateBp: number, country: string, reason = 'standard_rated') => ({
+    rateBp,
+    country,
+    reason,
+  });
+  assert.equal(stripeTaxProblem(de, 4439, line(1900, 'DE')), null);
+  assert.match(
+    stripeTaxProblem(de, 0, line(0, 'DE', 'not_collecting'))!,
+    /keine \(not_collecting\)/,
+  );
+  assert.match(stripeTaxProblem(de, 4633, line(2000, 'AT'))!, /von AT/);
+  assert.match(stripeTaxProblem(de, null, null)!, /Stripe Tax aus/);
+  const rc = { vat_regime: 'reverse_charge', tax_country: null, vat_rate_bp: 0 };
+  assert.equal(stripeTaxProblem(rc, 0, line(0, 'DE', 'reverse_charge')), null);
+  assert.match(stripeTaxProblem(rc, 4401, line(1900, 'DE'))!, /keine Umsatzsteuer/);
 });

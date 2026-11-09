@@ -192,7 +192,10 @@ function toSessionInfo(s: Stripe.Checkout.Session): SessionInfo {
   };
 }
 
-/** Stripe's PDF links are public but unguessable; only ever fetch them from Stripe. */
+/**
+ * Stripe's PDF links are public but unguessable. The link must be Stripe's; Stripe may redirect
+ * to wherever it stores the file, so the answer is checked for being a PDF instead.
+ */
 const STRIPE_FILE_HOST = /^https:\/\/([a-z0-9-]+\.)*stripe\.com\//;
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
@@ -200,7 +203,7 @@ async function fetchStripePdf(url: string, doFetch: typeof fetch): Promise<Buffe
   if (!STRIPE_FILE_HOST.test(url)) throw new Error('not a Stripe document link');
   const res = await doFetch(url, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`Stripe PDF ${res.status}`);
-  if (!STRIPE_FILE_HOST.test(res.url || url)) throw new Error('Stripe PDF redirected elsewhere');
+  if (!(res.url || url).startsWith('https://')) throw new Error('Stripe PDF left HTTPS');
   const body = Buffer.from(await res.arrayBuffer());
   if (body.length > MAX_PDF_BYTES || body.subarray(0, 5).toString('latin1') !== '%PDF-') {
     throw new Error('Stripe did not return a PDF');
@@ -282,7 +285,10 @@ export function stripeProvider(opts: StripeOptions): PaymentProvider & {
     },
     async getSession(id) {
       return toSessionInfo(
-        await stripe.checkout.sessions.retrieve(id, { expand: ['payment_intent.payment_method'] }),
+        await stripe.checkout.sessions.retrieve(id, {
+          // The tax breakdown (rate, country, reverse charge) is only sent when asked for.
+          expand: ['payment_intent.payment_method', 'total_details.breakdown'],
+        }),
       );
     },
     async expireSession(id) {

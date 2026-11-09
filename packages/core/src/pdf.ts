@@ -374,9 +374,13 @@ function writeRuns(
 
 export async function renderLegalPdf(
   docs: { title: string; body_md: string; version: number }[],
-  ctx: LegalContext & { note?: string },
+  ctx: LegalContext & {
+    note?: string;
+    /** Who issues the texts, if not the shop (the GmbH). */ issuer?: string;
+  },
 ): Promise<Buffer> {
-  const doc = newDoc(docs.map((d) => d.title).join(' / '), String(ctx.company.name ?? ''));
+  const issuer = ctx.issuer ?? String(ctx.company.name ?? '');
+  const doc = newDoc(docs.map((d) => d.title).join(' / '), issuer);
   const left = doc.page.margins.left;
   const width = doc.page.width - left - doc.page.margins.right;
   docs.forEach((d, idx) => {
@@ -387,9 +391,7 @@ export async function renderLegalPdf(
       .font('Helvetica')
       .fontSize(8.5)
       .fillColor(MUTED)
-      .text(
-        `${ctx.company.name ?? ''} · ${ctx.locale === 'de' ? 'Fassung' : 'Version'} ${d.version}`,
-      );
+      .text(`${issuer} · ${ctx.locale === 'de' ? 'Fassung' : 'Version'} ${d.version}`);
     if (ctx.note) doc.moveDown(0.3).text(ctx.note, { width });
     doc.moveDown(0.8);
     const tokens = new Lexer().lex(fillPlaceholders(d.body_md, ctx));

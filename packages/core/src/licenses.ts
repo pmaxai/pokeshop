@@ -637,11 +637,27 @@ export async function licenseOrderPaid(
  * (total, tax, rate, country) and remembers the invoice Stripe created.
  */
 async function recordStripeTax(tx: Db, orderId: number, s: SessionInfo): Promise<number> {
-  const [o] = await tx<{ total_cents: number; vat_regime: string; tax_country: string | null }[]>`
-    SELECT total_cents, vat_regime, tax_country FROM orders WHERE id = ${orderId}`;
+  const [o] = await tx<
+    {
+      number: string;
+      total_cents: number;
+      vat_regime: string;
+      tax_country: string | null;
+      vat_rate_bp: number;
+    }[]
+  >`SELECT number, total_cents, vat_regime, tax_country, vat_rate_bp FROM orders WHERE id = ${orderId}`;
   const total = s.amountTotal ?? o!.total_cents;
   const line = (s.taxes ?? []).find((t) => t.amount > 0) ?? s.taxes?.[0] ?? null;
   const tax = s.amountTax ?? null;
+  const problem = stripeTaxProblem(o!, tax, line);
+  if (problem) {
+    await alertShop(
+      tx,
+      `Umsatzsteuer prüfen: ${o!.number}`,
+      `Stripe Tax hat anders gerechnet als erwartet: ${problem} Bitte die Steuereinstellungen (Registrierungen Österreich und OSS) im Stripe-Konto der GmbH prüfen; die Rechnung von Stripe zeigt, was berechnet wurde.`,
+      `stripe_tax:${orderId}`,
+    );
+  }
   await tx`
     UPDATE orders SET goods_cents = ${total}, total_cents = ${total},
            vat_cents = coalesce(${tax}::int, vat_cents),
@@ -653,6 +669,33 @@ async function recordStripeTax(tx: Db, orderId: number, s: SessionInfo): Promise
   await tx`UPDATE order_licenses SET stripe_invoice_id = ${s.invoiceId ?? null}
             WHERE order_id = ${orderId}`;
   return total;
+}
+
+/**
+ * Compares what Stripe Tax charged with what the buyer was shown: VAT of the expected country
+ * and rate for consumers and Austrian businesses, none for businesses abroad. Null when it fits.
+ */
+export function stripeTaxProblem(
+  expected: { vat_regime: string; tax_country: string | null; vat_rate_bp: number },
+  tax: number | null,
+  line: { rateBp: number | null; country: string | null; reason: string | null } | null,
+): string | null {
+  if (tax === null) return 'Stripe hat für diese Zahlung keine Steuer berechnet (Stripe Tax aus?).';
+  const net = expected.vat_regime === 'reverse_charge' || expected.vat_regime === 'export';
+  if (net) {
+    return tax === 0 ? null : `Erwartet war keine Umsatzsteuer, berechnet wurden ${tax} Cent.`;
+  }
+  if (tax === 0) {
+    return `Erwartet war ${expected.vat_rate_bp / 100} % USt. (${expected.tax_country}), berechnet wurde keine${line?.reason ? ` (${line.reason})` : ''}.`;
+  }
+  if (!line) return null;
+  if (line.country && expected.tax_country && line.country !== expected.tax_country) {
+    return `Erwartet war die USt. von ${expected.tax_country}, berechnet wurde die von ${line.country}.`;
+  }
+  if (line.rateBp !== null && line.rateBp !== expected.vat_rate_bp) {
+    return `Erwartet waren ${expected.vat_rate_bp / 100} %, berechnet wurden ${line.rateBp / 100} %.`;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -941,9 +984,10 @@ export async function refundLicenseOrder(
         refunded_cents: number;
         stripe_payment_intent_id: string | null;
         stripe_invoice_id: string | null;
+        locale: 'de' | 'en';
       }[]
     >`SELECT o.id, o.number, o.seller, o.status, o.total_cents, o.refunded_cents,
-             o.stripe_payment_intent_id, l.stripe_invoice_id
+             o.stripe_payment_intent_id, l.stripe_invoice_id, o.locale
         FROM orders o JOIN order_licenses l ON l.order_id = o.id
        WHERE o.id = ${input.orderId} AND o.kind = 'license' FOR UPDATE OF o`;
     if (!o) throw new Error('Lizenzbestellung nicht gefunden.');
@@ -975,6 +1019,7 @@ export async function refundLicenseOrder(
       number: o.number,
       seller: o.seller,
       invoiceId: o.stripe_invoice_id,
+      locale: o.locale,
     };
   });
   let stripeId: string;
@@ -983,7 +1028,11 @@ export async function refundLicenseOrder(
     if (prep.seller === 'gmbh') {
       const cn = await provider.creditInvoice({
         invoiceId: prep.invoiceId!,
-        memo: input.reason.trim() || `Erstattung ${prep.number}`,
+        // Printed on the buyer's credit note: never the admin's internal reason.
+        memo:
+          prep.locale === 'en'
+            ? `Refund of order ${prep.number}`
+            : `Erstattung zur Bestellung ${prep.number}`,
         idempotencyKey: `refund-${prep.refundId}`,
       });
       if (cn.total !== prep.amount && cn.total > 0) {

@@ -396,6 +396,10 @@ test('the licence e-mail comes from the GmbH, with Stripe’s invoice and the li
   assert.ok(alert, 'the shop hears about the sale');
   assert.equal(alert.from ?? null, null, 'alerts still come from the shop');
   assert.match(alert.html, /an die GmbH/);
+  assert.ok(
+    !t.sent.some((x) => /Umsatzsteuer prüfen/.test(x.subject)),
+    'Stripe Tax charged what the buyer was shown',
+  );
 });
 
 test('a business in another EU country pays net with reverse charge', async () => {
@@ -556,7 +560,7 @@ test('refund: Stripe credit note of the GmbH, money back, keys revoked', async (
   assert.match(r.creditNote!, /^TESTGS-/);
   const cn = gmbh.creditNotes.at(-1)!;
   assert.match(cn.invoiceId, /^in_fake_/);
-  assert.equal(cn.memo, 'customer could not install');
+  assert.match(cn.memo, /^Erstattung zur Bestellung PK-/, 'the internal reason stays internal');
   assert.equal(cn.total, 27800);
   const [refund] = await sql<{ stripe_refund_id: string; credit_note_number: string }[]>`
     SELECT stripe_refund_id, credit_note_number FROM refunds WHERE order_id = ${orderId}`;
@@ -650,4 +654,11 @@ test('an older licence order of the shop keeps the shop’s own invoice', async 
     m.attachments.filter((a) => !a.contentId).map((a) => a.name),
     [`Rechnung-${doc!.number}.pdf`, 'AGB-und-Widerrufsbelehrung.pdf'],
   );
+  // Its keys sent again: from the shop, which sold them.
+  assert.equal(await resendLicensesByEmail(sql, licenses, 'old@example.com', 'de'), 1);
+  const t2 = new MemoryTransport();
+  await sendDueMails(sql, t2, mailCtx(), 20);
+  const again = t2.sent.find((x) => x.to === 'old@example.com')!;
+  assert.equal(again.from ?? null, null);
+  assert.doesNotMatch(again.html, /Antalyse/);
 });
