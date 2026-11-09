@@ -2,6 +2,29 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-09 · Licences are sold by Antalyse GmbH through its own Stripe account
+
+Cards are sold by the sole trader, app licences by Antalyse GmbH. Each order has a `seller`
+('shop' or 'gmbh'), and each seller has its own Stripe account (`STRIPE_*` and
+`STRIPE_LICENSE_*`) with its own webhook (`/api/stripe/webhook`, `/api/stripe/webhook-licenses`).
+A provider only completes, expires or refunds orders of its own seller, so a misrouted event
+cannot touch the other company's orders.
+
+The GmbH's VAT is worked out by Stripe Tax, not by the shop: every licence purchase creates a
+Stripe customer with billing address and tax id, the session runs with `automatic_tax`, and
+Stripe issues invoice and credit note (`invoice_creation`, `creditNotes.create` with every line,
+so the VAT is reversed). The shop keeps no invoice numbers for the GmbH; it stores Stripe's
+number and links and attaches Stripe's PDFs to its own e-mails. The paid session's total, tax
+and rate replace the estimate on the order.
+
+Prices: the set price includes Austrian VAT. Consumers (EU only) and Austrian businesses pay it
+(Stripe Tax applies Austrian or OSS VAT). Businesses elsewhere in the EU with a VAT id that VIES
+confirms, and businesses in CH, LI, NO, IS, GB, US, CA and AU (tax id required), pay the price
+without Austrian VAT, as an exclusive net price on a customer with `tax_exempt = reverse`.
+A VAT id VIES cannot confirm right now is not taken on trust: the form asks to try again or to
+buy with VAT. Licence mails come from the GmbH's mailbox (`license_seller.email`), with its
+details in the footer and its licence terms (`license_terms`) instead of the shop's AGB.
+
 ## 2026-11-09 · App licences are sold as orders of their own kind
 
 ScanPM licences are bought on `/app` through their own short checkout (name, e-mail, EU country,

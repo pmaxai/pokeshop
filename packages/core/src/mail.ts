@@ -1,4 +1,5 @@
-// E-mail: templates, attachments and sending through Microsoft Graph as bestellung@.
+// E-mail: templates, attachments and sending through Microsoft Graph as bestellung@ – licence
+// mails as Antalyse GmbH from its own address (setting license_seller.email).
 // The worker takes due mails from the outbox (outbox.ts) and sends them here.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
@@ -12,6 +13,7 @@ import { formatEuro, formatRate } from './money.ts';
 import { SMALL_BUSINESS_NOTE, type VatRegime } from './vat.ts';
 import { currentLegal, type LegalKind } from './legal.ts';
 import type { License, LicenseClient } from './license-client.ts';
+import type { PaymentProvider } from './payments.ts';
 import { APP_NAME, downloadPath } from './licenses.ts';
 import {
   claimMail,
@@ -37,6 +39,8 @@ export type Attachment = {
 };
 export type Mail = {
   to: string;
+  /** Sender mailbox when it is not the default one (the GmbH's licence mails). */
+  from?: string | null;
   replyTo?: string | null;
   subject: string;
   html: string;
@@ -55,6 +59,10 @@ export type MailContext = {
   replyTo: string;
   /** Licence service: the licence mails ask it for the keys (they are not kept in the shop). */
   licenses?: LicenseClient | null;
+  /** Antalyse GmbH (setting license_seller): sender, footer and terms of the licence mails. */
+  licenseSeller?: Record<string, string | null | undefined> | null;
+  /** The GmbH's Stripe account: its invoices and credit notes are attached from there. */
+  gmbhPayments?: PaymentProvider | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -123,8 +131,10 @@ export function graphTransport(opts: GraphOptions): MailTransport {
         scopes: ['https://graph.microsoft.com/.default'],
       });
       if (!token?.accessToken) throw new Error('no Graph access token');
+      // Mail.Send (application) lets the app send as any mailbox of the tenant.
+      const sender = mail.from || opts.sender;
       const res = await doFetch(
-        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(opts.sender)}/sendMail`,
+        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`,
         {
           method: 'POST',
           headers: {
@@ -156,7 +166,7 @@ export function fileTransport(dir: string): MailTransport {
       }
       await writeFile(
         join(dir, `${base}.html`),
-        `<!-- To: ${mail.to} | Subject: ${mail.subject} | Attachments: ${mail.attachments.map((a) => a.name).join(', ')} -->\n${html}`,
+        `<!-- From: ${mail.from ?? 'default'} | To: ${mail.to} | Subject: ${mail.subject} | Attachments: ${mail.attachments.map((a) => a.name).join(', ')} -->\n${html}`,
       );
       for (const a of mail.attachments) await writeFile(join(dir, `${base}-${a.name}`), a.content);
     },
@@ -182,7 +192,17 @@ const C = {
   paper: '#f5f6f8',
 };
 
-function layout(locale: 'de' | 'en', ctx: MailContext, preheader: string, body: string): string {
+/**
+ * The shop's mails carry its name; the GmbH's licence mails the app's name and the GmbH's
+ * details in the footer (pass a context whose company is the GmbH).
+ */
+function layout(
+  locale: 'de' | 'en',
+  ctx: MailContext,
+  preheader: string,
+  body: string,
+  brand: 'shop' | 'app' = 'shop',
+): string {
   const co = ctx.company;
   const foot = [
     co.name,
@@ -193,12 +213,12 @@ function layout(locale: 'de' | 'en', ctx: MailContext, preheader: string, body: 
     .filter(Boolean)
     .map(esc)
     .join(' · ');
-  return `<!doctype html><html lang="${locale === 'de' ? 'de-AT' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>pokemonkarten.at</title></head>
+  return `<!doctype html><html lang="${locale === 'de' ? 'de-AT' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${brand === 'app' ? esc(APP_NAME) : 'pokemonkarten.at'}</title></head>
 <body style="margin:0;padding:0;background:${C.paper};color:${C.ink};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5">
 <span style="display:none;max-height:0;overflow:hidden">${esc(preheader)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid ${C.line};border-radius:6px">
-<tr><td style="padding:22px 28px 8px;font-size:20px;font-weight:bold;letter-spacing:-0.01em">pokemonkarten<span style="color:${C.accent}">.at</span></td></tr>
+<tr><td style="padding:22px 28px 8px;font-size:20px;font-weight:bold;letter-spacing:-0.01em">${brand === 'app' ? `${esc(APP_NAME)}<span style="color:${C.muted};font-size:13px;font-weight:normal;letter-spacing:0"> · ${esc(co.name ?? '')}</span>` : `pokemonkarten<span style="color:${C.accent}">.at</span>`}</td></tr>
 <tr><td style="padding:8px 28px 28px">${body}</td></tr></table>
 <p style="max-width:600px;margin:16px auto 0;color:${C.muted};font-size:12px;line-height:1.5">${foot}</p>
 </td></tr></table></body></html>`;
@@ -291,6 +311,8 @@ const TEXT = {
     } as Record<string, string>,
     all: 'alle',
     legalPdf: 'AGB-und-Widerrufsbelehrung.pdf',
+    licenseTermsPdf: 'Lizenzbedingungen.pdf',
+    stripeCreditPdf: (n: string) => `Gutschrift-${n}.pdf`,
     invoicePdf: (n: string) => `Rechnung-${n}.pdf`,
     creditPdf: (n: string) => `Rechnungskorrektur-${n}.pdf`,
     shippedSubject: (n: string) => `Deine Karten sind unterwegs (${n})`,
@@ -341,6 +363,8 @@ const TEXT = {
     } as Record<string, string>,
     all: 'all',
     legalPdf: 'Terms-and-withdrawal.pdf',
+    licenseTermsPdf: 'Licence-terms.pdf',
+    stripeCreditPdf: (n: string) => `Credit-note-${n}.pdf`,
     invoicePdf: (n: string) => `Invoice-${n}.pdf`,
     creditPdf: (n: string) => `Credit-note-${n}.pdf`,
     shippedSubject: (n: string) => `Your cards are on their way (${n})`,
@@ -371,7 +395,28 @@ const orderUrl = (ctx: MailContext, locale: 'de' | 'en', token: string) =>
 const withdrawUrl = (ctx: MailContext, locale: 'de' | 'en') =>
   `${ctx.baseUrl}${locale === 'de' ? '/vertrag-widerrufen' : '/en/withdraw'}`;
 
-type Rendered = { subject: string; html: string; inline?: Attachment[] };
+type Rendered = {
+  subject: string;
+  html: string;
+  inline?: Attachment[];
+  /** Licence mails of the GmbH: its own sender and reply address. */
+  from?: string | null;
+  replyTo?: string | null;
+};
+
+/** Context for a mail the GmbH sends: its details in the footer and the legal PDFs. */
+function gmbhContext(ctx: MailContext): MailContext & { sender: string | null } {
+  const seller = ctx.licenseSeller;
+  if (!seller?.name) throw new Error('setting license_seller is missing – run migrate');
+  return { ...ctx, company: seller, sender: seller.email || null };
+}
+
+async function orderSeller(db: Db, orderId: number): Promise<'shop' | 'gmbh'> {
+  const [o] = await db<
+    { seller: 'shop' | 'gmbh' }[]
+  >`SELECT seller FROM orders WHERE id = ${orderId}`;
+  return o?.seller ?? 'shop';
+}
 
 export async function renderTemplate(
   db: Db,
@@ -449,8 +494,11 @@ export async function renderTemplate(
       >`
         SELECT amount_cents, shipping_cents, items FROM refunds WHERE id = ${Number(payload.refund_id)}`;
       if (!r) throw new Error('refund not found');
-      const [credit] =
-        await db`SELECT 1 FROM documents WHERE refund_id = ${Number(payload.refund_id)}`;
+      const [credit] = await db`
+        SELECT 1 FROM documents WHERE refund_id = ${Number(payload.refund_id)}
+        UNION ALL
+        SELECT 1 FROM refunds WHERE id = ${Number(payload.refund_id)} AND stripe_credit_note_id IS NOT NULL`;
+      const gmbh = (await orderSeller(db, o.id)) === 'gmbh' ? gmbhContext(ctx) : null;
       const [ids] = await db<{ ids: number[] }[]>`
         SELECT array_agg(id ORDER BY id) AS ids FROM order_items WHERE order_id = ${o.id}`;
       const rows = r.items
@@ -477,6 +525,14 @@ export async function renderTemplate(
         credit ? p(esc(t.refundCredit)) : '',
         p(esc(t.questions)),
       ].join('\n');
+      if (gmbh) {
+        return {
+          subject: t.refundSubject(o.number),
+          html: layout(L, gmbh, t.refundSubject(o.number), body, 'app'),
+          from: gmbh.sender,
+          replyTo: gmbh.sender,
+        };
+      }
       return {
         subject: t.refundSubject(o.number),
         html: layout(L, ctx, t.refundSubject(o.number), body),
@@ -621,9 +677,15 @@ const LICENSE_TEXT = {
     ],
     facts: (n: string, total: string) => `Bestellnummer <strong>${esc(n)}</strong> · ${esc(total)}`,
     invoice: 'Die Rechnung findest du im Anhang.',
+    seller: (name: string) =>
+      `Verkäufer und dein Vertragspartner für die Lizenz ist die ${esc(name)}. Die Rechnung der ${esc(name)} findest du im Anhang.`,
     withdrawalTitle: 'Widerrufsrecht',
     withdrawal: (at: string) =>
       `Du hast beim Kauf am ${esc(at)} ausdrücklich verlangt, dass wir vor Ablauf der Widerrufsfrist liefern, und bestätigt, dass dein Widerrufsrecht damit erlischt (§ 18 Abs. 1 Z 11 FAGG). Mit dieser E-Mail ist die Lizenz geliefert. Unsere AGB und die Widerrufsbelehrung liegen als PDF bei.`,
+    withdrawalGmbh: (at: string) =>
+      `Du hast beim Kauf am ${esc(at)} ausdrücklich verlangt, dass wir vor Ablauf der Widerrufsfrist liefern, und bestätigt, dass dein Widerrufsrecht damit erlischt (§ 18 Abs. 1 Z 11 FAGG). Mit dieser E-Mail ist die Lizenz geliefert. Die Lizenzbedingungen mit der Widerrufsbelehrung liegen als PDF bei.`,
+    withdrawalBusiness:
+      'Du hast als Unternehmen gekauft: Das Widerrufsrecht für Verbraucher gilt dafür nicht. Die Lizenzbedingungen liegen als PDF bei.',
     questions: 'Fragen oder Probleme? Antworte einfach auf diese E-Mail.',
     qrAlt: 'QR-Code der Lizenz',
   },
@@ -658,9 +720,15 @@ const LICENSE_TEXT = {
     ],
     facts: (n: string, total: string) => `Order number <strong>${esc(n)}</strong> · ${esc(total)}`,
     invoice: 'The invoice is attached.',
+    seller: (name: string) =>
+      `The licence is sold by ${esc(name)}, your contract partner for it. The invoice from ${esc(name)} is attached.`,
     withdrawalTitle: 'Right of withdrawal',
     withdrawal: (at: string) =>
       `When you bought on ${esc(at)} you expressly asked us to deliver before the withdrawal period ends and confirmed that your right of withdrawal ends with it (§ 18 (1) 11 FAGG). With this e-mail the licence is delivered. Our terms and the withdrawal information are attached as a PDF.`,
+    withdrawalGmbh: (at: string) =>
+      `When you bought on ${esc(at)} you expressly asked us to deliver before the withdrawal period ends and confirmed that your right of withdrawal ends with it (§ 18 (1) 11 FAGG). With this e-mail the licence is delivered. The licence terms with the withdrawal information are attached as a PDF.`,
+    withdrawalBusiness:
+      'You bought as a business: the consumer right of withdrawal does not apply. The licence terms are attached as a PDF.',
     questions: 'Questions or problems? Just reply to this e-mail.',
     qrAlt: 'Licence QR code',
   },
@@ -686,28 +754,22 @@ async function renderLicenseMail(db: Db, mail: OutboxMail, ctx: MailContext): Pr
   if (!ctx.licenses) throw new Error('licence service not configured (LICENSE_SERVICE_URL)');
 
   let ids: string[];
-  let order: {
+  type OrderFacts = {
     id: number;
     number: string;
+    seller: 'shop' | 'gmbh';
+    business: boolean;
     customer_name: string | null;
     lookup_token: string;
     total_cents: number;
     consent: Date;
-  } | null = null;
+  };
+  let order: OrderFacts | null = null;
   if (mail.template === 'license_delivery') {
-    const [o] = await db<
-      {
-        id: number;
-        number: string;
-        customer_name: string | null;
-        lookup_token: string;
-        total_cents: number;
-        consent: Date;
-        license_ids: string[];
-      }[]
-    >`
-      SELECT o.id, o.number, o.customer_name, o.lookup_token, o.total_cents,
-             l.immediate_delivery_consent_at AS consent, l.license_ids
+    const [o] = await db<(OrderFacts & { license_ids: string[] })[]>`
+      SELECT o.id, o.number, o.seller, o.buyer_business AS business, o.customer_name,
+             o.lookup_token, o.total_cents, l.immediate_delivery_consent_at AS consent,
+             l.license_ids
         FROM orders o JOIN order_licenses l ON l.order_id = o.id
        WHERE o.id = ${Number(payload.order_id)}`;
     if (!o) throw new Error('licence order not found');
@@ -734,6 +796,10 @@ async function renderLicenseMail(db: Db, mail: OutboxMail, ctx: MailContext): Pr
     : [];
   const token = order?.lookup_token ?? tokens[0]?.lookup_token ?? null;
   const app = await appDownload(db);
+  // Licences are the GmbH's: its sender and footer (older shop orders keep the shop's).
+  const gmbh = (order ? order.seller === 'gmbh' : !!ctx.licenseSeller?.name)
+    ? gmbhContext(ctx)
+    : null;
 
   const inline: Attachment[] = [];
   const boxes: string[] = [];
@@ -788,9 +854,15 @@ ${l.active_device?.name ? `<div style="color:${C.muted};font-size:13px;margin-to
     order && !payload.again
       ? [
           p(t.facts(order.number, formatEuro(order.total_cents, L))),
-          p(esc(t.invoice)),
+          p(gmbh ? t.seller(String(gmbh.company.name)) : esc(t.invoice)),
           h2(t.withdrawalTitle),
-          p(t.withdrawal(dateTime(order.consent, L))),
+          p(
+            !gmbh
+              ? t.withdrawal(dateTime(order.consent, L))
+              : order.business
+                ? esc(t.withdrawalBusiness)
+                : t.withdrawalGmbh(dateTime(order.consent, L)),
+          ),
         ].join('\n')
       : '',
     p(esc(t.questions)),
@@ -801,6 +873,15 @@ ${l.active_device?.name ? `<div style="color:${C.muted};font-size:13px;margin-to
       : licenses.length === 1
         ? t.subject
         : t.subjectMany(licenses.length);
+  if (gmbh) {
+    return {
+      subject,
+      html: layout(L, gmbh, subject, body, 'app'),
+      inline,
+      from: gmbh.sender,
+      replyTo: gmbh.sender,
+    };
+  }
   return { subject, html: layout(L, ctx, subject, body), inline };
 }
 
@@ -904,20 +985,37 @@ async function resolveAttachment(
     const { key: _key, ...pdf } = await documentPdf(db, a.id, ctx);
     return { ...pdf, contentType: 'application/pdf' };
   }
+  if (a.kind === 'stripe') {
+    if (!ctx.gmbhPayments) throw new Error('GmbH Stripe account not configured');
+    const content = await ctx.gmbhPayments.documentPdf({ kind: a.doc, id: a.id });
+    const safe = a.number.replace(/[^A-Za-z0-9-]/g, '_');
+    return {
+      name:
+        a.doc === 'invoice' ? TEXT[locale].invoicePdf(safe) : TEXT[locale].stripeCreditPdf(safe),
+      contentType: 'application/pdf',
+      content,
+    };
+  }
   const docs = [];
   for (const k of a.kinds as LegalKind[]) {
     const text = await currentLegal(db, k, locale);
     if (text) docs.push(text);
   }
   if (docs.length === 0) throw new Error('legal texts missing – run migrate');
+  const terms = a.kinds.includes('license_terms');
   const content = await renderLegalPdf(docs, {
     company: ctx.company as Record<string, unknown>,
+    seller: (ctx.licenseSeller ?? undefined) as Record<string, unknown> | undefined,
     baseUrl: ctx.baseUrl,
     locale,
     note:
       locale === 'en' ? 'Translation for convenience; the German version is binding.' : undefined,
   });
-  return { name: TEXT[locale].legalPdf, contentType: 'application/pdf', content };
+  return {
+    name: terms ? TEXT[locale].licenseTermsPdf : TEXT[locale].legalPdf,
+    contentType: 'application/pdf',
+    content,
+  };
 }
 
 export async function buildMail(db: Db, m: OutboxMail, ctx: MailContext): Promise<Mail> {
@@ -927,7 +1025,8 @@ export async function buildMail(db: Db, m: OutboxMail, ctx: MailContext): Promis
     attachments.push(await resolveAttachment(db, a, m.locale, ctx));
   return {
     to: m.to_address,
-    replyTo: m.reply_to ?? ctx.replyTo,
+    from: r.from ?? null,
+    replyTo: m.reply_to ?? r.replyTo ?? ctx.replyTo,
     subject: r.subject,
     html: r.html,
     attachments,

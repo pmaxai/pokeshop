@@ -95,6 +95,16 @@ export default async function OrderDetail({
           `${a.storage_location}${a.quantity > 1 ? ` (${a.quantity}×)` : ''}${a.status === 'reserved' ? ' reserviert' : ''}`,
       )
       .join(', ');
+  const gmbh = o.seller === 'gmbh';
+  const billing = (o.billing_address ?? {}) as { tax_id?: string; vies_name?: string };
+  const taxText =
+    o.vat_regime === 'small_business'
+      ? 'ohne USt. (Kleinunternehmer)'
+      : o.vat_regime === 'reverse_charge'
+        ? 'netto, Reverse Charge'
+        : o.vat_regime === 'export'
+          ? 'netto, in Österreich nicht steuerbar'
+          : `inkl. ${formatRate(o.vat_rate_bp)} USt. (${formatEuro(o.vat_cents)})${o.tax_country && o.tax_country !== 'AT' ? `, ${o.tax_country} (OSS)` : ''}`;
   const shippingLeft =
     o.shipping_cents -
     refunds.filter((r) => r.status === 'succeeded').reduce((a, r) => a + r.shipping_cents, 0);
@@ -176,8 +186,18 @@ export default async function OrderDetail({
           <section>
             <h2>{APP_NAME}-Lizenzen</h2>
             <p>
-              {license.quantity} × {formatEuro(license.unit_price_cents)} · Sofortlieferung verlangt
-              am {dateTime(license.immediate_delivery_consent_at)}
+              {license.quantity} × {formatEuro(license.unit_price_cents)} · gesamt{' '}
+              {formatEuro(o.total_cents)} <span className="muted">({taxText})</span>
+            </p>
+            <p>
+              Verkäufer:{' '}
+              {gmbh ? (
+                <strong>GmbH (eigenes Stripe-Konto, Rechnung von Stripe)</strong>
+              ) : (
+                'Shop (ältere Bestellung)'
+              )}
+              {license.terms_version ? ` · Lizenzbedingungen v${license.terms_version}` : ''} ·
+              Sofortlieferung verlangt am {dateTime(license.immediate_delivery_consent_at)}
             </p>
             <p>
               {license.issued_at ? (
@@ -292,12 +312,7 @@ export default async function OrderDetail({
                   </tr>
                   <tr>
                     <td colSpan={3}>
-                      <strong>Gesamt</strong>{' '}
-                      <span className="muted">
-                        {o.vat_regime === 'small_business'
-                          ? 'ohne USt. (Kleinunternehmer)'
-                          : `inkl. ${formatRate(o.vat_rate_bp)} USt. (${formatEuro(o.vat_cents)})`}
-                      </span>
+                      <strong>Gesamt</strong> <span className="muted">{taxText}</span>
                     </td>
                     <td className="r">
                       <strong>{formatEuro(o.total_cents)}</strong>
@@ -310,6 +325,23 @@ export default async function OrderDetail({
         )}
         <section>
           <h2>Kunde</h2>
+          {isLicense && (
+            <p>
+              {o.buyer_business ? <strong>Unternehmen</strong> : 'Privatperson'}
+              {o.buyer_tax_id && (
+                <>
+                  {' · '}
+                  {o.buyer_tax_id_type === 'eu_vat' ? 'UID' : 'Steuernummer'} {o.buyer_tax_id}
+                  {o.buyer_tax_id_type === 'eu_vat' && (
+                    <span className="muted">
+                      {' '}
+                      (VIES gültig{billing.vies_name ? `: ${billing.vies_name}` : ''})
+                    </span>
+                  )}
+                </>
+              )}
+            </p>
+          )}
           <p>
             <a href={`mailto:${o.email}`}>{o.email}</a>
             {o.phone && (
@@ -443,7 +475,8 @@ export default async function OrderDetail({
             <input type="hidden" name="id" value={o.id} />
             <p>
               Erstattet den vollen Betrag ({formatEuro(o.total_cents - o.refunded_cents)}) über
-              Stripe und sperrt die Lizenzschlüssel: Die App hört beim nächsten Online-Check auf.
+              Stripe{gmbh ? ' (Gutschrift der GmbH, Stripe bucht die USt. zurück)' : ''} und sperrt
+              die Lizenzschlüssel: Die App hört beim nächsten Online-Check auf.
             </p>
             <label className="field">
               <span>Grund (intern)</span>
@@ -465,7 +498,51 @@ export default async function OrderDetail({
       <div className="two-col">
         <section>
           <h2>Dokumente</h2>
-          {documents.length === 0 ? (
+          {gmbh && license && (
+            <ul className="plain">
+              {license.invoice_number ? (
+                <li>
+                  Rechnung {license.invoice_number} (Stripe)
+                  {license.invoice_url && (
+                    <>
+                      {' · '}
+                      <a href={license.invoice_url} target="_blank" rel="noreferrer">
+                        ansehen
+                      </a>
+                    </>
+                  )}
+                  {license.invoice_pdf_url && (
+                    <>
+                      {' · '}
+                      <a href={license.invoice_pdf_url} target="_blank" rel="noreferrer">
+                        PDF
+                      </a>
+                    </>
+                  )}
+                </li>
+              ) : (
+                <li className="muted">
+                  Die Rechnung kommt von Stripe und wird mit der Lizenz verschickt.
+                </li>
+              )}
+              {refunds
+                .filter((r) => r.credit_note_number)
+                .map((r) => (
+                  <li key={r.id}>
+                    Gutschrift {r.credit_note_number} (Stripe)
+                    {r.credit_note_pdf_url && (
+                      <>
+                        {' · '}
+                        <a href={r.credit_note_pdf_url} target="_blank" rel="noreferrer">
+                          PDF
+                        </a>
+                      </>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          )}
+          {gmbh ? null : documents.length === 0 ? (
             <p className="muted">
               {isLicense
                 ? 'Die Rechnung entsteht, sobald die Lizenz verschickt ist.'

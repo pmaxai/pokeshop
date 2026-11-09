@@ -204,7 +204,9 @@
     "director": "Geschäftsführer",
     "chamber": "Mitglied der",
     "authority": "Gewerbebehörde",
-    "contact": "Kontakt"
+    "contact": "Kontakt",
+    "licenses": "Verkauf der App-Lizenzen (ScanPM)",
+    "licensesIntro": "Die Lizenzen für die App ScanPM verkauft und verrechnet:"
   },
   "Privacy": {
     "title": "Datenschutz",
@@ -342,7 +344,7 @@
     "tagline": "Karte vor die Kamera, Preis auf den Schirm. Auch ohne Netz.",
     "lead": "ScanPM erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Börsen und Openings.",
     "price": "{price} einmalig",
-    "priceNote": "Einmal-Lizenz, Updates inklusive",
+    "priceNote": "Einmal-Lizenz, Updates inklusive, inkl. USt.",
     "buy": "Lizenz kaufen",
     "seeFeatures": "Was die App kann",
     "platformApk": "Nur für Android (ab Android 8). ScanPM ist noch nicht im Play Store: Du bekommst die App als APK-Datei.",
@@ -422,7 +424,6 @@
       "quantity": "Anzahl Lizenzen",
       "quantityHint": "Je {price}. Eine Lizenz pro Gerät, bis zu {max} pro Bestellung.",
       "name": "Name",
-      "company": "Firma (optional)",
       "email": "E-Mail-Adresse",
       "emailHint": "Hierhin schicken wir Lizenzschlüssel und Rechnung.",
       "country": "Land",
@@ -436,17 +437,53 @@
         "required": "Bitte ausfüllen.",
         "invalid_email": "Bitte gib eine gültige E-Mail-Adresse an.",
         "too_long": "Das ist zu lang.",
-        "terms": "Bitte bestätige die AGB.",
+        "terms": "Bitte akzeptiere die Lizenzbedingungen.",
         "consent": "Ohne diese Zustimmung können wir den Schlüssel nicht sofort schicken.",
         "too_many": "Höchstens {max} Lizenzen pro Bestellung.",
         "invalid": "Bitte prüfen.",
-        "country": "Lizenzen gibt es derzeit nur in der EU.",
-        "invalid_postcode": "Diese PLZ passt nicht zum Land."
+        "country": "Lizenzen gibt es in der EU und für Unternehmen in der Schweiz, Liechtenstein, Norwegen, Island, im Vereinigten Königreich, in den USA, Kanada und Australien.",
+        "invalid_postcode": "Diese PLZ passt nicht zum Land.",
+        "consumer_eu_only": "Als Privatperson kannst du nur mit Wohnsitz in der EU kaufen. Kaufst du für ein Unternehmen, wähl oben „Unternehmen“.",
+        "invalid_tax_id": "Diese Nummer passt nicht zum Format des gewählten Landes.",
+        "vat_id_invalid": "Laut EU-Abfrage (VIES) ist diese UID-Nummer nicht gültig. Bitte prüf sie – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
+        "vies_unavailable": "Die EU-Abfrage (VIES) ist gerade nicht erreichbar. Bitte versuch es in ein paar Minuten noch einmal – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
+        "invalid_address": "Diese Adresse kann der Zahlungsdienst keinem Steuergebiet zuordnen. Bitte prüf PLZ und Ort."
       },
       "street": "Straße und Hausnummer",
       "postcode": "PLZ",
       "city": "Ort",
-      "streetHint": "Für die Rechnung."
+      "streetHint": "Für die Rechnung.",
+      "buyerTitle": "Du kaufst als",
+      "consumer": "Privatperson",
+      "consumerNote": "Wohnsitz in der EU",
+      "business": "Unternehmen",
+      "businessNote": "Rechnung auf die Firma, im Ausland netto",
+      "companyName": "Firma",
+      "contactName": "Ansprechperson",
+      "vatId": "UID-Nummer (USt-IdNr.)",
+      "taxId": "Steuer- oder Unternehmensnummer",
+      "vatIdHintHome": "Optional, für die Rechnung. In Österreich fallen immer 20 % USt. an.",
+      "vatIdHintEu": "Mit gültiger Nummer zahlst du netto (Reverse Charge). Wir prüfen sie bei der EU (VIES). Ohne Nummer zahlst du die Umsatzsteuer deines Landes.",
+      "taxIdHint": {
+        "CH": "UID, z. B. CHE-123.456.789 oder CHE-123.456.789 MWST",
+        "LI": "UID (CHE-…) oder MWST-Nummer (5 Ziffern)",
+        "NO": "Organisationsnummer, z. B. 123456789MVA",
+        "IS": "VSK-Nummer (5 oder 6 Ziffern)",
+        "GB": "VAT registration number, z. B. GB123456789",
+        "US": "EIN, z. B. 12-3456789",
+        "CA": "Business Number (9 Ziffern)",
+        "AU": "ABN (11 Ziffern)"
+      },
+      "countriesEu": "Europäische Union",
+      "countriesOther": "Andere Länder (nur Unternehmen)",
+      "countryHintConsumer": "Als Privatperson kannst du mit Wohnsitz in der EU kaufen.",
+      "countryHintBusiness": "EU, Schweiz, Liechtenstein, Norwegen, Island, Vereinigtes Königreich, USA, Kanada und Australien.",
+      "inclVat": "Inkl. USt. Die Umsatzsteuer richtet sich nach deinem Land.",
+      "reverseCharge": "Nettopreis ohne Umsatzsteuer: Die Steuerschuld geht auf dich über (Reverse Charge).",
+      "notTaxable": "Nettopreis: In Österreich nicht steuerbar, allfällige Steuern deines Landes führst du selbst ab.",
+      "totalNet": "Gesamt (netto)",
+      "terms": "Ich akzeptiere die <terms>Lizenzbedingungen</terms> der {seller} mit Widerrufsbelehrung und Datenschutzhinweisen.",
+      "seller": "Verkäufer der Lizenzen und Rechnungsaussteller: {seller}, {address}."
     },
     "lost": {
       "title": "Lizenz-E-Mail verloren?",
@@ -471,6 +508,7 @@
       "downloadMeta": "APK, Version {version}, {size}",
       "store": "ScanPM im Play Store",
       "installHint": "Öffne die Datei auf deinem Android-Handy. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben. Dann ScanPM starten und den QR-Code aus der E-Mail scannen."
-    }
+    },
+    "priceBusiness": "Für Unternehmen außerhalb Österreichs: {net} netto"
   }
 }

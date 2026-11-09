@@ -9,16 +9,19 @@ export const dynamic = 'force-dynamic';
 
 type Fake = ReturnType<typeof fakeProvider>;
 
-function fake(): Fake {
-  const p = payments();
-  if (!p || p.name !== 'fake') notFound();
-  return p as Fake;
+/** The stand-in that opened this session: the shop's, or the GmbH's (licences). */
+function fake(id: string): Fake {
+  for (const seller of ['shop', 'gmbh'] as const) {
+    const p = payments(seller);
+    if (p?.name === 'fake' && (p as Fake).sessions.has(id)) return p as Fake;
+  }
+  notFound();
 }
 
 async function pay(form: FormData) {
   'use server';
-  const p = fake();
   const id = String(form.get('id'));
+  const p = fake(id);
   const s = p.sessions.get(id);
   if (!s) notFound();
   await handlePaymentEvent(db(), p, p.pay(id, String(form.get('method') ?? 'card')));
@@ -27,7 +30,8 @@ async function pay(form: FormData) {
 
 async function cancel(form: FormData) {
   'use server';
-  const s = fake().sessions.get(String(form.get('id')));
+  const id = String(form.get('id'));
+  const s = fake(id).sessions.get(id);
   if (!s) notFound();
   redirect(s.input.cancelUrl);
 }
@@ -35,15 +39,26 @@ async function cancel(form: FormData) {
 /** Local stand-in for the Stripe payment page (only without Stripe keys on localhost). */
 export default async function FakePayment({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const s = fake().sessions.get(id);
+  const p = fake(id);
+  const s = p.sessions.get(id);
   if (!s) notFound();
   return (
     <div className="prose">
       <p className="notice notice--warn">Testzahlung – nur lokal, es fließt kein Geld.</p>
       <h1>{formatEuro(s.amountTotal ?? 0, 'de')}</h1>
       <p>
-        Bestellung {s.input.orderNumber} · {s.input.email} · Status: {s.status}
+        Bestellung {s.input.orderNumber} · {s.input.email} · Status: {s.status} · Konto:{' '}
+        {p.seller === 'gmbh' ? 'Antalyse GmbH' : 'Shop'}
       </p>
+      {s.amountTax !== null && s.amountTax !== undefined && (
+        <p>
+          Davon USt. (Stripe-Tax-Ersatz): {formatEuro(s.amountTax, 'de')}
+          {s.taxes?.[0]?.reason ? ` · ${s.taxes[0].reason}` : ''}
+          {s.input.tax
+            ? ` · Preise ${s.input.tax.behavior === 'inclusive' ? 'brutto' : 'netto'}`
+            : ''}
+        </p>
+      )}
       <ul>
         {s.input.lines.map((l, i) => (
           <li key={i}>

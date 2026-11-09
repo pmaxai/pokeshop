@@ -26,9 +26,9 @@ Sie tragen die unmittelbaren Kosten der Rücksendung der Waren.
 
 Sie müssen für einen etwaigen Wertverlust der Waren nur aufkommen, wenn dieser Wertverlust auf einen zur Prüfung der Beschaffenheit, Eigenschaften und Funktionsweise der Waren nicht notwendigen Umgang mit ihnen zurückzuführen ist.
 
-## Erlöschen des Widerrufsrechts bei App-Lizenzen
+## App-Lizenzen (ScanPM)
 
-Beim Kauf einer Lizenz für die App ScanPM (digitale Inhalte, die nicht auf einem körperlichen Datenträger geliefert werden) beginnt die Widerrufsfrist mit dem Tag des Vertragsabschlusses. Das Widerrufsrecht erlischt, sobald wir mit der Lieferung (Zusendung von Lizenzschlüssel und Download-Link) begonnen haben, nachdem Sie ausdrücklich zugestimmt haben, dass wir vor Ablauf der Widerrufsfrist damit beginnen, und Sie Ihre Kenntnis davon bestätigt haben, dass Sie dadurch Ihr Widerrufsrecht verlieren (§ 18 Abs. 1 Z 11 FAGG). Die Bestätigung darüber erhalten Sie mit der Lizenz-E-Mail.
+Diese Widerrufsbelehrung gilt für Kartenbestellungen. Lizenzen für die App ScanPM verkauft die {{seller.name}}; die Widerrufsbelehrung dafür steht in deren Lizenzbedingungen: {{license_terms_url}}.
 
 ---
 

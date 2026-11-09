@@ -44,11 +44,7 @@ If you withdraw from the contract with "Return an order (withdraw from contract)
 
 ## 8. App licences (ScanPM)
 
-When you buy a licence for the app ScanPM, we process name, company if given, e-mail address, country, number of licences and the payment status (as under 3 and 4), and count how often the app was downloaded through your download link.
-
-The licence keys are managed by our licence service, which runs on our own server (see 9). For each licence it stores name, e-mail address and order number, the key in encrypted form, and for each activation a random device id created by the app, the device name (such as the phone model), the app version and the times of activation and of the last check. The app asks at start and at most once an hour whether the licence is still valid; it only sends a licence token and the app version. The service uses your IP address only briefly in memory to fend off too many activation attempts; it is not stored.
-
-The legal bases are the performance of the contract (Art. 6(1)(b) GDPR) and our legitimate interest in protecting the licences against misuse (Art. 6(1)(f) GDPR). We keep licence data for as long as the licence exists, order and invoice data for seven years (§ 132 BAO).
+Licences for the app ScanPM are sold by {{seller.name}}. It is the controller for the data of a licence purchase and of the licence service; what it processes is set out in the data protection section of its licence terms ({{license_terms_url}}). We run the app page, the order form and the server the licence service also runs on, and process the data on its behalf (Art. 28 GDPR).
 
 ## 9. Hosting
 

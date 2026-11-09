@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { orderByToken, releaseOrder, syncSession } from '@pokeshop/core/orders';
 import { getPathname } from '@/i18n/navigation';
 import { config, db } from '@/server/config';
-import { payments } from '@/server/payments';
+import { paymentsForOrder } from '@/server/payments';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
   const locale = req.nextUrl.searchParams.get('l') === 'en' ? 'en' : 'de';
   const token = req.nextUrl.searchParams.get('o') ?? '';
   const order = await orderByToken(db(), token);
-  const provider = payments();
+  // Card orders are paid to the shop's account, licences to the GmbH's.
+  const provider = order ? await paymentsForOrder(order.id) : null;
   if (order && order.status === 'checkout') {
     const [row] = await db()<{ stripe_session_id: string | null }[]>`
       SELECT stripe_session_id FROM orders WHERE id = ${order.id}`;

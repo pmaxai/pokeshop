@@ -53,6 +53,20 @@ Test-ServicePrincipalAuthorization -Identity <client-id> -Resource someone.else@
 
 Changes can take up to two hours to apply because Exchange caches app permissions.
 
+The app licences are sold by Antalyse GmbH, and their mails go out from the GmbH's mailbox
+(Admin › App, `info@abc-it.at` to start with). That mailbox has to be in the same tenant, and
+the scope has to include it:
+
+```powershell
+Set-ManagementScope -Identity "pokeshop-mailbox" `
+  -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'bestellung@pokemonkarten.at' -or PrimarySmtpAddress -eq 'info@abc-it.at'"
+
+Test-ServicePrincipalAuthorization -Identity <client-id> -Resource info@abc-it.at
+```
+
+When the GmbH's address changes, change it in Admin › App and in this filter. Its domain needs
+SPF and DKIM for Microsoft 365 like pokemonkarten.at (step 4).
+
 ### 4. DNS for deliverability
 
 - SPF on pokemonkarten.at includes `include:spf.protection.outlook.com`.

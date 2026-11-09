@@ -95,7 +95,7 @@ export type VatDecision = {
   regime: VatRegime;
 };
 
-export type VatRegime = 'domestic' | 'oss' | 'export' | 'small_business';
+export type VatRegime = 'domestic' | 'oss' | 'export' | 'small_business' | 'reverse_charge';
 
 /** Invoice note for a sale under the small business scheme. */
 export const SMALL_BUSINESS_NOTE = {

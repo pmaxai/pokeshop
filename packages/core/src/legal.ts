@@ -4,7 +4,8 @@
 import { Marked } from 'marked';
 import type { Db } from './db.ts';
 
-export const LEGAL_KINDS = ['agb', 'withdrawal', 'privacy'] as const;
+/** license_terms: the app licence terms of Antalyse GmbH (seller of the licences). */
+export const LEGAL_KINDS = ['agb', 'withdrawal', 'privacy', 'license_terms'] as const;
 export type LegalKind = (typeof LEGAL_KINDS)[number];
 export type LegalLocale = 'de' | 'en';
 
@@ -34,31 +35,51 @@ export async function currentLegalVersions(db: Db): Promise<Record<LegalKind, nu
   const rows = await db<{ kind: LegalKind; version: number }[]>`
     SELECT DISTINCT ON (kind) kind, version FROM legal_texts
      WHERE locale = 'de' AND published_at <= now() ORDER BY kind, version DESC`;
-  const out: Record<LegalKind, number | null> = { agb: null, withdrawal: null, privacy: null };
+  const out: Record<LegalKind, number | null> = {
+    agb: null,
+    withdrawal: null,
+    privacy: null,
+    license_terms: null,
+  };
   for (const r of rows) out[r.kind] = r.version;
   return out;
 }
 
 export type LegalContext = {
   company: Record<string, unknown>;
+  /** Antalyse GmbH, seller of the app licences (setting license_seller): {{seller.…}}. */
+  seller?: Record<string, unknown>;
   baseUrl: string;
   locale: LegalLocale;
 };
 
-/** Fills {{company.name}}, {{company.address}}, {{shop_url}}, {{withdraw_url}} … */
+const addressOf = (c: Record<string, string | undefined>, locale: LegalLocale) =>
+  [
+    c.street,
+    [c.postcode, c.city].filter(Boolean).join(' '),
+    c.country === 'AT' ? (locale === 'de' ? 'Österreich' : 'Austria') : c.country,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+/** Fills {{company.name}}, {{company.address}}, {{seller.name}}, {{shop_url}} … */
 export function fillPlaceholders(md: string, ctx: LegalContext): string {
   const c = ctx.company as Record<string, string | undefined>;
+  const sel = (ctx.seller ?? {}) as Record<string, string | undefined>;
   const values: Record<string, string> = {
+    'seller.name': sel.name ?? '',
+    'seller.address': addressOf(sel, ctx.locale),
+    'seller.email': sel.email ?? '',
+    'seller.register': [sel.register_number, sel.register_court].filter(Boolean).join(', '),
+    'seller.vat_id': sel.vat_id ?? '',
+    'seller.managing_director': sel.managing_director ?? '',
+    'seller.chamber': sel.chamber ?? '',
+    'seller.authority': sel.supervisory_authority ?? '',
+    license_terms_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/app/lizenzbedingungen' : '/en/app/license-terms'}`,
     'company.name': c.name ?? '',
     // Shop pages and legal texts name the shop, not its owner (that is in the legal notice).
     'company.public_name': c.public_name || 'pokemonkarten.at',
-    'company.address': [
-      c.street,
-      [c.postcode, c.city].filter(Boolean).join(' '),
-      c.country === 'AT' ? (ctx.locale === 'de' ? 'Österreich' : 'Austria') : c.country,
-    ]
-      .filter(Boolean)
-      .join(', '),
+    'company.address': addressOf(c, ctx.locale),
     'company.email': c.email ?? '',
     'company.phone': c.phone ?? '',
     'company.register': [c.register_number, c.register_court].filter(Boolean).join(', '),

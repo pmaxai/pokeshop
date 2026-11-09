@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { Fragment } from 'react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { licenseSeller } from '@pokeshop/core/licenses';
 import { SMALL_BUSINESS_NOTE } from '@pokeshop/core/vat';
 import type { Locale } from '@/i18n/routing';
-import { getSetting } from '@/server/config';
+import { db, getSetting } from '@/server/config';
 import { getCompany } from '@/server/shop';
 
 export const dynamic = 'force-dynamic';
@@ -18,16 +19,32 @@ export async function generateMetadata({
   return { title: t('title') };
 }
 
-/** The only shop page that names the operator (§ 5 ECG, § 25 MedienG). */
+/**
+ * The only shop page that names the operator (§ 5 ECG, § 25 MedienG) – and the seller of the
+ * app licences, Antalyse GmbH (§ 14 UGB).
+ */
 export default async function Imprint({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('Imprint');
   const c = await getCompany();
+  const g = await licenseSeller(db());
   const smallBusiness = await getSetting<boolean>('small_business', false);
-  const country = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' }).of(
-    c.country,
-  );
+  const region = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
+  const country = region.of(c.country);
+  const gmbhRows: [string, React.ReactNode][] = [
+    [t('contact'), <a href={`mailto:${g.email}`}>{g.email}</a>],
+    ...(g.register_number ? [[t('register'), g.register_number] as [string, React.ReactNode]] : []),
+    ...(g.register_court ? [[t('court'), g.register_court] as [string, React.ReactNode]] : []),
+    ...(g.vat_id ? [[t('vat'), g.vat_id] as [string, React.ReactNode]] : []),
+    ...(g.managing_director
+      ? [[t('director'), g.managing_director] as [string, React.ReactNode]]
+      : []),
+    ...(g.chamber ? [[t('chamber'), g.chamber] as [string, React.ReactNode]] : []),
+    ...(g.supervisory_authority
+      ? [[t('authority'), g.supervisory_authority] as [string, React.ReactNode]]
+      : []),
+  ];
   // Only what applies: a sole trader has no company register entry or managing director.
   const rows: [string, React.ReactNode][] = [
     [t('contact'), <a href={`mailto:${c.email}`}>{c.email}</a>],
@@ -74,6 +91,29 @@ export default async function Imprint({ params }: { params: Promise<{ locale: Lo
           </Fragment>
         ))}
       </dl>
+      {g.name && (
+        <>
+          <h2>{t('licenses')}</h2>
+          <p>{t('licensesIntro')}</p>
+          <p>
+            {g.name}
+            <br />
+            {g.street}
+            <br />
+            {g.postcode} {g.city}
+            <br />
+            {region.of(g.country)}
+          </p>
+          <dl>
+            {gmbhRows.map(([label, value]) => (
+              <Fragment key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </Fragment>
+            ))}
+          </dl>
+        </>
+      )}
     </div>
   );
 }
