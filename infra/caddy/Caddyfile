@@ -16,10 +16,13 @@
 pokemonkarten.at {
 	import security_headers
 	encode zstd gzip
-	# The app's APK (admin upload) is large; everything else stays small.
+	# The app's APK (admin upload) is large; everything else stays small. A bit above the
+	# upload route's own 400 MiB limit, so too large files get its clear message.
+	# Caddy reads this file only at start: after a change, recreate the container
+	# (docs/deploy.md, section 6).
 	@apk_upload path /admin/app/upload
 	request_body @apk_upload {
-		max_size 400MB
+		max_size 410MiB
 	}
 	@not_apk_upload not path /admin/app/upload
 	request_body @not_apk_upload {

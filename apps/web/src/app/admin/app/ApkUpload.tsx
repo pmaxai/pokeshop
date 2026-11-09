@@ -40,7 +40,7 @@ export function ApkUpload() {
           text:
             body.error ??
             (xhr.status === 413
-              ? 'Die Datei ist zu groß für den Server (Caddy-Limit prüfen).'
+              ? `Der Webserver (Caddy) hat die Datei abgelehnt (${(file.size / 1024 / 1024).toFixed(0)} MB). Erlaubt sind bis 400 MB – läuft Caddy noch mit der alten Einstellung, muss er neu gestartet werden (docs/deploy.md, Abschnitt 6).`
               : `Upload fehlgeschlagen (${xhr.status}).`),
         });
       }
