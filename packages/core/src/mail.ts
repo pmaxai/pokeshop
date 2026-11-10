@@ -27,6 +27,7 @@ import {
   PAYMENT_METHOD_LABELS,
   renderInvoicePdf,
   renderLegalPdf,
+  renderVoucherPdf,
   type InvoiceData,
 } from './pdf.ts';
 
@@ -190,6 +191,7 @@ const C = {
   line: '#dce0e8',
   accent: '#c2470a',
   paper: '#f5f6f8',
+  soft: '#f6f1ea',
 };
 
 /**
@@ -265,13 +267,53 @@ ${names.translations.length ? `<span style="color:${C.muted};font-size:13px">${n
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px">${rows}
 ${line(t.goods, formatEuro(o.goodsCents, locale))}
 ${line(t.shippingLabel(o.shippingMethod), o.shippingCents ? formatEuro(o.shippingCents, locale) : t.free)}
+${reductionLines(o, locale, line)}
 ${line(t.total, formatEuro(o.totalCents, locale), true)}
+${o.redemptions.paid.map((v) => line(t.paidVoucher(v.code), formatEuro(-v.amount, locale))).join('')}
+${o.voucherCents > 0 && o.totalCents > o.voucherCents ? line(t.paidRest, formatEuro(o.totalCents - o.voucherCents, locale)) : ''}
 <tr><td colspan="2" style="color:${C.muted};font-size:13px">${esc(o.vatRegime === 'small_business' ? SMALL_BUSINESS_NOTE[locale] : t.vatIncluded(formatRate(o.vatRateBp, locale), formatEuro(o.vatCents, locale)))}</td></tr></table>`;
+}
+
+/** Discount code and promotional vouchers as negative lines above the total. */
+function reductionLines(
+  o: CustomerOrder,
+  locale: 'de' | 'en',
+  line: (label: string, value: string) => string,
+): string {
+  const t = TEXT[locale];
+  const r = o.redemptions;
+  return [
+    r.code ? line(r.code.label[locale], formatEuro(-r.code.amount, locale)) : '',
+    ...r.promo.map((v) => line(t.promoVoucher(v.code), formatEuro(-v.amount, locale))),
+  ].join('');
 }
 
 const TEXT = {
   de: {
     hello: (n: string) => `Hallo ${n},`,
+    promoVoucher: (c: string) => `Aktionsgutschein ${c}`,
+    paidVoucher: (c: string) => `Bezahlt mit Gutschein ${c}`,
+    paidRest: 'Bezahlt per Zahlungsmittel',
+    voucherSubject: 'Dein Geschenkgutschein von pokemonkarten.at',
+    voucherIntro: (amount: string) =>
+      `danke für deinen Einkauf! Dein Gutschein über <strong>${esc(amount)}</strong> ist fertig. Im Anhang ist er als PDF zum Ausdrucken oder Weiterschicken.`,
+    voucherCode: 'Gutscheincode',
+    voucherHow:
+      'Eingelöst wird er im Warenkorb unter „Gutschein oder Rabattcode“, für Karten im Shop. Er läuft nicht ab, und was nach einem Einkauf übrig bleibt, bleibt auf dem Gutschein.',
+    voucherCare: 'Bewahre den Code wie Bargeld auf: Wer ihn kennt, kann ihn einlösen.',
+    voucherReceipt: (n: string, d: string, amount: string) =>
+      `Bestellnummer <strong>${esc(n)}</strong> vom ${esc(d)} · bezahlt ${esc(amount)}. Ein Gutschein ist noch kein Einkauf: Die Rechnung gibt es beim Einlösen, für die Karten.`,
+    voucherWithdrawal:
+      'Du kannst den Kauf des Gutscheins innerhalb von 14 Tagen widerrufen – antworte einfach auf diese E-Mail. Ist er schon zum Teil eingelöst, erstatten wir, was noch drauf ist. Unsere AGB und die Widerrufsbelehrung findest du im Anhang.',
+    refundToVoucher: (voucher: string, card: string) =>
+      card
+        ? `Davon gehen <strong>${esc(voucher)}</strong> zurück auf deinen Gutschein und <strong>${esc(card)}</strong> auf dein Zahlungsmittel.`
+        : 'Der Betrag geht zurück auf deinen Gutschein – du kannst ihn gleich wieder einlösen.',
+    unavailableVouchers:
+      'Deine Gutscheine und dein Rabattcode sind wieder frei und voll einlösbar.',
+    voucherCancelled: (c: string) => `Geschenkgutschein ${c} (damit storniert)`,
+    licenseFree: (code: string) =>
+      `Die Lizenz ist ein Geschenk: Mit dem Code ${esc(code)} hast du nichts bezahlt, deshalb gibt es keine Rechnung.`,
     goods: 'Warenwert',
     total: 'Gesamt',
     free: 'kostenlos',
@@ -328,6 +370,29 @@ const TEXT = {
   },
   en: {
     hello: (n: string) => `Hello ${n},`,
+    promoVoucher: (c: string) => `Promotional voucher ${c}`,
+    paidVoucher: (c: string) => `Paid with voucher ${c}`,
+    paidRest: 'Paid by payment method',
+    voucherSubject: 'Your gift voucher from pokemonkarten.at',
+    voucherIntro: (amount: string) =>
+      `thank you for your purchase! Your voucher for <strong>${esc(amount)}</strong> is ready. It is attached as a PDF to print or forward.`,
+    voucherCode: 'Voucher code',
+    voucherHow:
+      'It is redeemed in the cart under “Voucher or discount code”, for cards in the shop. It does not expire, and whatever is left after a purchase stays on the voucher.',
+    voucherCare: 'Keep the code like cash: anyone who knows it can redeem it.',
+    voucherReceipt: (n: string, d: string, amount: string) =>
+      `Order number <strong>${esc(n)}</strong> of ${esc(d)} · paid ${esc(amount)}. A voucher is not yet a purchase: the invoice comes when it is redeemed, for the cards.`,
+    voucherWithdrawal:
+      'You can withdraw from buying the voucher within 14 days – just reply to this e-mail. If part of it has been redeemed already, we refund what is left on it. Our terms and the withdrawal information are attached.',
+    refundToVoucher: (voucher: string, card: string) =>
+      card
+        ? `Of this, <strong>${esc(voucher)}</strong> goes back onto your voucher and <strong>${esc(card)}</strong> to your payment method.`
+        : 'The amount goes back onto your voucher – you can redeem it again right away.',
+    unavailableVouchers:
+      'Your vouchers and your discount code are free again and can be used in full.',
+    voucherCancelled: (c: string) => `Gift voucher ${c} (now cancelled)`,
+    licenseFree: (code: string) =>
+      `The licence is a gift: with the code ${esc(code)} you paid nothing, so there is no invoice.`,
     goods: 'Goods',
     total: 'Total',
     free: 'free',
@@ -489,10 +554,12 @@ export async function renderTemplate(
         {
           amount_cents: number;
           shipping_cents: number;
-          items: { orderItemId: number; quantity: number }[];
+          voucher_cents: number;
+          items: { orderItemId: number; quantity: number }[] | null;
         }[]
       >`
-        SELECT amount_cents, shipping_cents, items FROM refunds WHERE id = ${Number(payload.refund_id)}`;
+        SELECT amount_cents, shipping_cents, voucher_cents, items FROM refunds
+         WHERE id = ${Number(payload.refund_id)}`;
       if (!r) throw new Error('refund not found');
       const [credit] = await db`
         SELECT 1 FROM documents WHERE refund_id = ${Number(payload.refund_id)}
@@ -501,7 +568,7 @@ export async function renderTemplate(
       const gmbh = (await orderSeller(db, o.id)) === 'gmbh' ? gmbhContext(ctx) : null;
       const [ids] = await db<{ ids: number[] }[]>`
         SELECT array_agg(id ORDER BY id) AS ids FROM order_items WHERE order_id = ${o.id}`;
-      const rows = r.items
+      const rows = (r.items ?? [])
         .map((w) => {
           const idx = (ids?.ids ?? []).indexOf(w.orderItemId);
           const i = o.items[idx];
@@ -516,11 +583,24 @@ export async function renderTemplate(
       const licenseRow = lic
         ? `<li>${lic.quantity} × ${esc(L === 'de' ? `${APP_NAME}-Lizenz (der Schlüssel ist damit gesperrt)` : `${APP_NAME} licence (the key no longer works)`)}</li>`
         : '';
+      const [gift] = await db<{ code: string }[]>`
+        SELECT v.code FROM order_gift_vouchers g JOIN vouchers v ON v.id = g.voucher_id
+         WHERE g.order_id = ${o.id}`;
+      const giftRow = gift ? `<li>${esc(t.voucherCancelled(gift.code))}</li>` : '';
+      const card = r.amount_cents - r.voucher_cents;
       const body = [
         p(esc(t.hello((o.shippingAddress ?? o.billingAddress)?.name ?? ''))),
         p(t.refundIntro(formatEuro(r.amount_cents, L))),
-        rows || shippingRow || licenseRow
-          ? `${h2(t.refundedItems)}<ul style="margin:0 0 14px;padding-left:20px">${rows}${shippingRow}${licenseRow}</ul>`
+        r.voucher_cents > 0
+          ? p(
+              t.refundToVoucher(
+                formatEuro(r.voucher_cents, L),
+                card > 0 ? formatEuro(card, L) : '',
+              ),
+            )
+          : '',
+        rows || shippingRow || licenseRow || giftRow
+          ? `${h2(t.refundedItems)}<ul style="margin:0 0 14px;padding-left:20px">${rows}${shippingRow}${licenseRow}${giftRow}</ul>`
           : '',
         credit ? p(esc(t.refundCredit)) : '',
         p(esc(t.questions)),
@@ -538,13 +618,43 @@ export async function renderTemplate(
         html: layout(L, ctx, t.refundSubject(o.number), body),
       };
     }
+    case 'voucher_purchase': {
+      const [v] = await db<
+        {
+          code: string;
+          value_cents: number;
+          number: string;
+          customer_name: string | null;
+          paid_at: Date | null;
+        }[]
+      >`SELECT v.code, v.value_cents, o.number, o.customer_name, o.paid_at
+          FROM vouchers v JOIN orders o ON o.id = v.order_id
+         WHERE v.id = ${Number(payload.voucher_id)}`;
+      if (!v) throw new Error('voucher not found');
+      const value = formatEuro(v.value_cents, L);
+      const body = [
+        p(esc(t.hello(v.customer_name ?? ''))),
+        p(t.voucherIntro(value)),
+        `<p style="margin:0 0 14px;padding:14px 16px;background:${C.soft};border-radius:8px;font-size:13px;color:${C.muted}">${esc(t.voucherCode)}<br><strong style="font-family:Consolas,Menlo,monospace;font-size:22px;letter-spacing:0.08em;color:${C.ink}">${esc(v.code)}</strong></p>`,
+        p(esc(t.voucherHow)),
+        p(esc(t.voucherCare)),
+        p(t.voucherReceipt(v.number, dateTime(v.paid_at ?? new Date(), L), value)),
+        h2(t.withdrawalTitle),
+        p(esc(t.voucherWithdrawal)),
+      ].join('\n');
+      return { subject: t.voucherSubject, html: layout(L, ctx, t.voucherSubject, body) };
+    }
     case 'order_unavailable': {
       const o = await orderById(db, Number(payload.order_id));
       if (!o) throw new Error('order not found');
       const amount = formatEuro(Number(payload.amount_cents ?? o.totalCents), L);
+      const [freed] = await db`
+        SELECT 1 FROM voucher_redemptions WHERE order_id = ${o.id}
+        UNION ALL SELECT 1 FROM discount_code_uses WHERE order_id = ${o.id}`;
       const body = [
         p(esc(t.hello(o.shippingAddress.name))),
-        p(t.unavailable(amount)),
+        Number(payload.amount_cents ?? 1) > 0 ? p(t.unavailable(amount)) : '',
+        freed ? p(esc(t.unavailableVouchers)) : '',
         itemsTable(o, L),
         p(esc(t.questions)),
       ].join('\n');
@@ -747,6 +857,13 @@ async function appDownload(
   };
 }
 
+async function orderCode(db: Db, orderId: number): Promise<string> {
+  const [c] = await db<{ code: string }[]>`
+    SELECT d.code FROM discount_code_uses u JOIN discount_codes d ON d.id = u.code_id
+     WHERE u.order_id = ${orderId}`;
+  return c?.code.toUpperCase() ?? '';
+}
+
 async function renderLicenseMail(db: Db, mail: OutboxMail, ctx: MailContext): Promise<Rendered> {
   const L = mail.locale;
   const t = LICENSE_TEXT[L];
@@ -856,7 +973,9 @@ ${l.active_device?.name ? `<div style="color:${C.muted};font-size:13px;margin-to
     order && !payload.again
       ? [
           p(t.facts(order.number, formatEuro(order.total_cents, L))),
-          p(gmbh ? t.seller(String(gmbh.company.name)) : esc(t.invoice)),
+          order.total_cents === 0
+            ? p(TEXT[L].licenseFree(await orderCode(db, order.id)))
+            : p(gmbh ? t.seller(String(gmbh.company.name)) : esc(t.invoice)),
           h2(t.withdrawalTitle),
           p(
             !gmbh
@@ -911,11 +1030,15 @@ export async function documentData(
       gross_cents: number;
       vat_cents: number;
       vat_rate_bp: number;
+      payments: { code: string; cents: number }[];
+      refund_voucher_cents: number | null;
     }[]
   >`
-    SELECT order_id, kind, number, issued_at, delivered_at, refers_to, locale, pdf_key, lines,
-           billing_address, gross_cents, vat_cents, vat_rate_bp
-      FROM documents WHERE id = ${documentId}`;
+    SELECT d.order_id, d.kind, d.number, d.issued_at, d.delivered_at, d.refers_to, d.locale, d.pdf_key,
+           d.lines, d.billing_address, d.gross_cents, d.vat_cents, d.vat_rate_bp, d.payments,
+           r.voucher_cents AS refund_voucher_cents
+      FROM documents d LEFT JOIN refunds r ON r.id = d.refund_id
+     WHERE d.id = ${documentId}`;
   if (!d) throw new Error(`document ${documentId} not found`);
   const o = await orderById(db, d.order_id);
   const [x] = await db<
@@ -951,6 +1074,8 @@ export async function documentData(
     taxCountry: x.tax_country,
     paidWith: x.payment_method_type,
     paidAt: o.paidAt,
+    voucherPayments: d.payments ?? [],
+    voucherRefundCents: d.refund_voucher_cents ?? 0,
   };
 }
 
@@ -986,6 +1111,31 @@ async function resolveAttachment(
   if (a.kind === 'document') {
     const { key: _key, ...pdf } = await documentPdf(db, a.id, ctx);
     return { ...pdf, contentType: 'application/pdf' };
+  }
+  if (a.kind === 'voucher') {
+    const [v] = await db<
+      {
+        code: string;
+        value_cents: number;
+        recipient_name: string | null;
+        message: string | null;
+        expires_at: Date | null;
+      }[]
+    >`SELECT code, value_cents, recipient_name, message, expires_at FROM vouchers WHERE id = ${a.id}`;
+    if (!v) throw new Error(`voucher ${a.id} not found`);
+    return {
+      name: locale === 'en' ? `Gift-voucher-${v.code}.pdf` : `Gutschein-${v.code}.pdf`,
+      contentType: 'application/pdf',
+      content: await renderVoucherPdf({
+        code: v.code,
+        valueCents: v.value_cents,
+        recipientName: v.recipient_name,
+        message: v.message,
+        expiresAt: v.expires_at,
+        locale,
+        shopUrl: ctx.baseUrl.replace(/^https?:\/\//, ''),
+      }),
+    };
   }
   if (a.kind === 'stripe') {
     if (!ctx.gmbhPayments) throw new Error('GmbH Stripe account not configured');

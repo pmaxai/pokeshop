@@ -8,6 +8,7 @@ import { licenseDocumentLine } from './licenses.ts';
 import { enqueueMail } from './outbox.ts';
 import { orderEvent } from './orders.ts';
 import type { PaymentProvider } from './payments.ts';
+import { orderRedemptions, restoreVouchers } from './vouchers.ts';
 
 export type DocumentLine = { de: string; en: string; quantity: number; unit_cents: number };
 
@@ -32,10 +33,27 @@ type ItemRow = {
   refunded_quantity: number;
   restocked_quantity: number;
   high_value: boolean;
+  /** The line's share of the order's discount, for all its copies. */
+  discount_cents: number;
 };
 
 const ITEM_COLUMNS = `id, product_id, sku, name_de, name_en, name_local, set_name_de, set_name_en, card_number,
-  card_language, condition, finish, unit_price_cents, quantity, refunded_quantity, restocked_quantity, high_value`;
+  card_language, condition, finish, unit_price_cents, quantity, refunded_quantity, restocked_quantity, high_value,
+  discount_cents`;
+
+/** Discount on `quantity` more copies of a line, after `before` were refunded (exact over all). */
+const lineDiscountShare = (i: ItemRow, before: number, quantity: number) =>
+  Math.floor((i.discount_cents * (before + quantity)) / i.quantity) -
+  Math.floor((i.discount_cents * before) / i.quantity);
+
+function discountLine(cents: number, label?: { de: string; en: string }): DocumentLine {
+  return {
+    de: label?.de ?? 'Anteiliger Rabatt',
+    en: label?.en ?? 'Discount (pro rata)',
+    quantity: 1,
+    unit_cents: -cents,
+  };
+}
 
 /** "リザードンex (Charizard ex, Glurak-ex)": printed name first, as in the shop. */
 function itemName(
@@ -98,12 +116,17 @@ type OrderForDocs = {
   billing_address: unknown;
   shipping_address: unknown;
   stripe_payment_intent_id: string | null;
+  discount_cents: number;
+  shipping_discount_cents: number;
+  voucher_cents: number;
+  voucher_refunded_cents: number;
 };
 
 async function lockOrder(tx: Tx, id: number): Promise<OrderForDocs> {
   const [o] = await tx<OrderForDocs[]>`
     SELECT id, number, status, locale, email, vat_rate_bp, vat_regime, total_cents, refunded_cents,
-           shipping_cents, shipping_method, billing_address, shipping_address, stripe_payment_intent_id
+           shipping_cents, shipping_method, billing_address, shipping_address, stripe_payment_intent_id,
+           discount_cents, shipping_discount_cents, voucher_cents, voucher_refunded_cents
       FROM orders WHERE id = ${id} FOR UPDATE`;
   if (!o) throw new FulfilmentError('not_found', 'Bestellung nicht gefunden');
   return o;
@@ -158,20 +181,50 @@ export async function issueInvoice(
     .filter((i) => i.quantity > i.refunded_quantity)
     .map((i) => itemLine(i, i.quantity - i.refunded_quantity));
   lines.push(...(await licenseLines(tx, orderId)));
-  const shipping = o.shipping_cents - (await refundedShipping(tx, orderId));
-  if (shipping > 0) lines.push(shippingLine(o.shipping_method, shipping));
+  // Shipping is refunded whole or not at all.
+  const shippingRefunded = (await refundedShipping(tx, orderId)) > 0;
+  if (!shippingRefunded && o.shipping_cents > 0) {
+    lines.push(shippingLine(o.shipping_method, o.shipping_cents));
+  }
+  // Discounts (code, promotional vouchers) lower the price; on the invoice each by name, or
+  // pro rata when part of the order was refunded before it shipped.
+  const discountLeft =
+    items.reduce((a, i) => a + i.discount_cents - lineDiscountShare(i, 0, i.refunded_quantity), 0) +
+    (shippingRefunded ? 0 : o.shipping_discount_cents);
+  const red = o.discount_cents > 0 ? await orderRedemptions(tx, orderId) : null;
+  if (red && discountLeft === o.discount_cents) {
+    if (red.code) lines.push(discountLine(red.code.amount, red.code.label));
+    for (const v of red.promo) {
+      lines.push(
+        discountLine(v.amount, {
+          de: `Aktionsgutschein ${v.code}`,
+          en: `Promotional voucher ${v.code}`,
+        }),
+      );
+    }
+  } else if (discountLeft > 0) {
+    lines.push(discountLine(discountLeft));
+  }
   const gross = lines.reduce((a, l) => a + l.unit_cents * l.quantity, 0);
-  if (gross === 0) return null;
+  if (gross <= 0 && o.voucher_cents === 0) return null;
+  // Bought vouchers are a means of payment: shown below the total, not as a reduction.
+  const paidVouchers = await tx<{ code: string; cents: number }[]>`
+    SELECT v.code, r.amount_cents - r.restored_cents AS cents
+      FROM voucher_redemptions r JOIN vouchers v ON v.id = r.voucher_id
+     WHERE r.order_id = ${orderId} AND r.status = 'used' AND v.origin = 'sold'
+       AND r.amount_cents > r.restored_cents
+     ORDER BY r.id`;
   const vat = vatOf(gross, o);
   const year = vienna(deliveredAt);
   const [s] = await tx<{ seq: number }[]>`SELECT next_document_seq('invoice', ${year}) AS seq`;
   const number = formatDocumentNumber('invoice', year, s!.seq);
   const [doc] = await tx<{ id: number }[]>`
     INSERT INTO documents (order_id, kind, year, seq, number, issued_at, delivered_at, net_cents,
-                           vat_cents, gross_cents, vat_rate_bp, locale, lines, billing_address)
+                           vat_cents, gross_cents, vat_rate_bp, locale, lines, billing_address, payments)
     VALUES (${orderId}, 'invoice', ${year}, ${s!.seq}, ${number}, ${deliveredAt}, ${deliveredAt},
             ${gross - vat}, ${vat}, ${gross}, ${o.vat_rate_bp}, ${o.locale}, ${tx.json(lines as never)},
-            ${tx.json((o.billing_address ?? o.shipping_address) as never)})
+            ${tx.json((o.billing_address ?? o.shipping_address) as never)},
+            ${tx.json(paidVouchers as never)})
     RETURNING id`;
   return { id: doc!.id, number };
 }
@@ -316,42 +369,75 @@ export async function refundOrder(
     if (!['paid', 'packing', 'shipped', 'completed'].includes(o.status)) {
       throw new FulfilmentError('wrong_status', 'Diese Bestellung kann nicht erstattet werden.');
     }
-    if (!o.stripe_payment_intent_id) {
-      throw new FulfilmentError('no_payment', 'Zu dieser Bestellung gibt es keine Zahlung.');
-    }
     const items = await tx<ItemRow[]>`
       SELECT ${tx.unsafe(ITEM_COLUMNS)} FROM order_items WHERE order_id = ${o.id} FOR UPDATE`;
+    // What the buyer really paid: list price less the line's share of the discount.
     let amount = 0;
+    let discount = 0;
     for (const w of wanted) {
       const it = items.find((i) => i.id === w.orderItemId);
       if (!it || !Number.isInteger(w.quantity) || w.quantity > it.quantity - it.refunded_quantity) {
         throw new FulfilmentError('bad_quantity', 'Mehr Exemplare als noch nicht erstattet.');
       }
-      amount += it.unit_price_cents * w.quantity;
+      const share = lineDiscountShare(it, it.refunded_quantity, w.quantity);
+      amount += it.unit_price_cents * w.quantity - share;
+      discount += share;
     }
-    const shipping = input.shipping ? o.shipping_cents - (await refundedShipping(tx, o.id)) : 0;
+    const shipping =
+      input.shipping && (await refundedShipping(tx, o.id)) === 0
+        ? o.shipping_cents - o.shipping_discount_cents
+        : 0;
     amount += shipping;
     if (amount <= 0)
       throw new FulfilmentError('nothing', 'Bitte Karten oder Versandkosten wählen.');
     if (amount > o.total_cents - o.refunded_cents) {
       throw new FulfilmentError('too_much', 'Der Betrag übersteigt das noch Erstattbare.');
     }
+    // The same means as paid: the voucher part back onto the vouchers, the rest to the card.
+    const voucherLeft = o.voucher_cents - o.voucher_refunded_cents;
+    const stripeLeft =
+      o.total_cents - o.voucher_cents - (o.refunded_cents - o.voucher_refunded_cents);
+    let toVoucher =
+      o.total_cents > 0
+        ? Math.floor(((o.refunded_cents + amount) * o.voucher_cents) / o.total_cents) -
+          o.voucher_refunded_cents
+        : 0;
+    toVoucher = Math.max(0, Math.min(toVoucher, voucherLeft, amount));
+    let toCard = amount - toVoucher;
+    if (toCard > stripeLeft) {
+      toVoucher += toCard - Math.max(0, stripeLeft);
+      toCard = Math.max(0, stripeLeft);
+    }
+    if (toCard > 0 && !o.stripe_payment_intent_id) {
+      throw new FulfilmentError('no_payment', 'Zu dieser Bestellung gibt es keine Zahlung.');
+    }
     const [r] = await tx<{ id: number }[]>`
-      INSERT INTO refunds (order_id, amount_cents, shipping_cents, reason, items, status, created_by)
-      VALUES (${o.id}, ${amount}, ${shipping}, ${input.reason.trim().slice(0, 500) || null},
+      INSERT INTO refunds (order_id, amount_cents, shipping_cents, voucher_cents, reason, items,
+                           status, created_by)
+      VALUES (${o.id}, ${amount}, ${shipping}, ${toVoucher}, ${input.reason.trim().slice(0, 500) || null},
               ${tx.json(wanted as never)}, 'pending', ${input.actor})
       RETURNING id`;
-    return { refundId: r!.id, amount, shipping, pi: o.stripe_payment_intent_id };
+    return {
+      refundId: r!.id,
+      amount,
+      toCard,
+      toVoucher,
+      discount,
+      shipping,
+      pi: o.stripe_payment_intent_id,
+    };
   });
 
-  let stripeId: string;
+  let stripeId: string | null = null;
   try {
-    const res = await provider.refund({
-      paymentIntentId: prep.pi,
-      amount: prep.amount,
-      idempotencyKey: `refund-${prep.refundId}`,
-    });
-    stripeId = res.id;
+    if (prep.toCard > 0) {
+      const res = await provider.refund({
+        paymentIntentId: prep.pi!,
+        amount: prep.toCard,
+        idempotencyKey: `refund-${prep.refundId}`,
+      });
+      stripeId = res.id;
+    }
   } catch (e) {
     await sql`UPDATE refunds SET status = 'failed', error = ${(e as Error).message.slice(0, 1000)}
                WHERE id = ${prep.refundId}`;
@@ -382,11 +468,17 @@ export async function refundOrder(
       }
       lines.push(itemLine(it, w.quantity));
     }
+    if (prep.discount > 0) lines.push(discountLine(prep.discount));
     if (prep.shipping > 0) lines.push(shippingLine(o.shipping_method, prep.shipping));
+    const restored = await restoreVouchers(tx, o.id, prep.toVoucher, 'sold', input.actor);
     const refunded = o.refunded_cents + prep.amount;
     await tx`UPDATE orders SET refunded_cents = ${refunded},
+                    voucher_refunded_cents = voucher_refunded_cents + ${prep.toVoucher},
                     status = CASE WHEN ${refunded} >= total_cents THEN 'refunded' ELSE status END
               WHERE id = ${o.id}`;
+    // Refunded in full: promotional vouchers used on it are good again too.
+    if (refunded >= o.total_cents)
+      await restoreVouchers(tx, o.id, o.discount_cents, 'promo', input.actor);
     const credit = await issueCreditNote(tx, o, prep.refundId, lines, now);
     if (o.email) {
       await enqueueMail(tx, {
@@ -402,7 +494,13 @@ export async function refundOrder(
       tx,
       o.id,
       'refunded',
-      { amount: prep.amount, refund: stripeId, credit_note: credit?.number ?? null, items: wanted },
+      {
+        amount: prep.amount,
+        refund: stripeId,
+        ...(restored.length ? { vouchers: restored.map((v) => [v.code, v.amount]) } : {}),
+        credit_note: credit?.number ?? null,
+        items: wanted,
+      },
       input.actor,
     );
     return { refundId: prep.refundId, amount: prep.amount, creditNote: credit?.number ?? null };
@@ -603,13 +701,16 @@ export async function orderAdmin(db: Db, id: number) {
       internal_note: string | null;
       lookup_token: string;
       agb_version: number | null;
-      kind: 'cards' | 'license';
+      kind: 'cards' | 'license' | 'voucher';
       seller: 'shop' | 'gmbh';
       buyer_business: boolean;
       buyer_tax_id: string | null;
       buyer_tax_id_type: string | null;
       stripe_customer_id: string | null;
       tax_country: string | null;
+      discount_cents: number;
+      voucher_cents: number;
+      voucher_refunded_cents: number;
     })[]
   >`SELECT * FROM orders WHERE id = ${id}`;
   if (!order) return null;
@@ -646,10 +747,11 @@ export async function orderAdmin(db: Db, id: number) {
         error: string | null;
         credit_note_number: string | null;
         credit_note_pdf_url: string | null;
+        voucher_cents: number;
       }[]
     >`
       SELECT id, amount_cents, shipping_cents, reason, status, created_by, created_at, error,
-             credit_note_number, credit_note_pdf_url
+             credit_note_number, credit_note_pdf_url, voucher_cents
         FROM refunds WHERE order_id = ${id} ORDER BY id`,
     db<
       {
@@ -696,6 +798,18 @@ export async function orderAdmin(db: Db, id: number) {
     mails,
     withdrawals,
     license: license ?? null,
+    redemptions:
+      order.discount_cents + order.voucher_cents > 0
+        ? await orderRedemptions(db, id)
+        : { code: null, promo: [], paid: [] },
+    giftVoucher:
+      order.kind === 'voucher'
+        ? ((
+            await db<{ id: number; code: string; balance_cents: number; status: string }[]>`
+              SELECT v.id, v.code, v.balance_cents, v.status FROM order_gift_vouchers g
+                JOIN vouchers v ON v.id = g.voucher_id WHERE g.order_id = ${id}`
+          )[0] ?? null)
+        : null,
   };
 }
 

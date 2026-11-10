@@ -12,10 +12,13 @@ export type MailTemplate =
   | 'withdrawal_notification'
   | 'admin_alert'
   | 'license_delivery'
-  | 'license_resend';
+  | 'license_resend'
+  | 'voucher_purchase';
 
 export type MailAttachment =
   | { kind: 'document'; id: number }
+  /** The printable gift voucher. */
+  | { kind: 'voucher'; id: number }
   | { kind: 'legal'; kinds: ('agb' | 'withdrawal' | 'privacy' | 'license_terms')[] }
   /** Invoice or credit note of the GmbH, fetched from its Stripe account when sending. */
   | { kind: 'stripe'; seller: 'gmbh'; doc: 'invoice' | 'credit_note'; id: string; number: string };

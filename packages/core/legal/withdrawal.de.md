@@ -26,6 +26,10 @@ Sie tragen die unmittelbaren Kosten der Rücksendung der Waren.
 
 Sie müssen für einen etwaigen Wertverlust der Waren nur aufkommen, wenn dieser Wertverlust auf einen zur Prüfung der Beschaffenheit, Eigenschaften und Funktionsweise der Waren nicht notwendigen Umgang mit ihnen zurückzuführen ist.
 
+## Gutscheine
+
+Diese Widerrufsbelehrung gilt auch für den Kauf von Geschenkgutscheinen. Die Widerrufsfrist beträgt dort vierzehn Tage ab dem Tag des Vertragsabschlusses (Eingang der Zahlung). Wurde der Gutschein bereits teilweise eingelöst, erstatten wir den nicht eingelösten Restwert.
+
 ## App-Lizenzen (ScanPM)
 
 Diese Widerrufsbelehrung gilt für Kartenbestellungen. Lizenzen für die App ScanPM verkauft die {{seller.name}}; die Widerrufsbelehrung dafür steht in deren Lizenzbedingungen: {{license_terms_url}}.

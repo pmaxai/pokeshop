@@ -35,6 +35,7 @@ As of November 2026. This is a translation for your convenience; only the German
 1. You can pay by credit or debit card, Apple Pay, Google Pay, EPS bank transfer or PayPal. Payments are processed by Stripe (Stripe Payments Europe, Ltd., Dublin, Ireland). For payments with PayPal, PayPal's terms of use also apply.
 2. The purchase price is due when you order and is charged when you complete the payment.
 3. You receive the invoice by e-mail as soon as we ship your order.
+4. You can pay for cards in full or in part with vouchers and redeem one discount code (point 14).
 
 ## 6. Delivery and passing of risk
 
@@ -72,3 +73,13 @@ Please send complaints to {{company.email}}; we will reply as quickly as we can.
 ## 13. App licences (ScanPM)
 
 Licences for the app ScanPM offered on the shop's app page ({{app_url}}) are not sold by us but by {{seller.name}}. Buying them is governed only by its licence terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to them.
+
+## 14. Vouchers and discount codes
+
+1. You can buy gift vouchers on {{vouchers_url}} for an amount from 10 to 300 euros. The contract is concluded when the payment arrives; you receive the voucher with its code right after by e-mail as a PDF.
+2. Vouchers can be redeemed for cards in this shop, not for app licences. They are entered in the cart and pay the invoice amount in full or in part, including shipping. Several vouchers can be combined in one order. Any amount not used stays on the voucher.
+3. Bought vouchers have no expiry date; the statutory limitation period of 30 years applies. Promotional vouchers given away may be limited in time; the expiry date is printed on the voucher.
+4. Vouchers are not paid out in cash unless the law requires it. Anyone who knows the code can redeem the voucher, so keep it like cash. If misuse is reported to us, we block the voucher with the balance left at that time.
+5. If an order paid with a voucher is refunded in full or in part, the part paid with the voucher goes back onto the voucher and the rest to the original means of payment.
+6. Discount codes apply under the conditions of the respective campaign (such as period, minimum order value, once per customer). One discount code can be redeemed per order; it applies to the value of the cards, not to shipping, and cannot be applied afterwards to an order already placed. If part of an order is refunded, we refund the price actually paid, i.e. after the discount.
+7. Consumers can withdraw from buying a voucher within 14 days (withdrawal information: {{withdrawal_url}}). If the voucher has already been redeemed in part, we refund the balance not yet redeemed.

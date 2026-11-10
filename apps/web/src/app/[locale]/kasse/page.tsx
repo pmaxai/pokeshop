@@ -3,11 +3,13 @@ import { redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro } from '@pokeshop/core';
 import { loadCart } from '@pokeshop/core/cart';
+import { cartCodes, priceCartCodes } from '@pokeshop/core/vouchers';
 import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { currentCartId } from '@/server/cart';
 import { AltNames } from '@/components/AltNames';
+import { CodeLines } from '@/components/CodeLines';
 import { checkoutAction } from '../shop-actions';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +61,11 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     return code ? t(`errors.${code}` as never) : null;
   };
   const ship = view.check.shipping!;
+  const codes = await priceCartCodes(db(), {
+    codes: await cartCodes(db(), view.id),
+    lines: view.lines.map((l) => l.lineTotal),
+    shipping: ship.price,
+  });
   const allCountries = (await db()<{ code: string }[]>`SELECT code FROM countries`)
     .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
     .sort((a, b) => a.name.localeCompare(b.name, locale));
@@ -241,9 +248,15 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
                   : tCart('shipping')}
             </dt>
             <dd>{ship.price > 0 ? formatEuro(ship.price, locale) : tCart('shippingFree')}</dd>
-            <dt className="totals__total">{tCart('total')}</dt>
-            <dd className="totals__total">{formatEuro(view.check.total!, locale)}</dd>
+            <CodeLines pricing={codes.pricing} locale={locale} />
           </dl>
+          {codes.entries.length === 0 && (
+            <p className="small">
+              <Link href={{ pathname: '/warenkorb', hash: 'codes' }}>
+                {tCart('codes.checkoutLink')}
+              </Link>
+            </p>
+          )}
           <label className={errors.acceptTerms ? 'check check--error' : 'check'}>
             <input
               type="checkbox"

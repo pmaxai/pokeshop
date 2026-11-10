@@ -34,6 +34,7 @@ As of November 2026
 2. Businesses in Austria pay the price including 20 % VAT.
 3. Businesses in another EU country with a valid VAT identification number pay the net price; the VAT liability passes to them (reverse charge). Without a valid number they pay the price including their country's VAT.
 4. Businesses outside the EU pay the net price. The supply is not subject to Austrian VAT; any tax in their own country they account for themselves.
+5. Discount codes for licences apply under the conditions of the respective campaign; one can be redeemed per order. If a code makes a licence free, no payment is due and no invoice is issued. The shop's gift vouchers are not valid for licences.
 
 ## 6. Payment and invoice
 

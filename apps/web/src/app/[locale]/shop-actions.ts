@@ -3,13 +3,21 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { addToCart, saveCheckoutDraft, setCartCountry, setCartQuantity } from '@pokeshop/core/cart';
+import {
+  addToCart,
+  loadCart,
+  saveCheckoutDraft,
+  setCartCountry,
+  setCartQuantity,
+} from '@pokeshop/core/cart';
 import {
   CheckoutRejected,
+  completeWithoutPayment,
   createCheckoutOrder,
   startPayment,
   validateCheckout,
 } from '@pokeshop/core/orders';
+import { addCartCode, removeCartCode } from '@pokeshop/core/vouchers';
 import { recordWithdrawal, validateWithdrawal } from '@pokeshop/core/withdrawals';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -24,6 +32,11 @@ const str = (f: FormData, k: string) => {
 const localeOf = (f: FormData): Locale => (str(f, 'locale') === 'en' ? 'en' : 'de');
 const cartPath = (locale: Locale) => getPathname({ href: '/warenkorb', locale });
 const checkoutPath = (locale: Locale) => getPathname({ href: '/kasse', locale });
+
+/** next/navigation's redirect() throws; let it through a catch. */
+const isRedirect = (e: unknown) =>
+  typeof (e as { digest?: unknown })?.digest === 'string' &&
+  (e as { digest: string }).digest.startsWith('NEXT_REDIRECT');
 
 /** Encodes a small object for the query string (error codes after a redirect). */
 const pack = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
@@ -84,6 +97,28 @@ export async function updateCartAction(form: FormData) {
   redirect(cartPath(locale));
 }
 
+/**
+ * "Einlösen" in the cart: a voucher or discount code (one form for both). The cart page then
+ * shows what it does, or why it does nothing.
+ */
+export async function cartCodeAction(form: FormData) {
+  const locale = localeOf(form);
+  const cart = await ensureCartId(locale);
+  const remove = str(form, 'remove_code');
+  if (remove) {
+    await removeCartCode(db(), cart, remove);
+    revalidatePath('/', 'layout');
+    redirect(`${cartPath(locale)}#codes`);
+  }
+  const view = await loadCart(db(), cart, locale);
+  const r = await addCartCode(db(), cart, str(form, 'code'), view.check.goodsSubtotal);
+  revalidatePath('/', 'layout');
+  const q = r.ok
+    ? `code=${r.replaced ? 'replaced' : r.kind}`
+    : `code_error=${r.problem}${r.minGoodsCents ? `&min=${r.minGoodsCents}` : ''}&typed=${encodeURIComponent(str(form, 'code').slice(0, 40))}`;
+  redirect(`${cartPath(locale)}?${q}#codes`);
+}
+
 function address(form: FormData, prefix: string) {
   return {
     name: str(form, `${prefix}.name`),
@@ -128,6 +163,12 @@ export async function checkoutAction(form: FormData) {
       href: { pathname: '/bestellung/[token]', params: { token: order.token } },
       locale,
     });
+    if (order.dueCents === 0) {
+      // Code and vouchers pay it all: no payment page.
+      const r = await completeWithoutPayment(db(), order.id);
+      if (r === 'unavailable') redirect(`${cartPath(locale)}?unavailable=1`);
+      redirect(orderPath);
+    }
     url = await startPayment(db(), provider, order, {
       email: v.data.email,
       locale,
@@ -135,7 +176,15 @@ export async function checkoutAction(form: FormData) {
       cancelUrl: `${config.baseUrl}/api/checkout/cancel?o=${order.token}&l=${locale}`,
     });
   } catch (e) {
-    if (e instanceof CheckoutRejected) redirect(cartPath(locale));
+    if (isRedirect(e)) throw e;
+    if (e instanceof CheckoutRejected) {
+      const p = e.problems.find((x) => x.code === 'code_problem');
+      redirect(
+        p && p.code === 'code_problem'
+          ? `${cartPath(locale)}?code_error=${p.problem}&typed=${encodeURIComponent(p.entry)}#codes`
+          : cartPath(locale),
+      );
+    }
     console.error('[checkout]', (e as Error).message);
     redirect(`${checkoutPath(locale)}?e=${pack({ _: 'payment_unavailable' })}`);
   }

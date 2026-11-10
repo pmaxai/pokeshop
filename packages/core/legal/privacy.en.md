@@ -22,6 +22,8 @@ For your order we process your name, delivery and, where given, billing address,
 
 The legal bases are performance of the contract (Art. 6 (1) (b) GDPR) and our statutory retention obligations (Art. 6 (1) (c) GDPR). We keep order and invoice data for seven years (§ 132 BAO) and delete it afterwards. Details entered and stored with the cart are deleted together with the cart after 30 days without activity.
 
+When you buy a gift voucher, we process your name, your e-mail address, the amount and – if you enter them – the name of the person it is for and your message, which are printed on the voucher. We store when and for which order a voucher was redeemed. We store discount codes with the order and the e-mail address to keep campaign conditions such as “once per customer”.
+
 ## 4. Payment
 
 Payments are processed by Stripe (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Ireland). You enter your card or account details directly with Stripe; we do not receive them, only the payment status, the payment method and a reference number. Stripe processes the data partly on our behalf and partly as a controller in its own right, for example for fraud prevention; in doing so Stripe checks payments automatically and may decline a payment. Stripe may also process data in the USA; Stripe is certified under the EU-US Data Privacy Framework and additionally uses standard contractual clauses. More at https://stripe.com/at/privacy.

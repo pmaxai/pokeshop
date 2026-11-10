@@ -11,6 +11,7 @@ import {
   startLicensePayment,
   validateLicenseCheckout,
 } from '@pokeshop/core/licenses';
+import { completeWithoutPayment } from '@pokeshop/core/orders';
 import { CustomerRejected } from '@pokeshop/core/payments';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -57,6 +58,7 @@ export async function buyLicenseAction(form: FormData) {
     city: str(form, 'city'),
     country: str(form, 'country'),
     quantity: str(form, 'quantity') || '1',
+    code: str(form, 'code'),
   };
   const v = validateLicenseCheckout({
     ...values,
@@ -87,15 +89,26 @@ export async function buyLicenseAction(form: FormData) {
       href: { pathname: '/app/lizenz/[token]', params: { token: order.token } },
       locale,
     });
-    url = await startLicensePayment(db(), provider, order, {
-      details: v.data,
-      buyer: checked.buyer,
-      locale,
-      successUrl: `${config.baseUrl}${thanks}?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${config.baseUrl}/api/checkout/cancel?o=${order.token}&l=${locale}&app=1`,
-    });
+    if (order.dueCents === 0) {
+      // A free licence (code): no payment, no invoice.
+      await completeWithoutPayment(db(), order.id);
+      url = `${config.baseUrl}${thanks}`;
+    } else
+      url = await startLicensePayment(db(), provider, order, {
+        details: v.data,
+        buyer: checked.buyer,
+        locale,
+        successUrl: `${config.baseUrl}${thanks}?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${config.baseUrl}/api/checkout/cancel?o=${order.token}&l=${locale}&app=1`,
+      });
   } catch (e) {
-    if (e instanceof LicenseCheckoutRejected) return back(locale, values, { country: 'country' });
+    if (e instanceof LicenseCheckoutRejected) {
+      return back(
+        locale,
+        values,
+        e.code === 'code' ? { code: `code_${e.problem ?? 'unknown'}` } : { country: 'country' },
+      );
+    }
     if (e instanceof CustomerRejected) {
       return back(
         locale,

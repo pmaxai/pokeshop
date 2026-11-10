@@ -2,6 +2,38 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-10 · Sold vouchers are money, promotional vouchers and codes are discounts
+
+There are two kinds of voucher, told apart by `vouchers.origin`, and they are booked differently:
+
+- **Sold** (`'sold'`): a customer bought it on `/gutscheine`, as an order of kind `'voucher'`.
+  It is a multi-purpose voucher: no VAT and no invoice at the sale, only a receipt; the open
+  balance is money the shop owes. When it is redeemed it pays part of a card order
+  (`orders.voucher_cents`); the order's invoice is unchanged by it and lists the voucher under
+  the total as a payment (`documents.payments`).
+- **Promotional** (`'promo'`): created in the admin without income, optionally with an expiry
+  date. When redeemed it lowers the price like a discount code (`orders.discount_cents`, a
+  negative line on the invoice), so the VAT is worked out on the reduced price.
+
+Discount codes (`discount_codes`) are percent or a fixed amount, for cards, licences or both,
+with optional minimum order, use limit, once per customer, validity dates and batches of
+single-use codes (`PREFIX-XXXXXX`). One code and up to five vouchers fit on an order; sold
+vouchers apply last, after the price is final. Vouchers only pay for cards, never licences
+(those belong to the GmbH, see below).
+
+Amounts are taken from vouchers when the order is created (`voucher_redemptions`, status
+`held`), not at payment, so two orders cannot spend the same balance. A trigger on `orders`
+gives held amounts back whenever an order closes without payment (expired, payment failed,
+cancelled) and marks them `used` on payment; a payment that still arrives for a closed order
+takes them again. Stripe gets the reduction as a one-off coupon on the session, so only what is
+left is charged; an order that is fully covered skips Stripe. A remainder below Stripe's minimum
+of €0.50 is avoided by using a little less of the last voucher.
+
+Every change to a balance writes `voucher_movements` (issued, redeemed, released, restored,
+cancelled) with the origin, so the bookkeeping CSV in the admin separates money received and
+spent from discounts given away. Refunds of a card order are split proportionally between the
+voucher part (back onto the voucher) and the card or bank part.
+
 ## 2026-11-09 · Licences are sold by Antalyse GmbH through its own Stripe account
 
 Cards are sold by the sole trader, app licences by Antalyse GmbH. Each order has a `seller`

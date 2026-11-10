@@ -26,6 +26,10 @@ You will have to bear the direct cost of returning the goods.
 
 You are only liable for any diminished value of the goods resulting from the handling other than what is necessary to establish the nature, characteristics and functioning of the goods.
 
+## Vouchers
+
+This withdrawal information also applies to buying gift vouchers. There, the withdrawal period is fourteen days from the day the contract is concluded (receipt of the payment). If the voucher has already been redeemed in part, we refund the balance not yet redeemed.
+
 ## App licences (ScanPM)
 
 This withdrawal information applies to card orders. Licences for the app ScanPM are sold by {{seller.name}}; the withdrawal information for them is in its licence terms: {{license_terms_url}}.

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro, formatRate, vatFor } from '@pokeshop/core';
 import { loadCart, type CartView } from '@pokeshop/core/cart';
+import { cartCodes, priceCartCodes } from '@pokeshop/core/vouchers';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
@@ -9,7 +10,8 @@ import { currentCartId } from '@/server/cart';
 import { AltNames } from '@/components/AltNames';
 import { CardImage } from '@/components/CardImage';
 import { AutoSubmit } from '@/components/AutoSubmit';
-import { updateCartAction } from '../shop-actions';
+import { CodeLines, CodeProblemText } from '@/components/CodeLines';
+import { cartCodeAction, updateCartAction } from '../shop-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +43,9 @@ export default async function CartPage({ params, searchParams }: Props) {
     sp.limited && { kind: 'warn', text: t('limited') },
     sp.unavailable && { kind: 'warn', text: t('unavailableAdd') },
     sp.cancelled && { kind: 'warn', text: t('cancelled') },
+    sp.code === 'voucher' && { kind: 'ok', text: t('codes.addedVoucher') },
+    sp.code === 'discount' && { kind: 'ok', text: t('codes.addedDiscount') },
+    sp.code === 'replaced' && { kind: 'ok', text: t('codes.replaced') },
   ].filter(Boolean) as { kind: string; text: string }[];
 
   if (!view || view.lines.length === 0) {
@@ -67,6 +72,12 @@ export default async function CartPage({ params, searchParams }: Props) {
   const minimum = view.check.problems.find((p) => p.code === 'below_minimum');
   const country = view.countries.find((c) => c.code === view.country);
   const ship = view.check.shipping;
+  const codes = await priceCartCodes(db(), {
+    codes: await cartCodes(db(), view.id),
+    lines: view.lines.map((l) => l.lineTotal),
+    shipping: ship?.price ?? 0,
+  });
+  const price = codes.pricing;
   const vat = vatFor({
     country: view.country,
     ossEnabled: await getSetting<boolean>('oss_enabled', false),
@@ -180,11 +191,85 @@ export default async function CartPage({ params, searchParams }: Props) {
                   : t('shipping')}
             </dt>
             <dd>{ship && ship.price > 0 ? formatEuro(ship.price, locale) : t('shippingFree')}</dd>
-            <dt className="totals__total">{t('total')}</dt>
-            <dd className="totals__total">
-              {formatEuro(view.check.total ?? view.check.goodsSubtotal, locale)}
-            </dd>
+            <CodeLines pricing={price} locale={locale} />
           </dl>
+          <div className="codes" id="codes">
+            {codes.entries.length > 0 && (
+              <ul className="codes__list">
+                {codes.entries.map((e) => (
+                  <li
+                    key={e.code}
+                    className={
+                      e.kind === 'invalid' ? 'codes__entry codes__entry--bad' : 'codes__entry'
+                    }
+                  >
+                    <span>
+                      <span className="codes__code">{e.code}</span>
+                      <small>
+                        {e.kind === 'invalid' ? (
+                          <CodeProblemText
+                            problem={e.problem!}
+                            minGoodsCents={e.minGoodsCents}
+                            locale={locale}
+                          />
+                        ) : e.amount === 0 ? (
+                          t('codes.notNeeded')
+                        ) : e.kind === 'voucher' ? (
+                          t('codes.voucherLeft', {
+                            rest: formatEuro((e.balance ?? 0) - e.amount, locale),
+                          })
+                        ) : (
+                          t('codes.discountApplied')
+                        )}
+                      </small>
+                    </span>
+                    <button
+                      type="submit"
+                      form="code-form"
+                      name="remove_code"
+                      value={e.code}
+                      className="btn btn--quiet codes__remove"
+                      aria-label={t('codes.removeLabel', { code: e.code })}
+                    >
+                      {t('remove')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <label className={sp.code_error ? 'field field--error' : 'field'} htmlFor="code-input">
+              <span>{t('codes.title')}</span>
+              <span className="codes__row">
+                <input
+                  id="code-input"
+                  name="code"
+                  form="code-form"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  defaultValue={sp.code_error ? (sp.typed ?? '') : ''}
+                  aria-invalid={sp.code_error ? true : undefined}
+                  aria-describedby={sp.code_error ? 'code-error' : 'code-hint'}
+                />
+                <button type="submit" form="code-form" className="btn">
+                  {t('codes.apply')}
+                </button>
+              </span>
+              {sp.code_error ? (
+                <small id="code-error" className="field__error">
+                  <CodeProblemText
+                    problem={sp.code_error}
+                    minGoodsCents={sp.min ? Number(sp.min) : undefined}
+                    locale={locale}
+                  />
+                </small>
+              ) : (
+                <small id="code-hint" className="muted">
+                  {t('codes.hint')}
+                </small>
+              )}
+            </label>
+          </div>
           <p className="muted small">
             {vat.regime === 'small_business'
               ? t('noVat')
@@ -224,6 +309,10 @@ export default async function CartPage({ params, searchParams }: Props) {
           )}
           <p className="muted small">{t('holdNote')}</p>
         </aside>
+      </form>
+      {/* Code entry: its fields sit in the summary above (form="code-form"). */}
+      <form id="code-form" action={cartCodeAction} hidden>
+        <input type="hidden" name="locale" value={locale} />
       </form>
       <AutoSubmit formId="cart-form" />
     </div>

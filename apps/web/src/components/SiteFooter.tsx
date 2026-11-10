@@ -21,6 +21,9 @@ export async function SiteFooter() {
                 <Link href="/veranstaltungen">{t('events')}</Link>
               </li>
               <li>
+                <Link href="/gutscheine">{t('vouchers')}</Link>
+              </li>
+              <li>
                 <Link href="/app">{t('app')}</Link>
               </li>
             </ul>

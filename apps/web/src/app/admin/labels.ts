@@ -15,7 +15,7 @@ export const SHIPPING_LABELS: Record<string, string> = {
   standard: 'Standard',
   insured: 'Versichert',
   tracked: 'Nachverfolgt (ohne Versicherung)',
-  none: 'Kein Versand (App-Lizenz)',
+  none: 'Kein Versand (App-Lizenz oder Gutschein)',
 };
 
 export const EVENT_LABELS: Record<string, string> = {
@@ -38,6 +38,33 @@ export const EVENT_LABELS: Record<string, string> = {
   licenses_issued: 'Lizenzschlüssel erstellt und verschickt',
   license_mail_resent: 'Lizenz-E-Mail erneut gesendet',
   licenses_revoked: 'Lizenzen gesperrt',
+  vouchers_gone_after_payment: 'Zahlung kam zu spät, Gutschein schon verbraucht',
+};
+
+/** Where a voucher came from: the disclosure for the books. */
+export const VOUCHER_ORIGIN: Record<string, string> = {
+  sold: 'Verkauft (bezahlt)',
+  promo: 'Geschenkt (ohne Einnahme)',
+};
+
+export const VOUCHER_STATUS: Record<string, string> = {
+  active: 'Aktiv',
+  blocked: 'Gesperrt',
+  cancelled: 'Storniert',
+};
+
+export const VOUCHER_MOVEMENT: Record<string, string> = {
+  issued: 'Ausgestellt',
+  redeemed: 'Eingelöst',
+  released: 'Zurück (Bestellung nicht bezahlt)',
+  restored: 'Zurückgebucht (Erstattung)',
+  cancelled: 'Storniert',
+};
+
+export const CODE_SCOPE: Record<string, string> = {
+  cards: 'Karten',
+  licenses: 'App-Lizenzen',
+  both: 'Karten und Lizenzen',
 };
 
 export const MAIL_LABELS: Record<string, string> = {
@@ -51,6 +78,7 @@ export const MAIL_LABELS: Record<string, string> = {
   admin_alert: 'Hinweis',
   license_delivery: 'App-Lizenz mit Rechnung',
   license_resend: 'App-Lizenz erneut angefordert',
+  voucher_purchase: 'Gutschein mit PDF',
 };
 
 export const dateTime = (d: Date | string | null | undefined) =>

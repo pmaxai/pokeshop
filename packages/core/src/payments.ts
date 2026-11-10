@@ -49,6 +49,8 @@ export type SessionInput = {
   tax?: SessionTax;
   /** Stripe issues the invoice (GmbH): footer and extra fields printed on it. */
   invoice?: { footer: string; fields: { name: string; value: string }[] };
+  /** Discount code and vouchers, taken off the lines' sum (a one-time Stripe coupon). */
+  discount?: { amount: number; label: string };
 };
 
 export type SessionTaxLine = {
@@ -226,6 +228,21 @@ export function stripeProvider(opts: StripeOptions): PaymentProvider & {
     name: 'stripe',
     seller: opts.seller ?? 'shop',
     async createSession(input) {
+      // One coupon per order, for exactly its reduction; Stripe Tax and the GmbH's invoice
+      // then work from the reduced price.
+      const coupon = input.discount
+        ? await stripe.coupons.create(
+            {
+              amount_off: input.discount.amount,
+              currency: 'eur',
+              duration: 'once',
+              max_redemptions: 1,
+              name: input.discount.label.slice(0, 40),
+              metadata: meta(input),
+            },
+            { idempotencyKey: `order-${input.orderId}-coupon-${input.discount.amount}` },
+          )
+        : null;
       const s = await stripe.checkout.sessions.create(
         {
           mode: 'payment',
@@ -247,6 +264,7 @@ export function stripeProvider(opts: StripeOptions): PaymentProvider & {
             },
           })),
           ...(input.tax ? { automatic_tax: { enabled: true } } : {}),
+          ...(coupon ? { discounts: [{ coupon: coupon.id }] } : {}),
           ...(input.invoice
             ? {
                 invoice_creation: {
@@ -454,7 +472,8 @@ function fakeTax(
   input: SessionInput,
   customer: FakeCustomer | undefined,
 ): Pick<SessionInfo, 'amountTotal' | 'amountTax' | 'taxes'> {
-  const sum = input.lines.reduce((a, l) => a + l.unitAmount * l.quantity, 0);
+  const sum =
+    input.lines.reduce((a, l) => a + l.unitAmount * l.quantity, 0) - (input.discount?.amount ?? 0);
   if (!input.tax) return { amountTotal: sum, amountTax: null, taxes: [] };
   const country = customer?.address.country ?? 'AT';
   const rate = (FAKE_EU_RATES as Record<string, number>)[country];
