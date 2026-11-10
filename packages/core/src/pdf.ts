@@ -106,6 +106,10 @@ export type InvoiceData = {
   taxCountry: string | null;
   paidWith: string | null;
   paidAt: Date | null;
+  /** Bought vouchers that paid part of the total (means of payment, not a discount). */
+  voucherPayments?: { code: string; cents: number }[];
+  /** Credit note: part of the refund that went back onto vouchers. */
+  voucherRefundCents?: number;
 };
 
 const INVOICE_TEXT = {
@@ -130,6 +134,10 @@ const INVOICE_TEXT = {
     gross: 'Rechnungsbetrag',
     paid: (method: string, date: string) =>
       `Bezahlt am ${date} (${method}). Vielen Dank für deinen Einkauf!`,
+    paidVoucher: (code: string) => `Bezahlt mit Gutschein ${code}`,
+    paidRest: (method: string) => `Bezahlt per ${method}`,
+    voucherRefund: (amount: string) =>
+      `Davon wurden ${amount} auf deinen Gutschein zurückgebucht, der Rest auf dein Zahlungsmittel erstattet.`,
     oss: (c: string) => `Umsatzsteuer des Bestimmungslandes ${c} (One-Stop-Shop).`,
     export: 'Steuerfreie Ausfuhrlieferung.',
     page: (n: number, t: number) => `Seite ${n} von ${t}`,
@@ -155,6 +163,10 @@ const INVOICE_TEXT = {
     gross: 'Invoice total',
     paid: (method: string, date: string) =>
       `Paid on ${date} (${method}). Thank you for your order!`,
+    paidVoucher: (code: string) => `Paid with voucher ${code}`,
+    paidRest: (method: string) => `Paid by ${method}`,
+    voucherRefund: (amount: string) =>
+      `Of this, ${amount} went back onto your voucher and the rest was refunded to your payment method.`,
     oss: (c: string) => `VAT of the country of destination ${c} (One-Stop-Shop).`,
     export: 'Tax-free export delivery.',
     page: (n: number, t: number) => `Page ${n} of ${t}`,
@@ -167,6 +179,8 @@ export const PAYMENT_METHOD_LABELS: Record<string, { de: string; en: string }> =
   paypal: { de: 'PayPal', en: 'PayPal' },
   apple_pay: { de: 'Apple Pay', en: 'Apple Pay' },
   google_pay: { de: 'Google Pay', en: 'Google Pay' },
+  voucher: { de: 'Gutschein', en: 'voucher' },
+  discount: { de: 'Rabattcode', en: 'discount code' },
 };
 
 export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
@@ -301,6 +315,16 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
     sumRow(`${t.vat} ${formatRate(inv.vatRateBp, L)}`, formatEuro(inv.vatCents, L));
   }
   sumRow(credit ? t.creditTotal : t.gross, formatEuro(inv.totalCents, L), true);
+  // Bought vouchers are money: they pay the total, they do not lower it.
+  const vp = credit ? [] : (inv.voucherPayments ?? []);
+  if (vp.length) {
+    const methodLabel = inv.paidWith
+      ? (PAYMENT_METHOD_LABELS[inv.paidWith]?.[L] ?? inv.paidWith)
+      : 'Stripe';
+    for (const v of vp) sumRow(t.paidVoucher(v.code), formatEuro(-v.cents, L));
+    const rest = inv.totalCents - vp.reduce((a, v) => a + v.cents, 0);
+    if (rest > 0) sumRow(t.paidRest(methodLabel), formatEuro(rest, L));
+  }
 
   y += 16;
   doc.font('Helvetica').fontSize(9).fillColor(INK);
@@ -310,6 +334,7 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
   if (smallBusiness) notes.push(`${SMALL_BUSINESS_NOTE[L]}.`);
   if (credit) {
     notes.push(t.refunded(dateFmt(inv.issuedAt, L)));
+    if (inv.voucherRefundCents) notes.push(t.voucherRefund(formatEuro(inv.voucherRefundCents, L)));
   } else if (inv.paidAt) {
     const m = inv.paidWith ? (PAYMENT_METHOD_LABELS[inv.paidWith]?.[L] ?? inv.paidWith) : 'Stripe';
     notes.push(t.paid(m, dateFmt(inv.paidAt, L)));
@@ -317,6 +342,170 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
   doc.text(notes.join('\n'), left, y, { width, lineGap: 2 });
 
   pageNumbers(doc, (n, total) => `${inv.number} · ${t.page(n, total)}`);
+  return toBuffer(doc);
+}
+
+// ---------------------------------------------------------------------------
+// Gift voucher
+// ---------------------------------------------------------------------------
+
+export type VoucherPdfData = {
+  code: string;
+  valueCents: number;
+  recipientName: string | null;
+  message: string | null;
+  /** Promotional vouchers may expire; bought ones do not. */
+  expiresAt: Date | null;
+  locale: 'de' | 'en';
+  shopUrl: string;
+};
+
+const VOUCHER_TEXT = {
+  de: {
+    title: 'Gutschein',
+    for: (n: string) => `für ${n}`,
+    code: 'Gutscheincode',
+    where: 'Einlösbar für Karten auf pokemonkarten.at',
+    noExpiry: 'Ohne Ablaufdatum',
+    until: (d: string) => `Gültig bis ${d}`,
+    howTitle: 'So löst du den Gutschein ein',
+    how: [
+      'Karten in den Warenkorb legen.',
+      'Im Warenkorb unter „Gutschein oder Rabattcode“ den Code eingeben.',
+      'Der Betrag wird abgezogen. Was übrig bleibt, bleibt auf dem Gutschein und lässt sich später einlösen.',
+    ],
+    fine: 'Der Gutschein gilt für Karten im Shop, nicht für App-Lizenzen. Er wird nicht bar ausbezahlt. Bitte den Code wie Bargeld aufbewahren: Wer ihn kennt, kann ihn einlösen.',
+  },
+  en: {
+    title: 'Gift voucher',
+    for: (n: string) => `for ${n}`,
+    code: 'Voucher code',
+    where: 'Redeemable for cards on pokemonkarten.at',
+    noExpiry: 'No expiry date',
+    until: (d: string) => `Valid until ${d}`,
+    howTitle: 'How to redeem the voucher',
+    how: [
+      'Put cards into the cart.',
+      'In the cart, enter the code under “Voucher or discount code”.',
+      'The amount is deducted. Whatever is left stays on the voucher for later.',
+    ],
+    fine: 'The voucher is valid for cards in the shop, not for app licences. It is not paid out in cash. Keep the code like cash: anyone who knows it can redeem it.',
+  },
+};
+
+/** What Helvetica can print (emoji and other scripts would come out as garbage). */
+const printable = (s: string) =>
+  s
+    .replace(
+      /[^\x20-\x7e\u00a0-\u00ff\u2013\u2014\u2018\u2019\u201c\u201d\u201e\u2026\u20ac\n]/g,
+      '',
+    )
+    .trim();
+
+/** The voucher to print or forward: a card on the upper half of an A4 page, how-to below. */
+export async function renderVoucherPdf(v: VoucherPdfData): Promise<Buffer> {
+  const t = VOUCHER_TEXT[v.locale];
+  const L = v.locale;
+  const doc = newDoc(`${t.title} ${v.code}`, 'pokemonkarten.at');
+  const left = doc.page.margins.left;
+  const width = doc.page.width - left - doc.page.margins.right;
+  const top = 56;
+  const height = 330;
+
+  doc.roundedRect(left, top, width, height, 14).lineWidth(2).strokeColor(ACCENT).stroke();
+  doc
+    .roundedRect(left + 8, top + 8, width - 16, height - 16, 9)
+    .lineWidth(0.6)
+    .strokeColor(LINE)
+    .stroke();
+
+  const inner = left + 32;
+  const innerWidth = width - 64;
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(15)
+    .fillColor(INK)
+    .text('pokemonkarten', inner, top + 30, { continued: true });
+  doc.fillColor(ACCENT).text('.at');
+  doc
+    .font('Helvetica')
+    .fontSize(11)
+    .fillColor(MUTED)
+    .text(t.title.toUpperCase(), inner, top + 33, {
+      width: innerWidth,
+      align: 'right',
+      characterSpacing: 2,
+    });
+
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(54)
+    .fillColor(INK)
+    .text(formatEuro(v.valueCents, L), inner, top + 82, { width: innerWidth });
+  let y = top + 150;
+  const name = v.recipientName ? printable(v.recipientName) : '';
+  if (name) {
+    doc.font('Helvetica').fontSize(16).fillColor(INK).text(t.for(name), inner, y, {
+      width: innerWidth,
+    });
+    y += 26;
+  }
+  const message = v.message ? printable(v.message) : '';
+  if (message) {
+    doc.font('Helvetica-Oblique').fontSize(11.5).fillColor(MUTED).text(`„${message}“`, inner, y, {
+      width: innerWidth,
+      height: 54,
+      ellipsis: true,
+      lineGap: 2,
+    });
+  }
+
+  // Code
+  const boxY = top + height - 104;
+  doc.roundedRect(inner, boxY, 250, 52, 8).fillColor('#f6f1ea').fill();
+  doc
+    .font('Helvetica')
+    .fontSize(8.5)
+    .fillColor(MUTED)
+    .text(t.code, inner + 14, boxY + 9);
+  doc
+    .font('Courier-Bold')
+    .fontSize(19)
+    .fillColor(INK)
+    .text(v.code, inner + 14, boxY + 23);
+  doc
+    .font('Helvetica')
+    .fontSize(9.5)
+    .fillColor(MUTED)
+    .text(
+      [t.where, v.expiresAt ? t.until(dateFmt(v.expiresAt, L)) : t.noExpiry].join('\n'),
+      inner + 270,
+      boxY + 12,
+      { width: innerWidth - 270, align: 'right', lineGap: 3 },
+    );
+
+  // How to
+  y = top + height + 44;
+  doc.font('Helvetica-Bold').fontSize(12).fillColor(INK).text(t.howTitle, left, y);
+  y += 22;
+  t.how.forEach((step, i) => {
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(10)
+      .fillColor(ACCENT)
+      .text(`${i + 1}.`, left, y);
+    doc
+      .font('Helvetica')
+      .fontSize(10)
+      .fillColor(INK)
+      .text(step, left + 18, y, { width: width - 18, lineGap: 2 });
+    y = doc.y + 8;
+  });
+  doc
+    .font('Helvetica')
+    .fontSize(8.5)
+    .fillColor(MUTED)
+    .text(`${t.fine} ${v.shopUrl}`, left, y + 10, { width, lineGap: 2 });
   return toBuffer(doc);
 }
 

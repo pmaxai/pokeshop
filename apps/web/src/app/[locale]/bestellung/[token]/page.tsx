@@ -9,6 +9,7 @@ import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { payments } from '@/server/payments';
 import { AltNames } from '@/components/AltNames';
+import { CodeLines } from '@/components/CodeLines';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,14 @@ export default async function OrderPage({ params, searchParams }: Props) {
   if (!order) notFound();
   // App licences have their own page (download instead of shipping).
   const [kind] = await db()<{ kind: string }[]>`SELECT kind FROM orders WHERE id = ${order.id}`;
+  // A bought gift voucher: its own page with the PDF.
+  if (kind?.kind === 'voucher') {
+    const sid = (await searchParams).session_id;
+    redirect(
+      getPathname({ href: { pathname: '/gutscheine/[token]', params: { token } }, locale }) +
+        (sid ? `?session_id=${encodeURIComponent(sid)}` : ''),
+    );
+  }
   if (kind?.kind === 'license') {
     const sid = (await searchParams).session_id;
     redirect(
@@ -198,8 +207,15 @@ export default async function OrderPage({ params, searchParams }: Props) {
                 ? formatEuro(order.shippingCents, locale)
                 : tCart('shippingFree')}
             </dd>
-            <dt className="totals__total">{tCart('total')}</dt>
-            <dd className="totals__total">{formatEuro(order.totalCents, locale)}</dd>
+            <CodeLines
+              pricing={{
+                ...order.redemptions,
+                total: order.totalCents,
+                voucher: order.voucherCents,
+                due: order.totalCents - order.voucherCents,
+              }}
+              locale={locale}
+            />
           </dl>
           <p className="muted small">
             {order.vatRegime === 'small_business' ? (

@@ -73,12 +73,16 @@ export default async function OrderDetail({
     mails,
     withdrawals,
     license,
+    redemptions,
+    giftVoucher,
   } = data;
   const sp = await searchParams;
   const isLicense = o.kind === 'license';
-  const canShip = !isLicense && ['paid', 'packing'].includes(o.status);
+  const isVoucher = o.kind === 'voucher';
+  const canShip = !isLicense && !isVoucher && ['paid', 'packing'].includes(o.status);
   const canRefund =
     !isLicense &&
+    !isVoucher &&
     ['paid', 'packing', 'shipped', 'completed'].includes(o.status) &&
     user.role === 'owner';
   // Live state of the keys (active device, revoked) from the licence service.
@@ -138,6 +142,21 @@ export default async function OrderDetail({
           </div>
         )}
       </dl>
+      {giftVoucher && (
+        <section className="panel">
+          <h2>Geschenkgutschein</h2>
+          <p>
+            Gutschein <a href={`/admin/gutscheine/${giftVoucher.id}`}>{giftVoucher.code}</a> ·
+            Restwert {formatEuro(giftVoucher.balance_cents)} ·{' '}
+            {giftVoucher.status === 'cancelled' ? 'storniert' : 'gültig'}
+          </p>
+          <p className="muted small">
+            Verkauf eines Mehrzweckgutscheins: Geld erhalten, aber noch kein Umsatz und keine
+            Rechnung. Die Rechnung entsteht beim Einlösen. Stornieren und erstatten geht auf der
+            Gutscheinseite.
+          </p>
+        </section>
+      )}
 
       {canShip && (
         <section className="panel panel--action">
@@ -310,6 +329,24 @@ export default async function OrderDetail({
                     <td colSpan={3}>{SHIPPING_LABELS[o.shipping_method]}</td>
                     <td className="r">{formatEuro(o.shipping_cents)}</td>
                   </tr>
+                  {redemptions.code && (
+                    <tr>
+                      <td colSpan={3}>
+                        <a href="/admin/rabattcodes">{redemptions.code.label.de}</a>{' '}
+                        <span className="muted">(Rabatt)</span>
+                      </td>
+                      <td className="r">−{formatEuro(redemptions.code.amount)}</td>
+                    </tr>
+                  )}
+                  {redemptions.promo.map((v) => (
+                    <tr key={v.code}>
+                      <td colSpan={3}>
+                        Gutschein <a href={`/admin/gutscheine/${v.voucherId}`}>{v.code}</a>{' '}
+                        <span className="muted">(geschenkt: Rabatt)</span>
+                      </td>
+                      <td className="r">−{formatEuro(v.amount)}</td>
+                    </tr>
+                  ))}
                   <tr>
                     <td colSpan={3}>
                       <strong>Gesamt</strong> <span className="muted">{taxText}</span>
@@ -318,6 +355,22 @@ export default async function OrderDetail({
                       <strong>{formatEuro(o.total_cents)}</strong>
                     </td>
                   </tr>
+                  {redemptions.paid.map((v) => (
+                    <tr key={v.code}>
+                      <td colSpan={3}>
+                        Bezahlt mit Gutschein{' '}
+                        <a href={`/admin/gutscheine/${v.voucherId}`}>{v.code}</a>{' '}
+                        <span className="muted">(verkauft: Zahlungsmittel)</span>
+                      </td>
+                      <td className="r">−{formatEuro(v.amount)}</td>
+                    </tr>
+                  ))}
+                  {o.voucher_cents > 0 && (
+                    <tr>
+                      <td colSpan={3}>Über Stripe bezahlt</td>
+                      <td className="r">{formatEuro(o.total_cents - o.voucher_cents)}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -393,6 +446,13 @@ export default async function OrderDetail({
       {canRefund && (
         <section className="panel">
           <h2>Erstatten</h2>
+          {o.discount_cents + o.voucher_cents > 0 && (
+            <p className="small muted">
+              Erstattet wird, was wirklich bezahlt wurde: der Kartenpreis abzüglich seines Anteils
+              am Rabatt. Was mit einem gekauften Gutschein bezahlt wurde, geht anteilig auf den
+              Gutschein zurück, der Rest über Stripe.
+            </p>
+          )}
           <form action={refundAction} className="stack-admin">
             <input type="hidden" name="id" value={o.id} />
             <div className="table-wrap">
@@ -575,7 +635,14 @@ export default async function OrderDetail({
               <ul className="plain">
                 {refunds.map((r) => (
                   <li key={r.id}>
-                    {formatEuro(r.amount_cents)} ·{' '}
+                    {formatEuro(r.amount_cents)}
+                    {r.voucher_cents > 0 && (
+                      <span className="muted">
+                        {' '}
+                        (davon {formatEuro(r.voucher_cents)} auf Gutschein)
+                      </span>
+                    )}{' '}
+                    ·{' '}
                     {r.status === 'succeeded'
                       ? 'erledigt'
                       : r.status === 'failed'

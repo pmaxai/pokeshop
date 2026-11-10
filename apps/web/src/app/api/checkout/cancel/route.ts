@@ -29,7 +29,13 @@ export async function GET(req: NextRequest) {
     if (closed === 'expired')
       await releaseOrder(db(), { id: order.id }, 'cancelled', 'buyer_cancelled');
   }
-  // A licence purchase goes back to the app page, card orders to the cart.
+  // A gift voucher goes back to its page, a licence purchase to the app page, cards to the cart.
+  if (req.nextUrl.searchParams.get('voucher') === '1') {
+    return NextResponse.redirect(
+      `${config.baseUrl}${getPathname({ href: '/gutscheine', locale })}?cancelled=1#kaufen`,
+      303,
+    );
+  }
   if (req.nextUrl.searchParams.get('app') === '1') {
     return NextResponse.redirect(
       `${config.baseUrl}${getPathname({ href: '/app', locale })}?cancelled=1#kaufen`,

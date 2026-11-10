@@ -6,6 +6,8 @@ const LINKS = [
   { href: '/admin/bestellungen', label: 'Bestellungen', key: 'orders' },
   { href: '/admin/produkte', label: 'Produkte', key: 'products' },
   { href: '/admin/kategorien', label: 'Kategorien', key: 'categories' },
+  { href: '/admin/gutscheine', label: 'Gutscheine', key: 'vouchers' },
+  { href: '/admin/rabattcodes', label: 'Rabattcodes', key: 'codes' },
   { href: '/admin/app', label: 'App', key: 'app' },
   { href: '/admin/widerrufe', label: 'Widerrufe', key: 'withdrawals' },
   { href: '/admin/veranstaltungen', label: 'Veranstaltungen', key: 'events' },

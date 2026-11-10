@@ -16,7 +16,9 @@ export type CheckoutProblem =
   | { code: 'below_minimum'; minimum: Cents; missing: Cents }
   | { code: 'unavailable'; productId: number; requested: number; available: number }
   | { code: 'empty_cart' }
-  | { code: 'invalid_quantity'; productId: number };
+  | { code: 'invalid_quantity'; productId: number }
+  /** A code in the cart can no longer be used (checked again with the buyer's e-mail). */
+  | { code: 'code_problem'; entry: string; problem: string };
 
 export type CheckoutCheck = {
   ok: boolean;

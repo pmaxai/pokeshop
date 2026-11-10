@@ -20,6 +20,7 @@ import type { PaymentProvider, SessionInfo } from './payments.ts';
 import { STRIPE_MIN_SESSION_MINUTES } from './reservation.ts';
 import { licenseCountryAllowed, parseTaxId, type TaxId, type ViesChecker } from './tax-id.ts';
 import { HOME_COUNTRY, isEuCountry, STANDARD_VAT_RATES } from './vat.ts';
+import { findCode, holdRedemptions, licenseDiscount, type CodeProblem } from './vouchers.ts';
 
 export const APP_NAME = 'ScanPM';
 /** The licence service issues at most 50 keys per order. */
@@ -66,6 +67,8 @@ export const LicenseCheckout = z.object({
   acceptTerms: z.literal(true, 'terms'),
   /** § 18 Abs. 1 Z 11 FAGG: start right away, the right of withdrawal ends with delivery. */
   immediateDelivery: z.literal(true, 'consent'),
+  /** Discount code (campaign, or a free licence for a friend). */
+  code: optional(40),
 });
 export type LicenseCheckout = z.infer<typeof LicenseCheckout>;
 
@@ -431,10 +434,13 @@ export function licenseInvoiceFooter(
 // ---------------------------------------------------------------------------
 
 export class LicenseCheckoutRejected extends Error {
-  readonly code: 'country' | 'closed';
-  constructor(code: 'country' | 'closed') {
-    super(`licence checkout rejected: ${code}`);
+  readonly code: 'country' | 'closed' | 'code';
+  /** Why the discount code cannot be used. */
+  readonly problem?: CodeProblem;
+  constructor(code: 'country' | 'closed' | 'code', problem?: CodeProblem) {
+    super(`licence checkout rejected: ${code}${problem ? ` (${problem})` : ''}`);
     this.code = code;
+    this.problem = problem;
   }
 }
 
@@ -458,9 +464,24 @@ export async function createLicenseOrder(
     if (!country || !licenseCountryAllowed(country.code, b.business)) {
       throw new LicenseCheckoutRejected('country');
     }
-    const total = pricing.unitCents * d.quantity;
+    const goods = pricing.unitCents * d.quantity;
+    let code: { id: number; code: string; amount: number } | null = null;
+    if (d.code) {
+      const f = await findCode(tx, d.code, { scope: 'licenses', email: d.email, lock: true, now });
+      if (f.kind !== 'discount') {
+        throw new LicenseCheckoutRejected('code', f.kind === 'invalid' ? f.problem : 'unknown');
+      }
+      code = {
+        id: f.code.id,
+        code: f.code.code,
+        amount: licenseDiscount(f.code, pricing.unitCents, d.quantity),
+      };
+    }
+    const discount = code?.amount ?? 0;
+    const total = goods - discount;
     // What we expect Stripe Tax to charge; the paid session's figures replace it.
-    const vat = pricing.behavior === 'inclusive' ? splitGross(total, pricing.rateBp).vat : 0;
+    const vat =
+      pricing.behavior === 'inclusive' && total > 0 ? splitGross(total, pricing.rateBp).vat : 0;
     const legal = await currentLegalVersions(tx);
     let number = '';
     for (let i = 0; i < 6 && !number; i++) {
@@ -488,13 +509,13 @@ export async function createLicenseOrder(
     const [o] = await tx<{ id: number }[]>`
       INSERT INTO orders (number, lookup_token, kind, seller, status, locale, country, email,
                           customer_name, billing_address, goods_cents, shipping_cents, total_cents,
-                          shipping_method, vat_regime, tax_country, vat_rate_bp, vat_cents,
-                          buyer_business, buyer_tax_id, buyer_tax_id_type,
+                          discount_cents, shipping_method, vat_regime, tax_country, vat_rate_bp,
+                          vat_cents, buyer_business, buyer_tax_id, buyer_tax_id_type,
                           reserved_until, agb_version, privacy_version, withdrawal_version,
                           terms_accepted_at, created_at)
       VALUES (${number}, ${token}, 'license', 'gmbh', 'checkout', ${input.locale}, ${country.code},
-              ${d.email}, ${d.name}, ${tx.json(billing as never)}, ${total}, 0, ${total}, 'none',
-              ${pricing.regime}, ${pricing.taxCountry}, ${pricing.rateBp}, ${vat},
+              ${d.email}, ${d.name}, ${tx.json(billing as never)}, ${goods}, 0, ${total},
+              ${discount}, 'none', ${pricing.regime}, ${pricing.taxCountry}, ${pricing.rateBp}, ${vat},
               ${b.business}, ${b.taxId?.value ?? null}, ${b.taxId?.type ?? null},
               ${until}, NULL, ${legal.privacy}, NULL, ${now}, ${now})
       RETURNING id`;
@@ -502,7 +523,11 @@ export async function createLicenseOrder(
       INSERT INTO order_licenses (order_id, quantity, unit_price_cents, immediate_delivery_consent_at,
                                   terms_version)
       VALUES (${o!.id}, ${d.quantity}, ${pricing.unitCents}, ${now}, ${legal.license_terms})`;
+    if (code) {
+      await holdRedemptions(tx, o!.id, d.email, { code: null, promo: [], paid: [] }, code);
+    }
     await orderEvent(tx, o!.id, 'created', {
+      ...(code ? { code: code.code, discount: code.amount } : {}),
       kind: 'license',
       seller: 'gmbh',
       quantity: d.quantity,
@@ -514,6 +539,7 @@ export async function createLicenseOrder(
       number,
       token,
       totalCents: total,
+      dueCents: total,
       reservedUntil: until,
       replacedSessions: [],
     };
@@ -616,18 +642,21 @@ export function licenseDocumentLine(quantity: number, unitCents: number) {
 export async function licenseOrderPaid(
   tx: Db,
   o: { id: number; number: string; total_cents: number; seller: 'shop' | 'gmbh' },
-  session: SessionInfo,
+  /** null: a free licence (discount code), no payment. */
+  session: SessionInfo | null,
   now: Date,
 ): Promise<void> {
   let total = o.total_cents;
-  if (o.seller === 'gmbh') total = await recordStripeTax(tx, o.id, session);
+  if (o.seller === 'gmbh' && session) total = await recordStripeTax(tx, o.id, session);
   await tx`UPDATE orders SET status = 'paid', paid_at = ${now}, reserved_until = NULL
             WHERE id = ${o.id}`;
   await enqueueJob(tx, 'license.issue', { order_id: o.id }, { dedupeKey: `license.issue:${o.id}` });
   await alertShop(
     tx,
     `${APP_NAME}-Lizenz verkauft: ${o.number}`,
-    `Bezahlt${o.seller === 'gmbh' ? ' an die GmbH' : ''}: ${(total / 100).toFixed(2).replace('.', ',')} €. Der Schlüssel geht automatisch per E-Mail an den Kunden.`,
+    session
+      ? `Bezahlt${o.seller === 'gmbh' ? ' an die GmbH' : ''}: ${(total / 100).toFixed(2).replace('.', ',')} €. Der Schlüssel geht automatisch per E-Mail an den Kunden.`
+      : 'Kostenlos mit Rabattcode, ohne Zahlung und ohne Rechnung. Der Schlüssel geht automatisch per E-Mail an den Kunden.',
     `license_sold:${o.id}`,
   );
 }
@@ -641,11 +670,13 @@ async function recordStripeTax(tx: Db, orderId: number, s: SessionInfo): Promise
     {
       number: string;
       total_cents: number;
+      discount_cents: number;
       vat_regime: string;
       tax_country: string | null;
       vat_rate_bp: number;
     }[]
-  >`SELECT number, total_cents, vat_regime, tax_country, vat_rate_bp FROM orders WHERE id = ${orderId}`;
+  >`SELECT number, total_cents, discount_cents, vat_regime, tax_country, vat_rate_bp
+      FROM orders WHERE id = ${orderId}`;
   const total = s.amountTotal ?? o!.total_cents;
   const line = (s.taxes ?? []).find((t) => t.amount > 0) ?? s.taxes?.[0] ?? null;
   const tax = s.amountTax ?? null;
@@ -659,7 +690,7 @@ async function recordStripeTax(tx: Db, orderId: number, s: SessionInfo): Promise
     );
   }
   await tx`
-    UPDATE orders SET goods_cents = ${total}, total_cents = ${total},
+    UPDATE orders SET goods_cents = ${total + o!.discount_cents}, total_cents = ${total},
            vat_cents = coalesce(${tax}::int, vat_cents),
            vat_rate_bp = CASE WHEN ${tax}::int = 0 THEN 0
                               ELSE coalesce(${line?.rateBp ?? null}::int, vat_rate_bp) END,
@@ -711,6 +742,7 @@ type LicenseOrderRow = {
   email: string | null;
   customer_name: string | null;
   lookup_token: string;
+  total_cents: number;
   quantity: number;
   unit_price_cents: number;
   license_ids: string[];
@@ -723,7 +755,7 @@ type LicenseOrderRow = {
 async function licenseOrderRow(db: Db, orderId: number, lock = false) {
   const [o] = await db<LicenseOrderRow[]>`
     SELECT o.id, o.number, o.seller, o.status, o.locale, o.email, o.customer_name, o.lookup_token,
-           o.stripe_session_id, l.quantity, l.unit_price_cents, l.license_ids, l.issued_at,
+           o.total_cents, o.stripe_session_id, l.quantity, l.unit_price_cents, l.license_ids, l.issued_at,
            l.revoked_at, l.stripe_invoice_id
       FROM orders o JOIN order_licenses l ON l.order_id = o.id
      WHERE o.id = ${orderId} AND o.kind = 'license'
@@ -752,7 +784,9 @@ export async function issueOrderLicenses(
 
   let stripeInvoice: { id: string; number: string; url: string | null; pdf: string | null } | null =
     null;
-  if (o.seller === 'gmbh') {
+  // A free licence (discount code) has no payment and so no invoice.
+  const free = o.total_cents === 0;
+  if (o.seller === 'gmbh' && !free) {
     if (!gmbh || gmbh.seller !== 'gmbh') throw new Error('GmbH Stripe account not configured');
     let invoiceId = o.stripe_invoice_id;
     if (!invoiceId && o.stripe_session_id) {
@@ -796,6 +830,9 @@ export async function issueOrderLicenses(
         },
         { kind: 'legal', kinds: ['license_terms'] },
       ];
+    } else if (free) {
+      invoiceNumber = null;
+      attachments = [{ kind: 'legal', kinds: [cur.seller === 'gmbh' ? 'license_terms' : 'agb'] }];
     } else {
       const invoice = await issueInvoice(tx, orderId, now);
       invoiceNumber = invoice?.number ?? null;

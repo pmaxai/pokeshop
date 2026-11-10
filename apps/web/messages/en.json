@@ -23,7 +23,8 @@
     "cart": "Cart",
     "cartCount": "Cart, {count, plural, =0 {empty} one {# card} other {# cards}}",
     "events": "Events",
-    "app": "App"
+    "app": "App",
+    "vouchers": "Gift vouchers"
   },
   "Home": {
     "title": "Single Pokémon cards from every series and language",
@@ -128,7 +129,8 @@
     "withdrawalInfo": "Right of withdrawal",
     "withdraw": "Return an order (withdraw from contract)",
     "events": "Events",
-    "app": "ScanPM app"
+    "app": "ScanPM app",
+    "vouchers": "Gift vouchers"
   },
   "Conditions": {
     "M": "Mint",
@@ -247,7 +249,23 @@
     "notDelivered": "Sorry, we do not deliver to this country.",
     "toCheckout": "Go to checkout",
     "holdNote": "Cards are reserved only once you go to payment – then for 10 minutes.",
-    "summary": "Summary"
+    "summary": "Summary",
+    "codes": {
+      "title": "Voucher or discount code",
+      "hint": "Several vouchers and one discount code per order.",
+      "apply": "Redeem",
+      "removeLabel": "Remove {code}",
+      "addedVoucher": "Voucher redeemed.",
+      "addedDiscount": "Discount code redeemed.",
+      "replaced": "Discount code replaced – one per order.",
+      "notNeeded": "Not needed for this order",
+      "voucherLeft": "{rest} stays on the voucher afterwards",
+      "discountApplied": "Discount on the cards",
+      "promoLine": "Promotional voucher <c>{code}</c>",
+      "paidLine": "Voucher <c>{code}</c>",
+      "due": "To pay",
+      "checkoutLink": "Redeem a voucher or discount code"
+    }
   },
   "Checkout": {
     "title": "Checkout",
@@ -483,7 +501,9 @@
       "notTaxable": "Net price: not subject to Austrian VAT; you account for any tax in your country yourself.",
       "totalNet": "Total (net)",
       "terms": "I accept the <terms>licence terms</terms> of {seller}, with the withdrawal information and the data protection notice.",
-      "seller": "Seller of the licences and issuer of the invoice: {seller}, {address}."
+      "seller": "Seller of the licences and issuer of the invoice: {seller}, {address}.",
+      "code": "Discount code (optional)",
+      "codeHint": "The discount shows on the payment page. If it makes the licence free, you get it right away without paying."
     },
     "lost": {
       "title": "Lost your licence e-mail?",
@@ -510,5 +530,85 @@
       "installHint": "Open the file on your Android phone. Android asks once whether your browser may install apps: allow it. Then start ScanPM and scan the QR code from the e-mail."
     },
     "priceBusiness": "Businesses outside Austria: {net} net"
+  },
+  "Codes": {
+    "unknown": "We don’t know this code. Please check the spelling.",
+    "inactive": "This code is no longer valid.",
+    "expired": "This code has expired.",
+    "not_yet": "This code is not valid yet.",
+    "used_up": "This code has been used up.",
+    "already_used": "You have already used this code.",
+    "not_for_cards": "This code is for app licences only.",
+    "not_for_licenses": "This code is for cards only.",
+    "min_goods": "This code applies from {min} worth of cards.",
+    "empty": "There is nothing left on this voucher.",
+    "blocked": "This voucher is blocked. If you have questions, reply to your order e-mail or write to us.",
+    "too_many": "More than five vouchers in one order is not possible.",
+    "voucher_for_licenses": "Vouchers are for cards, not for app licences."
+  },
+  "Vouchers": {
+    "metaTitle": "Gift vouchers",
+    "metaDescription": "Vouchers for Pokémon cards on pokemonkarten.at – from €10 to €300, no expiry date, as a PDF to print.",
+    "title": "Gift vouchers",
+    "lead": "For anyone who should pick their own cards: you choose the amount and add a few words, and we send you the voucher as a PDF right after payment – to print or forward.",
+    "pointCards": "Redeemable for every card in the shop",
+    "pointNoExpiry": "No expiry date",
+    "pointBalance": "Whatever is left stays on the voucher",
+    "buyLabel": "Buy a voucher",
+    "previewLabel": "This is what your voucher looks like",
+    "previewKind": "Gift voucher",
+    "previewFor": "for {name}",
+    "previewCode": "Voucher code",
+    "previewTerms": "For cards on pokemonkarten.at · no expiry date",
+    "previewCaption": "Preview: the code is created after payment.",
+    "amount": "Amount",
+    "ownAmount": "Other amount",
+    "ownAmountLabel": "Amount in euros",
+    "ownAmountHint": "Whole euros, from {min} to {max}.",
+    "personal": "Personal (optional)",
+    "recipient": "Who is it for?",
+    "recipientHint": "The name is printed on the voucher.",
+    "message": "Your message",
+    "messageHint": "Printed on the voucher. {left} characters left.",
+    "you": "From you",
+    "name": "Your name",
+    "email": "Your e-mail address",
+    "emailHint": "We send the voucher there as a PDF.",
+    "total": "To pay",
+    "terms": "I accept the <terms>terms</terms> and have read the <withdrawal>withdrawal information</withdrawal>.",
+    "submitNote": "You pay at Stripe. The voucher comes by e-mail right after.",
+    "cancelled": "Payment cancelled. You can try again any time.",
+    "paymentUnavailable": "Payment is not possible right now. Please try again later.",
+    "errorsTitle": "Please check the marked fields.",
+    "closed": "Vouchers are coming soon.",
+    "howTitle": "How it is redeemed",
+    "how1": "Put cards into the cart.",
+    "how2": "In the cart, enter the code under “Voucher or discount code”.",
+    "how3": "The amount is deducted. If it is not enough, the rest is paid as usual.",
+    "howNote": "Vouchers are valid for cards, not for app licences. They are not paid out in cash. Several vouchers can be combined in one order.",
+    "errors": {
+      "required": "Please fill in.",
+      "too_long": "That is too long.",
+      "invalid_email": "Please enter a valid e-mail address.",
+      "amount": "Please choose an amount in whole euros from €10 to €300.",
+      "terms": "Please accept the terms.",
+      "invalid": "Please check."
+    },
+    "thanks": {
+      "title": "Your voucher is ready",
+      "text": "Thank you! The voucher for {value} is on its way to {email} – as a PDF to print or forward.",
+      "code": "Voucher code",
+      "download": "Download the voucher (PDF)",
+      "shop": "Browse the cards",
+      "facts": "Order number {number}. Keep the code like cash.",
+      "pendingTitle": "Confirming the payment",
+      "pendingText": "As soon as the payment is confirmed, the voucher comes by e-mail. That usually takes seconds.",
+      "reload": "Reload",
+      "refundedTitle": "Voucher refunded",
+      "refundedText": "The purchase was reversed and the amount refunded.",
+      "failedTitle": "Not paid",
+      "failedText": "The payment did not go through or was cancelled. Nothing was charged.",
+      "again": "Try again"
+    }
   }
 }

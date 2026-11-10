@@ -35,6 +35,7 @@ Stand: November 2026
 1. Sie können mit Kredit- oder Debitkarte, Apple Pay, Google Pay, EPS-Überweisung oder PayPal bezahlen. Die Zahlung wird über Stripe abgewickelt (Stripe Payments Europe, Ltd., Dublin, Irland). Bei Zahlung mit PayPal gelten zusätzlich die Nutzungsbedingungen von PayPal.
 2. Der Kaufpreis ist mit der Bestellung fällig und wird mit Abschluss der Zahlung belastet.
 3. Die Rechnung erhalten Sie per E-Mail, sobald wir Ihre Bestellung versenden.
+4. Sie können Karten ganz oder teilweise mit Gutscheinen bezahlen und einen Rabattcode einlösen (Punkt 14).
 
 ## 6. Lieferung und Gefahrübergang
 
@@ -72,3 +73,13 @@ Beschwerden richten Sie bitte an {{company.email}}; wir antworten so schnell wie
 ## 13. App-Lizenzen (ScanPM)
 
 Lizenzen für die App ScanPM, die auf der App-Seite des Shops ({{app_url}}) angeboten werden, verkaufen nicht wir, sondern die {{seller.name}}. Für den Kauf gelten ausschließlich deren Lizenzbedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
+
+## 14. Gutscheine und Rabattcodes
+
+1. Geschenkgutscheine kaufen Sie auf {{vouchers_url}} über einen Betrag von 10 bis 300 Euro. Der Vertrag kommt mit Eingang der Zahlung zustande; den Gutschein mit seinem Code erhalten Sie unmittelbar danach per E-Mail als PDF.
+2. Gutscheine können für Karten in diesem Shop eingelöst werden, nicht für App-Lizenzen. Sie werden im Warenkorb eingegeben und bezahlen den Rechnungsbetrag ganz oder teilweise, auch die Versandkosten. Mehrere Gutscheine lassen sich in einer Bestellung kombinieren. Ein nicht verbrauchter Restbetrag bleibt auf dem Gutschein.
+3. Gekaufte Gutscheine haben kein Ablaufdatum; es gilt die gesetzliche Verjährungsfrist von 30 Jahren. Geschenkte Aktionsgutscheine können befristet sein; das Ablaufdatum steht auf dem Gutschein.
+4. Gutscheine werden nicht bar ausbezahlt, außer das Gesetz verlangt es. Wer den Code kennt, kann den Gutschein einlösen; bewahren Sie ihn daher wie Bargeld auf. Wird uns ein Missbrauch gemeldet, sperren wir den Gutschein mit dem dann vorhandenen Restwert.
+5. Wird eine mit Gutschein bezahlte Bestellung ganz oder teilweise erstattet, geht der mit dem Gutschein bezahlte Anteil auf den Gutschein zurück, der Rest auf das ursprüngliche Zahlungsmittel.
+6. Rabattcodes gelten zu den Bedingungen der jeweiligen Aktion (etwa Zeitraum, Mindestbestellwert, einmal pro Kunde). Pro Bestellung kann ein Rabattcode eingelöst werden; er gilt für den Warenwert der Karten, nicht für die Versandkosten, und kann nicht nachträglich auf eine bereits aufgegebene Bestellung angewendet werden. Wird ein Teil der Bestellung erstattet, erstatten wir den tatsächlich bezahlten, also rabattierten Preis.
+7. Den Kauf eines Gutscheins können Verbraucher binnen 14 Tagen widerrufen (Widerrufsbelehrung: {{withdrawal_url}}). Wurde der Gutschein bereits teilweise eingelöst, erstatten wir den nicht eingelösten Restwert.

@@ -14,6 +14,14 @@ import { alertShop, enqueueMail, enqueueShopMail } from './outbox.ts';
 import type { PaymentEvent, PaymentProvider, SessionInfo, SessionInput } from './payments.ts';
 import { reservedUntil, stripeSessionExpiresAt } from './reservation.ts';
 import { orderVat, type VatRegime } from './vat.ts';
+import {
+  cartCodes,
+  holdRedemptions,
+  orderRedemptions,
+  priceCartCodes,
+  reholdRedemptions,
+} from './vouchers.ts';
+import { giftVoucherOrderPaid, giftVoucherPaymentLine } from './gift-vouchers.ts';
 
 // ---------------------------------------------------------------------------
 // Checkout form
@@ -94,6 +102,8 @@ export type CreatedOrder = {
   number: string;
   token: string;
   totalCents: number;
+  /** What Stripe collects: the total less bought vouchers. 0 = no payment page. */
+  dueCents: number;
   reservedUntil: Date;
   /** Stripe sessions of earlier attempts from the same cart, to be closed. */
   replacedSessions: string[];
@@ -158,7 +168,23 @@ export async function createCheckoutOrder(
         throw new CheckoutRejected(view.check.problems);
       }
       const country = view.countries.find((c) => c.code === view.country)!;
-      const vat = orderVat([{ gross: view.check.total }], {
+      // Code and vouchers, checked again under lock and with the buyer's e-mail.
+      const codes = await priceCartCodes(tx, {
+        codes: await cartCodes(tx, input.cartId),
+        lines: view.lines.map((l) => l.lineTotal),
+        shipping: view.check.shipping.price,
+        email: d.email,
+        lock: true,
+        now,
+      });
+      const bad = codes.entries.filter((e) => e.kind === 'invalid');
+      if (bad.length) {
+        throw new CheckoutRejected(
+          bad.map((e) => ({ code: 'code_problem' as const, entry: e.code, problem: e.problem! })),
+        );
+      }
+      const price = codes.pricing;
+      const vat = orderVat([{ gross: price.total }], {
         country: view.country,
         ossEnabled: input.ossEnabled,
         smallBusiness: input.smallBusiness ?? false,
@@ -179,13 +205,15 @@ export async function createCheckoutOrder(
       const [o] = await tx<{ id: number }[]>`
         INSERT INTO orders (number, lookup_token, status, locale, country, email, customer_name, phone,
                             billing_address, shipping_address, goods_cents, shipping_cents, total_cents,
+                            discount_cents, shipping_discount_cents, voucher_cents,
                             shipping_method, vat_regime, tax_country, vat_rate_bp, vat_cents,
                             reserved_until, agb_version, privacy_version, withdrawal_version,
                             terms_accepted_at, cart_id, created_at)
         VALUES (${number}, ${token}, 'checkout', ${input.locale}, ${view.country}, ${d.email},
                 ${d.shipping.name}, ${d.phone ?? null}, ${tx.json((d.billing ?? d.shipping) as never)},
                 ${tx.json(d.shipping as never)}, ${view.check.goodsSubtotal},
-                ${view.check.shipping.price}, ${view.check.total}, ${view.check.shipping.method},
+                ${view.check.shipping.price}, ${price.total}, ${price.discount},
+                ${price.shippingDiscount}, ${price.voucher}, ${view.check.shipping.method},
                 ${vat.regime}, ${vat.taxCountry}, ${vat.rate}, ${vat.vat}, ${until},
                 ${legal.agb}, ${legal.privacy}, ${legal.withdrawal}, ${now}, ${input.cartId}, ${now})
         RETURNING id`;
@@ -207,6 +235,15 @@ export async function createCheckoutOrder(
       if (sum!.goods !== view.check.goodsSubtotal) {
         throw new Error('cart changed while the order was created');
       }
+      // Each line's share of the discount, so refunds pay back what was really paid.
+      for (const [i, l] of view.lines.entries()) {
+        const share = price.lineDiscounts[i] ?? 0;
+        if (share > 0) {
+          await tx`UPDATE order_items SET discount_cents = ${share}
+                    WHERE order_id = ${orderId} AND product_id = ${l.id}`;
+        }
+      }
+      await holdRedemptions(tx, orderId, d.email, price);
 
       try {
         await tx.savepoint((sp) => sp`SELECT order_reserve(${orderId})`);
@@ -225,12 +262,19 @@ export async function createCheckoutOrder(
       }
       const { acceptTerms: _terms, ...draft } = d;
       await saveCheckoutDraft(tx, input.cartId, draft);
-      await orderEvent(tx, orderId, 'created', { reserved_until: until.toISOString() });
+      await orderEvent(tx, orderId, 'created', {
+        reserved_until: until.toISOString(),
+        ...(price.code ? { code: price.code.code, discount: price.code.amount } : {}),
+        ...(price.promo.length || price.paid.length
+          ? { vouchers: [...price.promo, ...price.paid].map((v) => [v.code, v.amount]) }
+          : {}),
+      });
       return {
         id: orderId,
         number,
         token,
-        totalCents: view.check.total,
+        totalCents: price.total,
+        dueCents: price.due,
         reservedUntil: until,
         replacedSessions: previous.map((p) => p.stripe_session_id).filter((s): s is string => !!s),
       };
@@ -292,6 +336,8 @@ async function paymentLines(db: Db, orderId: number, locale: 'de' | 'en') {
   });
   const license = await licensePaymentLine(db, orderId, locale);
   if (license) lines.push(license);
+  const gift = await giftVoucherPaymentLine(db, orderId, locale);
+  if (gift) lines.push(gift);
   if (o && o.shipping_cents > 0) {
     lines.push({
       name: locale === 'en' ? 'Insured shipping' : 'Versicherter Versand',
@@ -336,6 +382,7 @@ export async function startPayment(
       customerId: input.customerId,
       tax: input.tax,
       invoice: input.invoice,
+      discount: await paymentDiscount(sql, order.id, input.locale),
     });
     await sql`UPDATE orders SET stripe_session_id = ${session.id}, payment_url = ${session.url}
                WHERE id = ${order.id}`;
@@ -347,6 +394,32 @@ export async function startPayment(
   }
 }
 
+/**
+ * Code, promotional and bought vouchers as one reduction on the payment page (the shop's own
+ * invoice shows them apart).
+ */
+async function paymentDiscount(
+  db: Db,
+  orderId: number,
+  locale: 'de' | 'en',
+): Promise<SessionInput['discount']> {
+  const [o] = await db<{ discount_cents: number; voucher_cents: number }[]>`
+    SELECT discount_cents, voucher_cents FROM orders WHERE id = ${orderId}`;
+  const amount = (o?.discount_cents ?? 0) + (o?.voucher_cents ?? 0);
+  if (amount <= 0) return undefined;
+  const r = await orderRedemptions(db, orderId);
+  const parts = [
+    r.code ? r.code.code.toUpperCase() : null,
+    ...[...r.promo, ...r.paid].map((v) => v.code),
+  ].filter(Boolean);
+  const vouchers = r.promo.length + r.paid.length > 0;
+  const label =
+    locale === 'en'
+      ? `${r.code && vouchers ? 'Discount and voucher' : vouchers ? 'Voucher' : 'Discount'}`
+      : `${r.code && vouchers ? 'Rabatt und Gutschein' : vouchers ? 'Gutschein' : 'Rabatt'}`;
+  return { amount, label: `${label} ${parts.join(', ')}`.slice(0, 40) };
+}
+
 // ---------------------------------------------------------------------------
 // Payment results
 // ---------------------------------------------------------------------------
@@ -356,12 +429,13 @@ const DONE = ['paid', 'packing', 'shipped', 'completed', 'refunded'];
 type OrderRow = {
   id: number;
   number: string;
-  kind: 'cards' | 'license';
+  kind: 'cards' | 'license' | 'voucher';
   seller: 'shop' | 'gmbh';
   status: string;
   locale: 'de' | 'en';
   email: string | null;
   total_cents: number;
+  voucher_cents: number;
   vat_cents: number;
   vat_rate_bp: number;
   cart_id: string | null;
@@ -390,8 +464,8 @@ export async function processPaidSession(
   if (session.paymentStatus === 'unpaid') return { kind: 'not_paid', orderId: session.orderId };
   const outcome = await sql.begin(async (tx) => {
     const [o] = await tx<OrderRow[]>`
-      SELECT id, number, kind, seller, status, locale, email, total_cents, vat_cents, vat_rate_bp,
-             cart_id, stripe_session_id
+      SELECT id, number, kind, seller, status, locale, email, total_cents, voucher_cents, vat_cents,
+             vat_rate_bp, cart_id, stripe_session_id
         FROM orders
        WHERE stripe_session_id = ${session.id}
           OR (${session.orderId}::bigint IS NOT NULL AND id = ${session.orderId}::bigint
@@ -407,14 +481,36 @@ export async function processPaidSession(
     await tx`UPDATE orders SET stripe_payment_intent_id = ${session.paymentIntentId},
                                payment_method_type = ${session.paymentMethodType}
               WHERE id = ${o.id}`;
-    if (session.amountTotal !== null && session.amountTotal !== o.total_cents) {
+    const due = o.total_cents - o.voucher_cents;
+    if (session.amountTotal !== null && session.amountTotal !== due) {
       // GmbH: Stripe Tax decides; a difference means the VAT came out other than expected.
       await alertShop(
         tx,
         `Betrag stimmt nicht: ${o.number}`,
-        `Stripe meldet ${session.amountTotal} Cent, die Bestellung lautet auf ${o.total_cents} Cent.`,
+        `Stripe meldet ${session.amountTotal} Cent, offen waren ${due} Cent.`,
         `amount_mismatch:${o.id}`,
       );
+    }
+    // Paid after the order had been given up: its vouchers were released and must be taken
+    // again – if they no longer cover their part, the payment goes back.
+    if (['expired', 'payment_failed', 'cancelled'].includes(o.status)) {
+      if (!(await reholdRedemptions(tx, o.id))) {
+        await tx`UPDATE orders SET status = 'cancelled', cancelled_at = now(), reserved_until = NULL
+                  WHERE id = ${o.id}`;
+        await tx`INSERT INTO refunds (order_id, amount_cents, reason, status, created_by)
+                 VALUES (${o.id}, ${due}, 'cards_sold_out_after_payment', 'pending', 'system')`;
+        await orderEvent(tx, o.id, 'vouchers_gone_after_payment', { session: session.id });
+        return { kind: 'refund_pending' as const, orderId: o.id };
+      }
+    }
+
+    if (o.kind === 'voucher') {
+      await giftVoucherOrderPaid(tx, o, now);
+      await orderEvent(tx, o.id, 'paid', {
+        session: session.id,
+        method: session.paymentMethodType,
+      });
+      return { kind: 'paid' as const, orderId: o.id };
     }
 
     if (o.kind === 'license') {
@@ -427,42 +523,16 @@ export async function processPaidSession(
       return { kind: 'paid' as const, orderId: o.id };
     }
 
-    const [c] = await tx<{ result: string }[]>`
-      SELECT order_commit_stock(${o.id}, ${o.number}) AS result`;
-    if (c!.result === 'unavailable') {
-      await tx`UPDATE orders SET status = 'cancelled', cancelled_at = now(), reserved_until = NULL
-                WHERE id = ${o.id}`;
-      await tx`INSERT INTO refunds (order_id, amount_cents, reason, status, created_by)
-               VALUES (${o.id}, ${o.total_cents}, 'cards_sold_out_after_payment', 'pending', 'system')`;
-      await orderEvent(tx, o.id, 'sold_out_after_payment', { session: session.id });
-      return { kind: 'refund_pending' as const, orderId: o.id };
-    }
-
-    await tx`UPDATE orders SET status = 'paid', paid_at = ${now}, reserved_until = NULL
-              WHERE id = ${o.id}`;
-    if (o.email) {
-      // Terms and withdrawal instructions on a durable medium (§ 7 Abs. 3 FAGG).
-      await enqueueMail(tx, {
-        template: 'order_confirmation',
-        to: o.email,
-        locale: o.locale,
-        payload: { order_id: o.id },
-        attachments: [{ kind: 'legal', kinds: ['agb', 'withdrawal'] }],
-        dedupeKey: `order_confirmation:${o.id}`,
-      });
-    }
-    await enqueueShopMail(
-      tx,
-      'order_notification',
-      { order_id: o.id },
-      `order_notification:${o.id}`,
-    );
-    if (o.cart_id) await emptyCart(tx, o.cart_id);
-    await orderEvent(tx, o.id, 'paid', {
+    const r = await cardOrderPaid(tx, o, now, {
       session: session.id,
       method: session.paymentMethodType,
-      stock: c!.result,
     });
+    if (r === 'unavailable') {
+      // Vouchers go back with the cancellation (database trigger), the card payment here.
+      await tx`INSERT INTO refunds (order_id, amount_cents, reason, status, created_by)
+               VALUES (${o.id}, ${due}, 'cards_sold_out_after_payment', 'pending', 'system')`;
+      return { kind: 'refund_pending' as const, orderId: o.id };
+    }
     return { kind: 'paid' as const, orderId: o.id };
   });
   if (outcome.kind === 'refund_pending') {
@@ -471,6 +541,73 @@ export async function processPaidSession(
       : outcome;
   }
   return outcome;
+}
+
+/**
+ * Commits the held cards of a paid card order (taking them again if the hold had run out),
+ * and queues the mails. 'unavailable': the cards are gone, the order is cancelled.
+ */
+async function cardOrderPaid(
+  tx: Tx,
+  o: Pick<OrderRow, 'id' | 'number' | 'locale' | 'email' | 'cart_id'>,
+  now: Date,
+  detail: { session: string | null; method: string | null },
+): Promise<'paid' | 'unavailable'> {
+  const [c] = await tx<{ result: string }[]>`
+      SELECT order_commit_stock(${o.id}, ${o.number}) AS result`;
+  if (c!.result === 'unavailable') {
+    await tx`UPDATE orders SET status = 'cancelled', cancelled_at = now(), reserved_until = NULL
+                WHERE id = ${o.id}`;
+    await orderEvent(tx, o.id, 'sold_out_after_payment', detail);
+    return 'unavailable';
+  }
+
+  await tx`UPDATE orders SET status = 'paid', paid_at = ${now}, reserved_until = NULL
+              WHERE id = ${o.id}`;
+  if (o.email) {
+    // Terms and withdrawal instructions on a durable medium (§ 7 Abs. 3 FAGG).
+    await enqueueMail(tx, {
+      template: 'order_confirmation',
+      to: o.email,
+      locale: o.locale,
+      payload: { order_id: o.id },
+      attachments: [{ kind: 'legal', kinds: ['agb', 'withdrawal'] }],
+      dedupeKey: `order_confirmation:${o.id}`,
+    });
+  }
+  await enqueueShopMail(tx, 'order_notification', { order_id: o.id }, `order_notification:${o.id}`);
+  if (o.cart_id) await emptyCart(tx, o.cart_id);
+  await orderEvent(tx, o.id, 'paid', { ...detail, stock: c!.result });
+  return 'paid';
+}
+
+/**
+ * An order that code and vouchers cover in full: no payment page, paid at once.
+ * 'unavailable' if the cards were sold in the meantime (the vouchers go back).
+ */
+export async function completeWithoutPayment(
+  sql: Sql,
+  orderId: number,
+  now = new Date(),
+): Promise<'paid' | 'unavailable' | 'not_free'> {
+  return sql.begin(async (tx) => {
+    const [o] = await tx<OrderRow[]>`
+      SELECT id, number, kind, seller, status, locale, email, total_cents, voucher_cents, vat_cents,
+             vat_rate_bp, cart_id, stripe_session_id
+        FROM orders WHERE id = ${orderId} FOR UPDATE`;
+    if (!o || o.status !== 'checkout' || o.total_cents - o.voucher_cents !== 0) {
+      return 'not_free' as const;
+    }
+    const method = o.voucher_cents > 0 ? 'voucher' : 'discount';
+    await tx`UPDATE orders SET payment_method_type = ${method} WHERE id = ${o.id}`;
+    if (o.kind === 'license') {
+      await licenseOrderPaid(tx, o, null, now);
+      await orderEvent(tx, o.id, 'paid', { method });
+      return 'paid' as const;
+    }
+    if (o.kind !== 'cards') return 'not_free' as const;
+    return cardOrderPaid(tx, o, now, { session: null, method });
+  });
 }
 
 /**
@@ -501,16 +638,20 @@ export async function runPendingRefunds(
      ORDER BY r.id LIMIT 20`;
   let allDone = rows.length > 0;
   for (const r of rows) {
-    if (!r.pi) {
+    if (!r.pi && r.amount_cents > 0) {
       allDone = false;
       continue;
     }
     try {
-      const res = await provider.refund({
-        paymentIntentId: r.pi,
-        amount: r.amount_cents,
-        idempotencyKey: `refund-${r.id}`,
-      });
+      // Nothing went through Stripe when vouchers paid it all (they are back already).
+      const res =
+        r.amount_cents > 0
+          ? await provider.refund({
+              paymentIntentId: r.pi!,
+              amount: r.amount_cents,
+              idempotencyKey: `refund-${r.id}`,
+            })
+          : { id: null };
       await sql.begin(async (tx) => {
         await tx`UPDATE refunds SET status = 'succeeded', stripe_refund_id = ${res.id} WHERE id = ${r.id}`;
         await tx`UPDATE orders SET status = 'refunded', refunded_cents = refunded_cents + ${r.amount_cents}
@@ -747,6 +888,11 @@ export type CustomerOrder = {
   goodsCents: number;
   shippingCents: number;
   totalCents: number;
+  /** Discount code and promotional vouchers (lower the total). */
+  discountCents: number;
+  /** Paid with bought vouchers (part of the total). */
+  voucherCents: number;
+  redemptions: Awaited<ReturnType<typeof orderRedemptions>>;
   vatCents: number;
   vatRateBp: number;
   vatRegime: VatRegime;
@@ -792,6 +938,8 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       goods_cents: number;
       shipping_cents: number;
       total_cents: number;
+      discount_cents: number;
+      voucher_cents: number;
       vat_cents: number;
       vat_rate_bp: number;
       vat_regime: VatRegime;
@@ -800,8 +948,8 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
       tracking_number: string | null;
     }[]
   >`SELECT id, number, status, locale, email, created_at, paid_at, shipped_at, reserved_until, payment_url,
-           shipping_method, goods_cents, shipping_cents, total_cents, vat_cents, vat_rate_bp, vat_regime,
-           shipping_address, billing_address, tracking_number
+           shipping_method, goods_cents, shipping_cents, total_cents, discount_cents, voucher_cents,
+           vat_cents, vat_rate_bp, vat_regime, shipping_address, billing_address, tracking_number
       FROM orders WHERE id = ${id}`;
   if (!o) return null;
   const items = await db<
@@ -836,6 +984,12 @@ export async function orderById(db: Db, id: number): Promise<CustomerOrder | nul
     shippingMethod: o.shipping_method,
     goodsCents: o.goods_cents,
     shippingCents: o.shipping_cents,
+    discountCents: o.discount_cents,
+    voucherCents: o.voucher_cents,
+    redemptions:
+      o.discount_cents + o.voucher_cents > 0
+        ? await orderRedemptions(db, o.id)
+        : { code: null, promo: [], paid: [] },
     totalCents: o.total_cents,
     vatCents: o.vat_cents,
     vatRateBp: o.vat_rate_bp,

@@ -22,6 +22,8 @@ Für Ihre Bestellung verarbeiten wir Name, Liefer- und gegebenenfalls Rechnungsa
 
 Rechtsgrundlagen sind die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) und unsere gesetzlichen Aufbewahrungspflichten (Art. 6 Abs. 1 lit. c DSGVO). Bestell- und Rechnungsdaten bewahren wir sieben Jahre auf (§ 132 BAO), danach werden sie gelöscht. Die im Warenkorb gespeicherten Eingaben werden mit dem Warenkorb nach 30 Tagen ohne Aktivität gelöscht.
 
+Beim Kauf eines Geschenkgutscheins verarbeiten wir Ihren Namen, Ihre E-Mail-Adresse, den Betrag und – wenn Sie sie angeben – den Namen der beschenkten Person und Ihre Nachricht, die auf dem Gutschein stehen. Wir speichern, wann und für welche Bestellung ein Gutschein eingelöst wurde. Rabattcodes speichern wir mit der Bestellung und der E-Mail-Adresse, um Aktionsbedingungen wie „einmal pro Kunde“ einzuhalten.
+
 ## 4. Zahlung
 
 Die Zahlung wickelt Stripe ab (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Irland). Ihre Karten- oder Kontodaten geben Sie direkt bei Stripe ein; wir erhalten sie nicht, sondern nur den Zahlungsstatus, die Zahlungsart und eine Referenznummer. Stripe verarbeitet die Daten teils in unserem Auftrag, teils als eigener Verantwortlicher, etwa zur Betrugsprävention; dabei prüft Stripe Zahlungen automatisiert und kann eine Zahlung ablehnen. Stripe kann Daten auch in den USA verarbeiten; Stripe ist nach dem EU-US Data Privacy Framework zertifiziert und verwendet zusätzlich Standardvertragsklauseln. Mehr unter https://stripe.com/at/privacy.

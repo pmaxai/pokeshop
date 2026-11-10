@@ -245,6 +245,23 @@ export function LicenseForm(p: LicenseFormProps) {
               t('quantityHint', { max: p.max, price: formatEuro(unit, p.locale) })}
           </small>
         </label>
+        <label className={p.errors.code ? 'field field--error' : 'field'} htmlFor="app-code">
+          <span>{t('code')}</span>
+          <input
+            id="app-code"
+            name="code"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            defaultValue={p.values.code ?? ''}
+            aria-invalid={p.errors.code ? true : undefined}
+            aria-describedby="app-code-hint"
+          />
+          <small id="app-code-hint" className={p.errors.code ? 'field__error' : 'muted'}>
+            {p.errors.code ?? t('codeHint')}
+          </small>
+        </label>
         <dl className="totals">
           <dt className="totals__total">{net ? t('totalNet') : t('total')}</dt>
           <dd className="totals__total" aria-live="polite">

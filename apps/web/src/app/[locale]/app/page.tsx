@@ -81,10 +81,15 @@ export default async function AppPage({ params, searchParams }: Props) {
   }
   const values = flash.values ?? {};
   const errors = flash.errors ?? {};
+  const tCodes = await getTranslations('Codes');
   const errorText = (k: string) =>
-    (t as (key: string, v?: Record<string, number>) => string)(`form.errors.${errors[k]}`, {
-      max: MAX_LICENSES_PER_ORDER,
-    });
+    errors[k]!.startsWith('code_')
+      ? (tCodes as (key: string, v?: Record<string, string>) => string)(errors[k]!.slice(5), {
+          min: '',
+        })
+      : (t as (key: string, v?: Record<string, number>) => string)(`form.errors.${errors[k]}`, {
+          max: MAX_LICENSES_PER_ORDER,
+        });
   const errorTexts = Object.fromEntries(
     Object.keys(errors)
       .filter((k) => k !== '_')

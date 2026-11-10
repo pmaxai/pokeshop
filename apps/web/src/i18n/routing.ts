@@ -28,6 +28,8 @@ export const routing = defineRouting({
     '/kasse': { de: '/kasse', en: '/checkout' },
     '/bestellung/[token]': { de: '/bestellung/[token]', en: '/order/[token]' },
     '/app': '/app',
+    '/gutscheine': { de: '/gutscheine', en: '/gift-vouchers' },
+    '/gutscheine/[token]': { de: '/gutscheine/[token]', en: '/gift-vouchers/[token]' },
     '/app/lizenzbedingungen': { de: '/app/lizenzbedingungen', en: '/app/license-terms' },
     '/app/lizenz/[token]': { de: '/app/lizenz/[token]', en: '/app/license/[token]' },
   },

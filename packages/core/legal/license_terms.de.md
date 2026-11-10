@@ -34,6 +34,7 @@ Stand: November 2026
 2. Unternehmen in Österreich zahlen den Preis einschließlich 20 % Umsatzsteuer.
 3. Unternehmen in einem anderen EU-Land mit gültiger Umsatzsteuer-Identifikationsnummer zahlen den Nettopreis; die Steuerschuld geht auf sie über (Reverse Charge). Ohne gültige Nummer zahlen sie den Preis einschließlich der Umsatzsteuer ihres Landes.
 4. Unternehmen außerhalb der EU zahlen den Nettopreis. Die Leistung ist in Österreich nicht steuerbar; allfällige Steuern im eigenen Land führen sie selbst ab.
+5. Rabattcodes für Lizenzen gelten zu den Bedingungen der jeweiligen Aktion; pro Bestellung kann einer eingelöst werden. Ist eine Lizenz durch einen Code kostenlos, fällt keine Zahlung an und es wird keine Rechnung ausgestellt. Geschenkgutscheine des Shops gelten nicht für Lizenzen.
 
 ## 6. Zahlung und Rechnung
 
