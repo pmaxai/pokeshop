@@ -2,6 +2,15 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-12 · The shop is Overpriced Cardboard at overpricedcardboard.com
+
+The shop moved from pokemonkarten.at to overpricedcardboard.com before the first order, with no
+redirect from the old domain. The name shown in the shop, mails, PDFs and invoices is "Overpriced
+Cardboard" (as on the YouTube channel); the domain appears where an address is meant. The shop
+mailbox is the new shared mailbox `order@overpricedcardboard.com`. Migration 0015 moves the stored
+settings that still held the old values; the switch itself is a runbook outside the repo (DNS,
+Microsoft 365, Stripe webhooks, Entra redirect URIs, a new APK with the licence server address).
+
 ## 2026-11-11 · Licences are sold in the EU only
 
 Private persons and businesses alike must live or be established in the EU
@@ -126,7 +135,7 @@ show no UID. Switching it off brings back domestic/OSS/export VAT.
 
 The owner's name appears on the legal notice, on invoices and credit notes (§ 11 UStG) and in the
 e-mail footer (the order confirmation must identify the seller). Shop pages and the legal texts
-say "pokemonkarten.at" (`company.public_name`) with its address and refer to the legal notice.
+say "Overpriced Cardboard" (`company.public_name`) with its address and refer to the legal notice.
 
 The online withdrawal is labelled "Bestellung retournieren (Vertrag widerrufen)": the statutory
 words stay in the label (§ 13a FAGG, § 356a BGB), and the confirm button keeps "Widerruf
@@ -234,4 +243,4 @@ only, `.ts` import extensions). Only the Next.js app has a build step.
 ## 2026-11-05 · Mail permission scoped in Exchange, not in Entra
 
 The mail app gets no tenant-wide Graph `Mail.Send` grant; Exchange RBAC for Applications limits
-it to `bestellung@pokemonkarten.at` (docs/m365-setup.md).
+it to `order@overpricedcardboard.com` (docs/m365-setup.md).

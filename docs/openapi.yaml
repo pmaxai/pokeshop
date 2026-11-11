@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: pokemonkarten.at product API
+  title: Overpriced Cardboard product API
   version: 1.0.0
   description: |
     Used by the scanning app to create and update products and stock.
@@ -11,9 +11,9 @@ info:
     with at least three digits ("001", "014", "1203"); copies of one product can sit in
     several boxes and are counted per box.
 servers:
-  - url: https://pokemonkarten.at/api/v1
+  - url: https://overpricedcardboard.com/api/v1
     description: Production
-  - url: https://staging.pokemonkarten.at/api/v1
+  - url: https://staging.overpricedcardboard.com/api/v1
     description: Staging (Stripe test mode, own database)
 
 security:

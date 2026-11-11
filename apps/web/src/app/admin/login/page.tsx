@@ -19,7 +19,7 @@ const ERRORS: Record<string, string> = {
   denied:
     'Microsoft hat die Anmeldung abgelehnt. Der Grund steht im Log des Web-Containers (Zeilen mit [entra]).',
   not_assigned:
-    'Dein Konto ist der App in Entra nicht zugewiesen (Unternehmensanwendungen → pokemonkarten-admin → Benutzer und Gruppen).',
+    'Dein Konto ist der App in Entra nicht zugewiesen (Unternehmensanwendungen → overpricedcardboard-admin → Benutzer und Gruppen).',
   tenant: 'Dieses Konto gehört nicht zu eurem Microsoft-365-Mandanten.',
   not_allowed:
     'Dein Konto hat keine Shop-Rolle. In Entra braucht es die App-Rolle „Shop owner“ oder „Shop staff“ (oder die Gruppe „Shop-Admins“ / „Shop-Staff“). Danach neu anmelden.',
@@ -37,7 +37,7 @@ export default async function Login({
   return (
     <main>
       <div className="login">
-        <h1 style={{ fontSize: 'var(--t-xl)' }}>pokemonkarten.at Admin</h1>
+        <h1 style={{ fontSize: 'var(--t-xl)' }}>Overpriced Cardboard Admin</h1>
         {err && (
           <p className="notice notice--err">
             {ERRORS[err] ?? 'Anmeldung fehlgeschlagen.'}

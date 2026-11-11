@@ -91,16 +91,16 @@ class MemoryTransport implements MailTransport {
 }
 let mediaDir: string;
 const mailCtx = () => ({
-  baseUrl: 'https://pokemonkarten.at',
+  baseUrl: 'https://overpricedcardboard.com',
   mediaDir,
-  replyTo: 'bestellung@pokemonkarten.at',
+  replyTo: 'order@overpricedcardboard.com',
   company: {
     name: 'Antalyse GmbH',
     street: 'Wienerstraße 1',
     postcode: '2440',
     city: 'Moosbrunn',
     country: 'AT',
-    email: 'bestellung@pokemonkarten.at',
+    email: 'order@overpricedcardboard.com',
     vat_id: 'ATU79907228',
     register_number: 'FN 614039z',
     register_court: 'Landesgericht Korneuburg',
@@ -332,7 +332,7 @@ test('withdrawal: stored with time of receipt, acknowledgement repeats the conte
 test('Graph sendMail body', () => {
   const body = graphMessage({
     to: 'a@example.com',
-    replyTo: 'bestellung@pokemonkarten.at',
+    replyTo: 'order@overpricedcardboard.com',
     subject: 'S',
     html: '<p>x</p>',
     attachments: [{ name: 'a.pdf', contentType: 'application/pdf', content: Buffer.from('%PDF') }],

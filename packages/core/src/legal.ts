@@ -78,7 +78,7 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     license_terms_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/app/lizenzbedingungen' : '/en/app/license-terms'}`,
     'company.name': c.name ?? '',
     // Shop pages and legal texts name the shop, not its owner (that is in the legal notice).
-    'company.public_name': c.public_name || 'pokemonkarten.at',
+    'company.public_name': c.public_name || 'Overpriced Cardboard',
     'company.address': addressOf(c, ctx.locale),
     'company.email': c.email ?? '',
     'company.phone': c.phone ?? '',

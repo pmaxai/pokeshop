@@ -30,7 +30,7 @@ export function AdminShell({
     <>
       <header className="admin-bar">
         <div className="wrap">
-          <strong>pokemonkarten.at</strong>
+          <strong>Overpriced Cardboard</strong>
           <nav style={{ display: 'flex', gap: 'var(--s-4)' }} aria-label="Admin">
             {LINKS.filter((l) => !('owner' in l) || user.role === 'owner').map((l) => (
               <a key={l.key} href={l.href} aria-current={active === l.key ? 'page' : undefined}>

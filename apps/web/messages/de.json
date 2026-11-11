@@ -1,6 +1,6 @@
 {
   "Meta": {
-    "siteName": "pokemonkarten.at",
+    "siteName": "Overpriced Cardboard",
     "homeTitle": "Pokémon-Einzelkarten kaufen – geprüft, in vielen Sprachen",
     "homeDescription": "Pokémon-Einzelkarten aus allen Serien und vielen Sprachen, mit genau beschriebenem Zustand. Versandkostenfrei nach Österreich und Deutschland.",
     "cardsTitle": "Alle Karten",
@@ -124,7 +124,7 @@
     "shipping": "Versand und Zahlung",
     "imprint": "Impressum",
     "privacy": "Datenschutz",
-    "trademark": "pokemonkarten.at ist nicht mit Nintendo, Creatures, GAME FREAK oder The Pokémon Company verbunden. Pokémon und alle Kartennamen sind Marken ihrer Inhaber.",
+    "trademark": "Overpriced Cardboard ist nicht mit Nintendo, Creatures, GAME FREAK oder The Pokémon Company verbunden. Pokémon und alle Kartennamen sind Marken ihrer Inhaber.",
     "terms": "AGB",
     "withdrawalInfo": "Widerrufsbelehrung",
     "withdraw": "Bestellung retournieren (Vertrag widerrufen)",
@@ -357,7 +357,7 @@
   },
   "App": {
     "metaTitle": "ScanPM – Pokémon-Karten scannen, Preise sehen",
-    "metaDescription": "Die Android-App von pokemonkarten.at: Karte vor die Kamera halten und den Cardmarket-Preis der richtigen Variante sehen, auch offline. Beta, Einmal-Lizenz mit Updates.",
+    "metaDescription": "Die Android-App von Overpriced Cardboard: Karte vor die Kamera halten und den Cardmarket-Preis der richtigen Variante sehen, auch offline. Beta, Einmal-Lizenz mit Updates.",
     "beta": "Beta",
     "tagline": "Karte vor die Kamera, Preis auf den Schirm. Auch ohne Netz.",
     "lead": "ScanPM erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Börsen und Openings.",
@@ -533,7 +533,7 @@
   },
   "Vouchers": {
     "metaTitle": "Geschenkgutscheine",
-    "metaDescription": "Gutscheine für Pokémon-Karten auf pokemonkarten.at – von 10 bis 300 €, ohne Ablaufdatum, als PDF zum Ausdrucken.",
+    "metaDescription": "Gutscheine für Pokémon-Karten auf overpricedcardboard.com – von 10 bis 300 €, ohne Ablaufdatum, als PDF zum Ausdrucken.",
     "title": "Geschenkgutscheine",
     "lead": "Für alle, die selbst aussuchen sollen: Du wählst den Betrag und schreibst ein paar Worte dazu, wir schicken dir den Gutschein gleich nach der Zahlung als PDF – zum Ausdrucken oder Weiterleiten.",
     "pointCards": "Einlösbar für alle Karten im Shop",
@@ -544,7 +544,7 @@
     "previewKind": "Gutschein",
     "previewFor": "für {name}",
     "previewCode": "Gutscheincode",
-    "previewTerms": "Für Karten auf pokemonkarten.at · ohne Ablaufdatum",
+    "previewTerms": "Für Karten auf overpricedcardboard.com · ohne Ablaufdatum",
     "previewCaption": "Vorschau: Der Code wird nach der Zahlung erzeugt.",
     "amount": "Betrag",
     "ownAmount": "Anderer Betrag",

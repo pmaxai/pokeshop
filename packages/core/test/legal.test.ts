@@ -9,9 +9,9 @@ const ctx = {
     postcode: '2440',
     city: 'Moosbrunn',
     country: 'AT',
-    email: 'bestellung@pokemonkarten.at',
+    email: 'order@overpricedcardboard.com',
   },
-  baseUrl: 'https://pokemonkarten.at',
+  baseUrl: 'https://overpricedcardboard.com',
   locale: 'de' as const,
 };
 
@@ -19,7 +19,7 @@ test('placeholders: company, address and shop links per language', () => {
   const md = '{{company.name}}, {{company.address}} – {{withdraw_url}} {{unknown}}';
   assert.equal(
     fillPlaceholders(md, ctx),
-    'Antalyse GmbH, Wienerstraße 1, 2440 Moosbrunn, Österreich – https://pokemonkarten.at/vertrag-widerrufen {{unknown}}',
+    'Antalyse GmbH, Wienerstraße 1, 2440 Moosbrunn, Österreich – https://overpricedcardboard.com/vertrag-widerrufen {{unknown}}',
   );
   assert.match(fillPlaceholders('{{withdraw_url}}', { ...ctx, locale: 'en' }), /\/en\/withdraw$/);
 });

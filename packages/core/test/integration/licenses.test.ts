@@ -60,9 +60,9 @@ class MemoryTransport implements MailTransport {
   }
 }
 const mailCtx = (): MailContext => ({
-  baseUrl: 'https://pokemonkarten.at',
+  baseUrl: 'https://overpricedcardboard.com',
   mediaDir,
-  replyTo: 'bestellung@pokemonkarten.at',
+  replyTo: 'order@overpricedcardboard.com',
   company: {
     name: 'Maximilian Pinter',
     street: 'Wienerstraße 1',
@@ -100,8 +100,8 @@ async function buy(over: Record<string, unknown> = {}, locale: 'de' | 'en' = 'de
     details: v.data,
     buyer: c.buyer,
     locale,
-    successUrl: 'https://pokemonkarten.at/app/lizenz/x',
-    cancelUrl: 'https://pokemonkarten.at/app',
+    successUrl: 'https://overpricedcardboard.com/app/lizenz/x',
+    cancelUrl: 'https://overpricedcardboard.com/app',
   });
   const [row] = await sql<{ stripe_session_id: string; stripe_customer_id: string }[]>`
     SELECT stripe_session_id, stripe_customer_id FROM orders WHERE id = ${order.id}`;
@@ -354,7 +354,7 @@ test('the licence e-mail comes from the GmbH, with Stripe’s invoice and the li
   assert.equal(m.replyTo, 'info@abc-it.at');
   assert.equal(m.subject, 'Deine 2 ScanPM-Lizenzen');
   for (const l of licenses.all()) assert.ok(m.html.includes(l.key), 'key in the mail');
-  assert.ok(m.html.includes(`https://pokemonkarten.at/api/app/download/${token}`));
+  assert.ok(m.html.includes(`https://overpricedcardboard.com/api/app/download/${token}`));
   assert.match(m.html, /Version 1\.2\.30/);
   assert.match(m.html, /§ 18 Abs\. 1 Z 11 FAGG/);
   assert.match(m.html, /Vertragspartner für die Lizenz ist die Antalyse GmbH/);

@@ -26,12 +26,12 @@ export type Company = {
 export const getCompany = cache(() =>
   getSetting<Company>('company', {
     name: '',
-    public_name: 'pokemonkarten.at',
+    public_name: 'Overpriced Cardboard',
     street: '',
     postcode: '',
     city: '',
     country: 'AT',
-    email: 'bestellung@pokemonkarten.at',
+    email: 'order@overpricedcardboard.com',
     register_number: '',
     register_court: '',
     vat_id: '',

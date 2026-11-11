@@ -47,7 +47,7 @@ printf '1793883600\nGET\n/api/v1/products/sv03.5-199-DE-NM-H\ne3b0c44298fc1c149a
 ## curl
 
 ```sh
-KEY_ID=kid_… ; SECRET=sk_… ; HOST=https://staging.pokemonkarten.at
+KEY_ID=kid_… ; SECRET=sk_… ; HOST=https://staging.overpricedcardboard.com
 PATH_Q=/api/v1/stock/intake
 BODY='{"card_ref":"sv03.5-199","card_language":"DE","condition":"NM","finish":"holo","delta":1,"storage_location":"014","price":{"amount":12900,"currency":"EUR"}}'
 TS=$(date +%s)

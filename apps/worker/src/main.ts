@@ -142,7 +142,7 @@ async function mailContext(): Promise<MailContext> {
     baseUrl,
     mediaDir,
     company: (get('company') ?? {}) as MailContext['company'],
-    replyTo: String(get('shop_mailbox') ?? 'bestellung@pokemonkarten.at'),
+    replyTo: String(get('shop_mailbox') ?? 'order@overpricedcardboard.com'),
     licenses,
     licenseSeller: (get('license_seller') ?? null) as MailContext['licenseSeller'],
     gmbhPayments,

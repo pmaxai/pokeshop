@@ -94,7 +94,10 @@ test('validation names each bad field and rejects unknown ones', () => {
 });
 
 test('intake creates the product from master data and puts the copy into box 014', async () => {
-  const r = await intake(sql, glurak(), actor, { tcgdex, baseUrl: 'https://pokemonkarten.at' });
+  const r = await intake(sql, glurak(), actor, {
+    tcgdex,
+    baseUrl: 'https://overpricedcardboard.com',
+  });
   assert.equal(r.created, true);
   assert.deepEqual(r.warnings, []);
   const p = r.product;
@@ -106,7 +109,7 @@ test('intake creates the product from master data and puts the copy into box 014
   assert.equal(p.release_year, 2023);
   assert.equal(p.status, 'active', 'price + card image → active');
   assert.equal(p.high_value, true);
-  assert.equal(p.url, 'https://pokemonkarten.at/karten/glurak-ex-sv03-5-199-de-nm-h');
+  assert.equal(p.url, 'https://overpricedcardboard.com/karten/glurak-ex-sv03-5-199-de-nm-h');
   assert.deepEqual(p.stock, {
     quantity: 1,
     reserved: 0,

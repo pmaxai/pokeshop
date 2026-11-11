@@ -13,7 +13,7 @@
 	}
 }
 
-pokemonkarten.at {
+overpricedcardboard.com {
 	import security_headers
 	encode zstd gzip
 	# The app's APK (admin upload) is large; everything else stays small. A bit above the
@@ -31,11 +31,11 @@ pokemonkarten.at {
 	reverse_proxy pokeshop-web:3000
 }
 
-www.pokemonkarten.at {
-	redir https://pokemonkarten.at{uri} permanent
+www.overpricedcardboard.com {
+	redir https://overpricedcardboard.com{uri} permanent
 }
 
-staging.pokemonkarten.at {
+staging.overpricedcardboard.com {
 	import security_headers
 	header X-Robots-Tag "noindex, nofollow"
 	encode zstd gzip
@@ -51,7 +51,7 @@ staging.pokemonkarten.at {
 
 # License service for the scanner app: only the app's endpoints are public;
 # /v1/shop/* is for the shop, which calls the container directly.
-license.pokemonkarten.at {
+license.overpricedcardboard.com {
 	import security_headers
 	header X-Robots-Tag "noindex, nofollow"
 	@app path /health /v1/activate /v1/check
@@ -63,7 +63,7 @@ license.pokemonkarten.at {
 	}
 }
 
-license.staging.pokemonkarten.at {
+license.staging.overpricedcardboard.com {
 	import security_headers
 	header X-Robots-Tag "noindex, nofollow"
 	@app path /health /v1/activate /v1/check

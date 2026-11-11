@@ -17,8 +17,8 @@ set -euo pipefail
 base=${POKESHOP_BASE:-/opt/pokeshop}
 stack=${1:-}
 case "$stack" in
-  production) project=pokeshop; url=https://pokemonkarten.at ;;
-  staging) project=pokeshop-staging; url=https://staging.pokemonkarten.at ;;
+  production) project=pokeshop; url=https://overpricedcardboard.com ;;
+  staging) project=pokeshop-staging; url=https://staging.overpricedcardboard.com ;;
   *)
     echo "usage: $0 production|staging <docker compose command …>" >&2
     exit 2

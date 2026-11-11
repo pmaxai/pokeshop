@@ -72,7 +72,7 @@ export function GiftVoucherForm(p: GiftVoucherFormProps) {
       <figure className="gv-card" aria-label={t('previewLabel')}>
         <div className="gv-card__top">
           <span className="gv-card__brand">
-            pokemonkarten<span>.at</span>
+            Overpriced <span>Cardboard</span>
           </span>
           <span className="gv-card__kind">{t('previewKind')}</span>
         </div>

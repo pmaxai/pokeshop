@@ -115,7 +115,9 @@ export async function giftVoucherPaymentLine(db: Db, orderId: number, locale: 'd
           ? `for ${g.recipient_name}`
           : `für ${g.recipient_name}`
         : '',
-      locale === 'en' ? 'for cards on pokemonkarten.at' : 'für Karten auf pokemonkarten.at',
+      locale === 'en'
+        ? 'for cards on overpricedcardboard.com'
+        : 'für Karten auf overpricedcardboard.com',
     ]
       .filter(Boolean)
       .join(' · '),

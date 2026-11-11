@@ -1,6 +1,6 @@
 {
   "Meta": {
-    "siteName": "pokemonkarten.at",
+    "siteName": "Overpriced Cardboard",
     "homeTitle": "Buy single Pokémon cards – checked, in many languages",
     "homeDescription": "Single Pokémon cards from every series and many languages, each with a clearly described condition. Free shipping to Austria and Germany.",
     "cardsTitle": "All cards",
@@ -124,7 +124,7 @@
     "shipping": "Shipping and payment",
     "imprint": "Legal notice",
     "privacy": "Privacy",
-    "trademark": "pokemonkarten.at is not affiliated with Nintendo, Creatures, GAME FREAK or The Pokémon Company. Pokémon and all card names are trademarks of their owners.",
+    "trademark": "Overpriced Cardboard is not affiliated with Nintendo, Creatures, GAME FREAK or The Pokémon Company. Pokémon and all card names are trademarks of their owners.",
     "terms": "Terms and conditions",
     "withdrawalInfo": "Right of withdrawal",
     "withdraw": "Return an order (withdraw from contract)",
@@ -357,7 +357,7 @@
   },
   "App": {
     "metaTitle": "ScanPM – scan Pokémon cards, see prices",
-    "metaDescription": "The Android app by pokemonkarten.at: hold a card to the camera and see the Cardmarket price of the right printing, offline too. Beta, one-off licence with updates.",
+    "metaDescription": "The Android app by Overpriced Cardboard: hold a card to the camera and see the Cardmarket price of the right printing, offline too. Beta, one-off licence with updates.",
     "beta": "Beta",
     "tagline": "Card in front of the camera, price on the screen. No signal needed.",
     "lead": "ScanPM recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
@@ -533,7 +533,7 @@
   },
   "Vouchers": {
     "metaTitle": "Gift vouchers",
-    "metaDescription": "Vouchers for Pokémon cards on pokemonkarten.at – from €10 to €300, no expiry date, as a PDF to print.",
+    "metaDescription": "Vouchers for Pokémon cards on overpricedcardboard.com – from €10 to €300, no expiry date, as a PDF to print.",
     "title": "Gift vouchers",
     "lead": "For anyone who should pick their own cards: you choose the amount and add a few words, and we send you the voucher as a PDF right after payment – to print or forward.",
     "pointCards": "Redeemable for every card in the shop",
@@ -544,7 +544,7 @@
     "previewKind": "Gift voucher",
     "previewFor": "for {name}",
     "previewCode": "Voucher code",
-    "previewTerms": "For cards on pokemonkarten.at · no expiry date",
+    "previewTerms": "For cards on overpricedcardboard.com · no expiry date",
     "previewCaption": "Preview: the code is created after payment.",
     "amount": "Amount",
     "ownAmount": "Other amount",

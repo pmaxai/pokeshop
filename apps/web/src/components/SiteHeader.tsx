@@ -19,7 +19,7 @@ export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets';
       </a>
       <div className="wrap site-header__row">
         <Link href="/" className="logo">
-          pokemonkarten<span>.at</span>
+          Overpriced <span>Cardboard</span>
         </Link>
         <nav className="site-nav" aria-label="Shop">
           <Link href="/karten" aria-current={active === 'cards' ? 'page' : undefined}>

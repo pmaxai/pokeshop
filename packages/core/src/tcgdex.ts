@@ -66,7 +66,10 @@ export function httpTcgdexClient(
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       last = Date.now();
       const res = await doFetch(base + path, {
-        headers: { Accept: 'application/json', 'User-Agent': 'pokemonkarten.at catalog sync' },
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'overpricedcardboard.com catalog sync',
+        },
         signal: AbortSignal.timeout(20_000),
       });
       if (res.status === 404) return null;
