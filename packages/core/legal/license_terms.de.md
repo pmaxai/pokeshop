@@ -12,11 +12,12 @@ Stand: November 2026
 ## 2. Wer kaufen kann
 
 1. Verbraucher können Lizenzen kaufen, wenn sie ihren Wohnsitz in der Europäischen Union haben.
-2. Unternehmen können Lizenzen kaufen, wenn sie ihren Sitz in der Europäischen Union, in der Schweiz, in Liechtenstein, Norwegen, Island, im Vereinigten Königreich, in den USA, in Kanada oder in Australien haben. Unternehmen außerhalb der EU geben dabei ihre Steuer- oder Unternehmensnummer an; Unternehmen in der EU außerhalb Österreichs ihre Umsatzsteuer-Identifikationsnummer, wenn sie ohne österreichische Umsatzsteuer kaufen möchten. Diese prüfen wir bei der Bestellung im Mehrwertsteuer-Informationsaustauschsystem der EU (VIES).
+2. Unternehmen können Lizenzen kaufen, wenn sie ihren Sitz in der Europäischen Union haben. Unternehmen außerhalb Österreichs geben ihre Umsatzsteuer-Identifikationsnummer an, wenn sie zum Nettopreis kaufen möchten (Punkt 5.3). Diese prüfen wir bei der Bestellung im Mehrwertsteuer-Informationsaustauschsystem der EU (VIES).
+3. Käufe mit Wohnsitz oder Sitz außerhalb der Europäischen Union sind nicht möglich.
 
 ## 3. Bestellung und Vertragsschluss
 
-1. Auf der App-Seite wählen Sie, ob Sie als Privatperson oder als Unternehmen kaufen, die Anzahl der Lizenzen und geben Name, gegebenenfalls Firma und Steuernummer, E-Mail-Adresse und Rechnungsadresse an. Sie akzeptieren diese Lizenzbedingungen, verlangen die sofortige Lieferung (Punkt 8) und klicken auf „Zahlungspflichtig bestellen“. Bis zu diesem Klick können Sie alle Eingaben prüfen und berichtigen.
+1. Auf der App-Seite wählen Sie, ob Sie als Privatperson oder als Unternehmen kaufen, die Anzahl der Lizenzen und geben Name, gegebenenfalls Firma und Umsatzsteuer-Identifikationsnummer, E-Mail-Adresse und Rechnungsadresse an. Sie akzeptieren diese Lizenzbedingungen, verlangen die sofortige Lieferung (Punkt 8) und klicken auf „Zahlungspflichtig bestellen“. Bis zu diesem Klick können Sie alle Eingaben prüfen und berichtigen.
 2. Anschließend schließen Sie die Zahlung bei unserem Zahlungsdienstleister Stripe ab. Der Vertrag kommt mit Eingang der Zahlung zustande.
 3. Lizenzschlüssel, Download-Link, Rechnung und diese Lizenzbedingungen erhalten Sie unmittelbar danach per E-Mail. Der Vertragstext wird von uns gespeichert; Sie können ihn mit dieser E-Mail jederzeit abrufen.
 
@@ -33,8 +34,7 @@ Stand: November 2026
 1. Für Verbraucher sind die angegebenen Preise Endpreise und enthalten die Umsatzsteuer des Landes, in dem sie wohnen (in Österreich 20 %).
 2. Unternehmen in Österreich zahlen den Preis einschließlich 20 % Umsatzsteuer.
 3. Unternehmen in einem anderen EU-Land mit gültiger Umsatzsteuer-Identifikationsnummer zahlen den Nettopreis; die Steuerschuld geht auf sie über (Reverse Charge). Ohne gültige Nummer zahlen sie den Preis einschließlich der Umsatzsteuer ihres Landes.
-4. Unternehmen außerhalb der EU zahlen den Nettopreis. Die Leistung ist in Österreich nicht steuerbar; allfällige Steuern im eigenen Land führen sie selbst ab.
-5. Rabattcodes für Lizenzen gelten zu den Bedingungen der jeweiligen Aktion; pro Bestellung kann einer eingelöst werden. Ist eine Lizenz durch einen Code kostenlos, fällt keine Zahlung an und es wird keine Rechnung ausgestellt. Geschenkgutscheine des Shops gelten nicht für Lizenzen.
+4. Rabattcodes für Lizenzen gelten zu den Bedingungen der jeweiligen Aktion; pro Bestellung kann einer eingelöst werden. Ist eine Lizenz durch einen Code kostenlos, fällt keine Zahlung an und es wird keine Rechnung ausgestellt. Geschenkgutscheine des Shops gelten nicht für Lizenzen.
 
 ## 6. Zahlung und Rechnung
 
@@ -93,7 +93,7 @@ Hiermit widerrufe(n) ich/wir (\*) den von mir/uns (\*) abgeschlossenen Vertrag �
 ## 11. Datenschutz
 
 1. Verantwortlich für die Daten des Lizenzkaufs ist die {{seller.name}} (Kontakt: {{seller.email}}). Einen Datenschutzbeauftragten haben wir nicht bestellt, weil wir dazu nicht verpflichtet sind.
-2. Wir verarbeiten Name, gegebenenfalls Firma und Steuer- oder Umsatzsteuer-Identifikationsnummer, E-Mail-Adresse, Rechnungsadresse, Anzahl der Lizenzen, Zahlungsstatus und Rechnungsdaten. Eine Umsatzsteuer-Identifikationsnummer aus der EU prüfen wir bei der Bestellung über VIES, den Dienst der Europäischen Kommission; dabei übermitteln wir nur die Nummer. Wir zählen, wie oft die App über Ihren Download-Link geladen wurde.
+2. Wir verarbeiten Name, gegebenenfalls Firma und Umsatzsteuer-Identifikationsnummer, E-Mail-Adresse, Rechnungsadresse, Anzahl der Lizenzen, Zahlungsstatus und Rechnungsdaten. Eine Umsatzsteuer-Identifikationsnummer prüfen wir bei der Bestellung über VIES, den Dienst der Europäischen Kommission; dabei übermitteln wir nur die Nummer. Wir zählen, wie oft die App über Ihren Download-Link geladen wurde.
 3. Die Lizenzschlüssel verwaltet unser Lizenzdienst. Er speichert zu jeder Lizenz Name, E-Mail-Adresse und Bestellnummer, den Schlüssel verschlüsselt, und bei jeder Aktivierung eine zufällige Gerätekennung, die die App erzeugt, die Gerätebezeichnung (etwa das Handymodell), die App-Version sowie die Zeitpunkte der Aktivierung und der letzten Prüfung. Die App fragt beim Start und höchstens einmal pro Stunde nach, ob die Lizenz noch gilt; dabei überträgt sie nur ein Lizenz-Token und die App-Version. Ihre IP-Adresse verwendet der Dienst nur kurzzeitig im Arbeitsspeicher, um zu viele Aktivierungsversuche abzuwehren; sie wird nicht gespeichert.
 4. Auftragsverarbeiter: Stripe (Zahlung, Berechnung der Umsatzsteuer und Rechnung; Stripe Payments Europe, Ltd., Dublin, Irland; zur Betrugsprävention auch als eigener Verantwortlicher), Microsoft (Versand der E-Mails über Microsoft 365; Microsoft Ireland Operations Limited, Dublin, Irland) und der Betreiber von {{company.public_name}}, der Website, Bestellformular und Server betreibt, auf dem auch der Lizenzdienst läuft (Rechenzentrum in Europa, siehe die Datenschutzerklärung des Shops: {{privacy_url}}). Stripe und Microsoft können Daten auch in den USA verarbeiten; sie sind nach dem EU-US Data Privacy Framework zertifiziert und verwenden zusätzlich Standardvertragsklauseln.
 5. Rechtsgrundlagen sind die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), unsere gesetzlichen Pflichten zur Rechnungslegung und Prüfung der Umsatzsteuer-Identifikationsnummer (Art. 6 Abs. 1 lit. c DSGVO) und unser berechtigtes Interesse am Schutz vor Missbrauch der Lizenzen (Art. 6 Abs. 1 lit. f DSGVO).

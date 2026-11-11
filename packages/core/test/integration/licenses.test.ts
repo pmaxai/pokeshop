@@ -149,34 +149,23 @@ test('the form: consent, address, company and tax id where the buyer type needs 
     const r = validateLicenseCheckout(form(over));
     return r.ok ? {} : r.errors;
   };
-  assert.equal(errs({ country: 'CH', postcode: '8001' }).country, 'consumer_eu_only');
+  assert.equal(errs({ country: 'CH', postcode: '8001' }).country, 'country');
   assert.equal(errs({ country: 'JP', postcode: '1000001' }).country, 'country');
   assert.equal(errs({ buyer: 'business' }).company, 'required');
+  for (const [country, postcode, vatId] of [
+    ['CH', '8001', 'CHE-123.456.789 MWST'],
+    ['GB', 'SW1A 1AA', 'GB123456789'],
+    ['US', '10001', '12-3456789'],
+  ] as const) {
+    assert.equal(
+      errs({ buyer: 'business', company: 'Arena Inc', country, postcode, vatId }).country,
+      'country',
+      `businesses in ${country} cannot buy either: licences are EU-only`,
+    );
+  }
   assert.equal(
-    errs({ buyer: 'business', company: 'Arena GmbH', country: 'CH', postcode: '8001' }).vatId,
-    'required',
-    'businesses outside the EU name their tax number',
-  );
-  assert.equal(
-    errs({
-      buyer: 'business',
-      company: 'Arena Inc',
-      country: 'US',
-      postcode: '10001',
-      vatId: 'abc',
-    }).vatId,
+    errs({ buyer: 'business', company: 'Arena GmbH', vatId: 'abc' }).vatId,
     'invalid_tax_id',
-  );
-  assert.ok(
-    validateLicenseCheckout(
-      form({
-        buyer: 'business',
-        company: 'Arena Inc',
-        country: 'US',
-        postcode: '10001',
-        vatId: '12-3456789',
-      }),
-    ).ok,
   );
   assert.ok(
     validateLicenseCheckout(form({ buyer: 'business', company: 'Arena GmbH' })).ok,
@@ -219,10 +208,6 @@ test('VIES decides about reverse charge; price and VAT follow the buyer', async 
     'txcd_10202003',
   ]);
   assert.deepEqual(await pricing(biz), [13900, 'inclusive', 'oss', 1900, 'none', 'txcd_10202003']);
-  assert.deepEqual(
-    await pricing({ ...biz, country: 'US', postcode: '10001', vatId: '123456789' }),
-    [11583, 'exclusive', 'export', 0, 'reverse', 'txcd_10202003'],
-  );
   const de = await check({ ...biz, vatId: '123456789' });
   assert.ok(de.ok);
   assert.deepEqual(de.buyer.taxId, { type: 'eu_vat', value: 'DE123456789' });
@@ -449,40 +434,36 @@ test('a business in another EU country pays net with reverse charge', async () =
   assert.doesNotMatch(m.html, /FAGG/);
 });
 
-test('a business outside the EU pays net, not taxable in Austria', async () => {
-  const { order, session, customer } = await buy({
-    buyer: 'business',
-    company: 'Arena Inc',
-    country: 'US',
-    postcode: '10001',
-    city: 'New York',
-    vatId: '123456789',
-    quantity: '1',
-  });
-  assert.equal(order.totalCents, 11583);
-  assert.deepEqual(customer.taxId, { type: 'us_ein', value: '12-3456789' });
-  assert.equal(customer.taxExempt, 'reverse');
-  assert.match(session.input.invoice!.footer, /Nicht in Österreich steuerbar.*§ 3a Abs\. 6 UStG/);
-  const [o] = await sql<
-    { vat_regime: string }[]
-  >`SELECT vat_regime FROM orders WHERE id = ${order.id}`;
-  assert.equal(o!.vat_regime, 'export');
+test('no sale outside the EU, even when the form is bypassed', async () => {
+  const v = validateLicenseCheckout(form({ buyer: 'business', company: 'Arena GmbH' }));
+  assert.ok(v.ok);
+  assert.deepEqual(
+    await checkLicenseBuyer(
+      sql,
+      { ...v.data, country: 'US', postcode: '10001' },
+      {
+        grossCents: 13900,
+        vies: fakeVies,
+      },
+    ),
+    { ok: false, errors: { country: 'country' } },
+  );
 });
 
 test('Stripe refuses the tax id: the order is cancelled and the form says which field', async () => {
   const v = validateLicenseCheckout(
     form({
       buyer: 'business',
-      company: 'Arena Ltd',
-      country: 'GB',
-      postcode: 'SW1A 1AA',
-      vatId: 'GB123456789',
+      company: 'Arena Srl',
+      country: 'IT',
+      postcode: '00100',
+      vatId: 'IT12345678901',
     }),
   );
   assert.ok(v.ok);
   const c = await checkLicenseBuyer(sql, v.data, { grossCents: 13900, vies: fakeVies });
   assert.ok(c.ok);
-  const buyer = { ...c.buyer, taxId: { type: 'gb_vat', value: 'GB-INVALID' } };
+  const buyer = { ...c.buyer, taxId: { type: 'eu_vat' as const, value: 'IT-INVALID' } };
   const order = await createLicenseOrder(sql, { locale: 'de', details: v.data, buyer });
   await assert.rejects(
     startLicensePayment(sql, gmbh, order, {

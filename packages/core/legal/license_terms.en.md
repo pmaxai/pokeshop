@@ -12,11 +12,12 @@ As of November 2026
 ## 2. Who can buy
 
 1. Consumers can buy licences if they live in the European Union.
-2. Businesses can buy licences if they are established in the European Union, Switzerland, Liechtenstein, Norway, Iceland, the United Kingdom, the USA, Canada or Australia. Businesses outside the EU state their tax or business number; businesses in the EU outside Austria state their VAT identification number if they want to buy without Austrian VAT. We check EU VAT numbers when you order, in the EU's VAT Information Exchange System (VIES).
+2. Businesses can buy licences if they are established in the European Union. Businesses outside Austria state their VAT identification number if they want to buy at the net price (point 5.3). We check it when you order, in the EU's VAT Information Exchange System (VIES).
+3. Purchases by persons or businesses resident or established outside the European Union are not possible.
 
 ## 3. Ordering and conclusion of the contract
 
-1. On the app page you choose whether you buy as a private person or as a business and the number of licences, and enter your name, where applicable company and tax number, e-mail address and billing address. You accept these licence terms, ask for immediate delivery (point 8) and click "Place order and pay". Until that click you can check and correct all entries.
+1. On the app page you choose whether you buy as a private person or as a business and the number of licences, and enter your name, where applicable company and VAT identification number, e-mail address and billing address. You accept these licence terms, ask for immediate delivery (point 8) and click "Place order and pay". Until that click you can check and correct all entries.
 2. You then complete the payment with our payment provider Stripe. The contract is concluded when the payment arrives.
 3. You receive the licence key, the download link, the invoice and these licence terms by e-mail right after. We store the contract text; with this e-mail you can retrieve it at any time.
 
@@ -33,8 +34,7 @@ As of November 2026
 1. For consumers the prices shown are final prices and include the VAT of the country they live in (20 % in Austria).
 2. Businesses in Austria pay the price including 20 % VAT.
 3. Businesses in another EU country with a valid VAT identification number pay the net price; the VAT liability passes to them (reverse charge). Without a valid number they pay the price including their country's VAT.
-4. Businesses outside the EU pay the net price. The supply is not subject to Austrian VAT; any tax in their own country they account for themselves.
-5. Discount codes for licences apply under the conditions of the respective campaign; one can be redeemed per order. If a code makes a licence free, no payment is due and no invoice is issued. The shop's gift vouchers are not valid for licences.
+4. Discount codes for licences apply under the conditions of the respective campaign; one can be redeemed per order. If a code makes a licence free, no payment is due and no invoice is issued. The shop's gift vouchers are not valid for licences.
 
 ## 6. Payment and invoice
 
@@ -93,7 +93,7 @@ I/We (\*) hereby give notice that I/We (\*) withdraw from my/our (\*) contract f
 ## 11. Data protection
 
 1. The controller for the data of a licence purchase is {{seller.name}} (contact: {{seller.email}}). We have not appointed a data protection officer because we are not required to.
-2. We process your name, where applicable company and tax or VAT identification number, e-mail address, billing address, number of licences, payment status and invoice data. We check an EU VAT identification number when you order through VIES, the European Commission's service; only the number is sent. We count how often the app was downloaded through your download link.
+2. We process your name, where applicable company and VAT identification number, e-mail address, billing address, number of licences, payment status and invoice data. We check a VAT identification number when you order through VIES, the European Commission's service; only the number is sent. We count how often the app was downloaded through your download link.
 3. The licence keys are managed by our licence service. For each licence it stores name, e-mail address and order number, the key in encrypted form, and on each activation a random device identifier created by the app, the device name (such as the phone model), the app version and the times of activation and of the last check. The app asks at start and at most once an hour whether the licence is still valid; it only sends a licence token and the app version. The service uses your IP address only briefly in memory to fend off too many activation attempts; it is not stored.
 4. Processors: Stripe (payment, VAT calculation and invoice; Stripe Payments Europe, Ltd., Dublin, Ireland; for fraud prevention also as a controller in its own right), Microsoft (sending e-mails through Microsoft 365; Microsoft Ireland Operations Limited, Dublin, Ireland) and the operator of {{company.public_name}}, who runs the website, the order form and the server the licence service also runs on (data centre in Europe, see the shop's privacy policy: {{privacy_url}}). Stripe and Microsoft may also process data in the USA; they are certified under the EU-US Data Privacy Framework and additionally use standard contractual clauses.
 5. The legal bases are the performance of the contract (Art. 6 (1) (b) GDPR), our legal obligations to keep invoices and check VAT identification numbers (Art. 6 (1) (c) GDPR) and our legitimate interest in protecting the licences against misuse (Art. 6 (1) (f) GDPR).

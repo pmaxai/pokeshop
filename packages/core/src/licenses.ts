@@ -19,7 +19,7 @@ import { alertShop, enqueueMail, type MailAttachment } from './outbox.ts';
 import type { PaymentProvider, SessionInfo } from './payments.ts';
 import { STRIPE_MIN_SESSION_MINUTES } from './reservation.ts';
 import { licenseCountryAllowed, parseTaxId, type TaxId, type ViesChecker } from './tax-id.ts';
-import { HOME_COUNTRY, isEuCountry, STANDARD_VAT_RATES } from './vat.ts';
+import { HOME_COUNTRY, STANDARD_VAT_RATES } from './vat.ts';
 import { findCode, holdRedemptions, licenseDiscount, type CodeProblem } from './vouchers.ts';
 
 export const APP_NAME = 'ScanPM';
@@ -98,13 +98,12 @@ export function validateLicenseCheckout(
     errors.postcode = 'invalid_postcode';
   }
   if (business && !errors.company && !text('company')) errors.company = 'required';
-  if (hasCountry && !errors.country && !licenseCountryAllowed(country, business)) {
-    errors.country = licenseCountryAllowed(country, true) ? 'consumer_eu_only' : 'country';
+  if (hasCountry && !errors.country && !licenseCountryAllowed(country)) {
+    errors.country = 'country';
   }
   if (business && hasCountry && !errors.vatId && !errors.country) {
     const id = text('vatId');
-    if (!id && !isEuCountry(country)) errors.vatId = 'required';
-    else if (id && !parseTaxId(country, id)) errors.vatId = 'invalid_tax_id';
+    if (id && !parseTaxId(country, id)) errors.vatId = 'invalid_tax_id';
   }
   if (r.success && Object.keys(errors).length === 0) return { ok: true, data: r.data };
   return { ok: false, errors };
@@ -121,13 +120,14 @@ export const LICENSE_TAX_CODES = {
 } as const;
 
 /**
- * The set price includes Austrian VAT. Business buyers abroad pay it without (they account
- * for the tax themselves): € 139 → € 115.83.
+ * The set price includes Austrian VAT. Business buyers elsewhere in the EU with a VAT id pay
+ * it without (reverse charge): € 139 → € 115.83.
  */
 export const netLicensePrice = (grossCents: number) =>
   Math.round((grossCents * 10_000) / (10_000 + STANDARD_VAT_RATES[HOME_COUNTRY]));
 
-export type LicenseRegime = 'domestic' | 'oss' | 'reverse_charge' | 'export';
+/** Orders from before licences were EU-only can also have 'export' (non-EU businesses). */
+export type LicenseRegime = 'domestic' | 'oss' | 'reverse_charge';
 
 export type LicensePricing = {
   /** Per licence, as on the payment page: gross ('inclusive') or net ('exclusive'). */
@@ -148,8 +148,7 @@ export type LicensePricing = {
  *   the buyer's country's (OSS).
  * - Businesses elsewhere in the EU with a valid VAT id: net price, reverse charge.
  * - EU businesses without a VAT id: as consumers.
- * - Businesses outside the EU (CH, LI, NO, IS, GB, US, CA, AU): net price, not taxable in
- *   Austria (place of supply is the buyer's seat).
+ * Only EU countries are allowed (licenseCountryAllowed).
  */
 export function licensePricing(input: {
   grossCents: number;
@@ -162,12 +161,11 @@ export function licensePricing(input: {
   const code = input.business ? LICENSE_TAX_CODES.business : LICENSE_TAX_CODES.consumer;
   const rateOf = (c: string) =>
     input.rates?.[c] ?? (STANDARD_VAT_RATES as Record<string, number>)[c] ?? 0;
-  const eu = isEuCountry(input.country);
-  if (input.business && input.country !== HOME_COUNTRY && (!eu || input.taxId)) {
+  if (input.business && input.country !== HOME_COUNTRY && input.taxId) {
     return {
       unitCents: netLicensePrice(input.grossCents),
       behavior: 'exclusive',
-      regime: eu ? 'reverse_charge' : 'export',
+      regime: 'reverse_charge',
       taxCountry: null,
       rateBp: 0,
       taxExempt: 'reverse',
@@ -207,22 +205,16 @@ export async function checkLicenseBuyer(
   const business = d.buyer === 'business';
   const [c] = await db<{ code: string; vat_rate_bp: number }[]>`
     SELECT code, vat_rate_bp FROM countries WHERE code = ${d.country}`;
-  if (!c || !licenseCountryAllowed(c.code, business)) {
-    return { ok: false, errors: { country: business ? 'country' : 'consumer_eu_only' } };
-  }
+  if (!c || !licenseCountryAllowed(c.code)) return { ok: false, errors: { country: 'country' } };
   let taxId: TaxId | null = null;
   let viesName: string | null = null;
   if (business && d.vatId) {
     taxId = parseTaxId(c.code, d.vatId);
     if (!taxId) return { ok: false, errors: { vatId: 'invalid_tax_id' } };
-    if (taxId.type === 'eu_vat') {
-      const v = await input.vies(taxId.value);
-      if (v.status === 'invalid') return { ok: false, errors: { vatId: 'vat_id_invalid' } };
-      if (v.status === 'unavailable') return { ok: false, errors: { vatId: 'vies_unavailable' } };
-      viesName = v.name;
-    }
-  } else if (business && !isEuCountry(c.code)) {
-    return { ok: false, errors: { vatId: 'required' } };
+    const v = await input.vies(taxId.value);
+    if (v.status === 'invalid') return { ok: false, errors: { vatId: 'vat_id_invalid' } };
+    if (v.status === 'unavailable') return { ok: false, errors: { vatId: 'vies_unavailable' } };
+    viesName = v.name;
   }
   const pricing = licensePricing({
     grossCents: input.grossCents,
@@ -418,11 +410,7 @@ export function licenseInvoiceFooter(
       ? de
         ? 'Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge, Art. 196 MwSt-RL).'
         : 'Reverse charge: VAT to be accounted for by the recipient (Art. 196 VAT Directive).'
-      : regime === 'export'
-        ? de
-          ? 'Nicht in Österreich steuerbar: Leistungsort ist der Sitz des Leistungsempfängers (§ 3a Abs. 6 UStG).'
-          : 'Not subject to Austrian VAT: the place of supply is the recipient’s seat (§ 3a (6) UStG).'
-        : '';
+      : '';
   const date = de
     ? 'Leistungsdatum = Rechnungsdatum (Lieferung der Lizenz per E-Mail).'
     : 'Date of supply = invoice date (licence delivered by e-mail).';
@@ -461,7 +449,7 @@ export async function createLicenseOrder(
   return sql.begin(async (tx) => {
     const [country] = await tx<{ code: string }[]>`
       SELECT code FROM countries WHERE code = ${b.country}`;
-    if (!country || !licenseCountryAllowed(country.code, b.business)) {
+    if (!country || !licenseCountryAllowed(country.code)) {
       throw new LicenseCheckoutRejected('country');
     }
     const goods = pricing.unitCents * d.quantity;
