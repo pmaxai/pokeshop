@@ -1,14 +1,9 @@
-// Business buyers' tax ids: format per country, Stripe's id type, and the live check of EU VAT
-// ids against VIES (the EU Commission's VAT Information Exchange System).
+// Business buyers' VAT ids: format per EU country, and the live check against VIES (the EU
+// Commission's VAT Information Exchange System).
 import { isEuCountry } from './vat.ts';
 
-/** Countries outside the EU where businesses may buy licences (no consumers there). */
-export const LICENSE_BUSINESS_COUNTRIES = ['CH', 'LI', 'NO', 'IS', 'GB', 'US', 'CA', 'AU'] as const;
-
-export function licenseCountryAllowed(country: string, business: boolean): boolean {
-  if (isEuCountry(country)) return true;
-  return business && (LICENSE_BUSINESS_COUNTRIES as readonly string[]).includes(country);
-}
+/** Licences are sold in the EU only, to private persons and businesses alike. */
+export const licenseCountryAllowed = (country: string): boolean => isEuCountry(country);
 
 /** VIES and VAT ids use EL for Greece. */
 export const vatPrefix = (country: string) => (country === 'GR' ? 'EL' : country);
@@ -45,65 +40,23 @@ const EU_VAT: Record<string, RegExp> = {
 };
 
 export type TaxId = {
-  /** Stripe's tax id type: eu_vat, ch_vat, gb_vat, us_ein … */
-  type: string;
-  /** Normalised as Stripe expects it (EU: prefix and number, no spaces or dots). */
+  /** Stripe's tax id type: always eu_vat. */
+  type: 'eu_vat';
+  /** Normalised as Stripe expects it: prefix and number, no spaces or dots. */
   value: string;
 };
 
 /**
- * Reads what the buyer typed as a tax id of their country. Returns null when it cannot be
- * one: wrong country prefix or wrong format.
+ * Reads what the buyer typed as a VAT id of their EU country. Returns null when it cannot be
+ * one: not an EU country, wrong country prefix or wrong format.
  */
 export function parseTaxId(country: string, raw: string): TaxId | null {
   const compact = raw.toUpperCase().replace(/[\s.\-/]/g, '');
-  if (!compact) return null;
-  if (isEuCountry(country)) {
-    const prefix = vatPrefix(country);
-    // Typed with or without the prefix; another country's prefix fails the format check.
-    const number = compact.startsWith(prefix) ? compact.slice(prefix.length) : compact;
-    return EU_VAT[prefix]?.test(number) ? { type: 'eu_vat', value: `${prefix}${number}` } : null;
-  }
-  switch (country) {
-    case 'CH':
-    case 'LI': {
-      // CHE-123.456.789 (UID), with MWST/TVA/IVA once registered for VAT. Liechtenstein
-      // businesses have Swiss-style UIDs or a 5-digit VAT number.
-      const m = /^CHE(\d{9})(MWST|TVA|IVA)?$/.exec(compact);
-      if (m) {
-        const formatted = `CHE-${m[1]!.slice(0, 3)}.${m[1]!.slice(3, 6)}.${m[1]!.slice(6)}`;
-        if (country === 'LI') return { type: 'li_uid', value: `CHE${m[1]}` };
-        return m[2]
-          ? { type: 'ch_vat', value: `${formatted} ${m[2]}` }
-          : { type: 'ch_uid', value: formatted };
-      }
-      if (country === 'LI' && /^\d{5}$/.test(compact)) return { type: 'li_vat', value: compact };
-      return null;
-    }
-    case 'NO': {
-      const m = /^(?:NO)?(\d{9})(MVA)?$/.exec(compact);
-      return m ? { type: 'no_vat', value: `${m[1]}MVA` } : null;
-    }
-    case 'IS':
-      return /^\d{5,6}$/.test(compact) ? { type: 'is_vat', value: compact } : null;
-    case 'GB': {
-      const m = /^(?:GB)?(\d{9}|\d{12})$/.exec(compact);
-      return m ? { type: 'gb_vat', value: `GB${m[1]}` } : null;
-    }
-    case 'US':
-      return /^\d{9}$/.test(compact)
-        ? { type: 'us_ein', value: `${compact.slice(0, 2)}-${compact.slice(2)}` }
-        : null;
-    case 'CA':
-      // Business number: 9 digits (with a program account, e.g. 123456789RT0001).
-      return /^\d{9}([A-Z]{2}\d{4})?$/.test(compact)
-        ? { type: 'ca_bn', value: compact.slice(0, 9) }
-        : null;
-    case 'AU':
-      return /^\d{11}$/.test(compact) ? { type: 'au_abn', value: compact } : null;
-    default:
-      return null;
-  }
+  if (!compact || !isEuCountry(country)) return null;
+  const prefix = vatPrefix(country);
+  // Typed with or without the prefix; another country's prefix fails the format check.
+  const number = compact.startsWith(prefix) ? compact.slice(prefix.length) : compact;
+  return EU_VAT[prefix]?.test(number) ? { type: 'eu_vat', value: `${prefix}${number}` } : null;
 }
 
 // ---------------------------------------------------------------------------

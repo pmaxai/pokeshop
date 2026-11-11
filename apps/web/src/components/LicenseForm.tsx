@@ -13,9 +13,8 @@ export type LicenseFormProps = {
   values: Record<string, string>;
   /** Messages already translated, by field. */
   errors: Record<string, string>;
+  /** Licences are sold in the EU only. */
   euCountries: Country[];
-  /** Business buyers only (CH, LI, NO, IS, GB, US, CA, AU). */
-  otherCountries: Country[];
   grossCents: number;
   netCents: number;
   max: number;
@@ -27,10 +26,10 @@ export type LicenseFormProps = {
 const HOME = 'AT';
 
 /**
- * The licence order form. Private or business buyer decides which countries are offered,
- * whether company and tax id are asked for, and whether the price is shown with VAT or net
- * (business abroad: reverse charge or not taxable in Austria). The server checks all of it
- * again, and VIES the EU VAT id.
+ * The licence order form, for buyers in the EU. Private or business buyer decides whether
+ * company and VAT id are asked for, and whether the price is shown with VAT or net (business
+ * elsewhere in the EU with a VAT id: reverse charge). The server checks all of it again, and
+ * VIES the VAT id.
  */
 export function LicenseForm(p: LicenseFormProps) {
   const t = useTranslations('App.form');
@@ -40,27 +39,14 @@ export function LicenseForm(p: LicenseFormProps) {
   const [vatId, setVatId] = useState(p.values.vatId ?? '');
   const [quantity, setQuantity] = useState(p.values.quantity || '1');
 
-  const eu = p.euCountries.some((c) => c.code === country);
-  const net = business && country !== '' && country !== HOME && (!eu || vatId.trim() !== '');
+  const net = business && country !== '' && country !== HOME && vatId.trim() !== '';
   const unit = net ? p.netCents : p.grossCents;
   const n = Number(quantity);
   const validQty = Number.isInteger(n) && n >= 1 && n <= p.max;
-  const taxNote = !net ? t('inclVat') : eu ? t('reverseCharge') : t('notTaxable');
-  const taxIdLabel = eu || country === '' ? t('vatId') : t('taxId');
-  const taxIdHint =
-    country === HOME
-      ? t('vatIdHintHome')
-      : eu || country === ''
-        ? t('vatIdHintEu')
-        : t(`taxIdHint.${country}` as 'taxIdHint.US');
+  const taxNote = net ? t('reverseCharge') : t('inclVat');
+  const vatIdHint = country === HOME ? t('vatIdHintHome') : t('vatIdHintEu');
 
   const countryError = country === (p.values.country ?? '') ? p.errors.country : undefined;
-
-  const chooseBuyer = (b: boolean) => {
-    setBusiness(b);
-    // Private buyers only in the EU.
-    if (!b && country && !p.euCountries.some((c) => c.code === country)) setCountry('');
-  };
 
   const field = (
     name: string,
@@ -124,7 +110,7 @@ export function LicenseForm(p: LicenseFormProps) {
               name="buyer"
               value="consumer"
               checked={!business}
-              onChange={() => chooseBuyer(false)}
+              onChange={() => setBusiness(false)}
             />
             <span>
               <strong>{t('consumer')}</strong>
@@ -137,7 +123,7 @@ export function LicenseForm(p: LicenseFormProps) {
               name="buyer"
               value="business"
               checked={business}
-              onChange={() => chooseBuyer(true)}
+              onChange={() => setBusiness(true)}
             />
             <span>
               <strong>{t('business')}</strong>
@@ -175,30 +161,11 @@ export function LicenseForm(p: LicenseFormProps) {
               aria-describedby={countryError ? 'app-country-err' : 'app-country-hint'}
             >
               <option value="">–</option>
-              {business ? (
-                <>
-                  <optgroup label={t('countriesEu')}>
-                    {p.euCountries.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label={t('countriesOther')}>
-                    {p.otherCountries.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                </>
-              ) : (
-                p.euCountries.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))
-              )}
+              {p.euCountries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
             </select>
             {countryError ? (
               <small id="app-country-err" className="field__error">
@@ -211,10 +178,10 @@ export function LicenseForm(p: LicenseFormProps) {
             )}
           </label>
           {business &&
-            field('vatId', taxIdLabel, {
+            field('vatId', t('vatId'), {
               autoComplete: 'off',
-              required: country !== '' && !eu,
-              hint: taxIdHint,
+              required: false,
+              hint: vatIdHint,
               value: vatId,
               onChange: setVatId,
             })}

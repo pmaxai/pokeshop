@@ -4,7 +4,7 @@ import { licensePricing, netLicensePrice, stripeTaxProblem } from '../src/licens
 import { fakeProvider, paymentsFromEnv, stripeProvider } from '../src/payments.ts';
 import { licenseCountryAllowed, parseTaxId, viesChecker } from '../src/tax-id.ts';
 
-test('tax ids are read per country and written as Stripe expects them', () => {
+test('EU VAT ids are read per country and written as Stripe expects them', () => {
   const cases: [string, string, unknown][] = [
     ['AT', 'atu 1234 5678', { type: 'eu_vat', value: 'ATU12345678' }],
     ['AT', '12345678', null],
@@ -15,47 +15,38 @@ test('tax ids are read per country and written as Stripe expects them', () => {
     ['GR', 'EL123456789', { type: 'eu_vat', value: 'EL123456789' }],
     ['FR', 'FR40303265045', { type: 'eu_vat', value: 'FR40303265045' }],
     ['NL', 'NL123456789B01', { type: 'eu_vat', value: 'NL123456789B01' }],
-    ['CH', 'CHE-123.456.789 MWST', { type: 'ch_vat', value: 'CHE-123.456.789 MWST' }],
-    ['CH', 'che123456789', { type: 'ch_uid', value: 'CHE-123.456.789' }],
-    ['LI', 'CHE-123.456.789', { type: 'li_uid', value: 'CHE123456789' }],
-    ['LI', '12345', { type: 'li_vat', value: '12345' }],
-    ['NO', '123 456 789', { type: 'no_vat', value: '123456789MVA' }],
-    ['IS', '123456', { type: 'is_vat', value: '123456' }],
-    ['GB', 'GB 123 4567 89', { type: 'gb_vat', value: 'GB123456789' }],
-    ['US', '12-3456789', { type: 'us_ein', value: '12-3456789' }],
-    ['US', '1234', null],
-    ['CA', '123456789RT0001', { type: 'ca_bn', value: '123456789' }],
-    ['AU', '51 824 753 556', { type: 'au_abn', value: '51824753556' }],
-    ['JP', '1234567890123', null],
+    // Outside the EU there is nothing to read: licences are EU-only.
+    ['CH', 'CHE-123.456.789 MWST', null],
+    ['GB', 'GB123456789', null],
+    ['US', '12-3456789', null],
   ];
   for (const [country, raw, want] of cases) {
     assert.deepEqual(parseTaxId(country, raw), want, `${country} ${raw}`);
   }
 });
 
-test('who may buy: consumers in the EU, businesses also in eight countries outside', () => {
-  assert.equal(licenseCountryAllowed('FR', false), true);
-  assert.equal(licenseCountryAllowed('CH', false), false);
-  assert.equal(licenseCountryAllowed('CH', true), true);
-  assert.equal(licenseCountryAllowed('AU', true), true);
-  assert.equal(licenseCountryAllowed('JP', true), false);
+test('who may buy: private persons and businesses in the EU only', () => {
+  assert.equal(licenseCountryAllowed('FR'), true);
+  assert.equal(licenseCountryAllowed('AT'), true);
+  for (const c of ['CH', 'LI', 'NO', 'IS', 'GB', 'US', 'CA', 'AU', 'JP']) {
+    assert.equal(licenseCountryAllowed(c), false, c);
+  }
 });
 
-test('price by buyer: gross with VAT, net for businesses abroad', () => {
+test('price by buyer: gross with VAT, net for EU businesses abroad with a VAT id', () => {
   assert.equal(netLicensePrice(13900), 11583);
   const p = (business: boolean, country: string, taxId: boolean) =>
     licensePricing({
       grossCents: 13900,
       business,
       country,
-      taxId: taxId ? { type: 'x', value: 'x' } : null,
+      taxId: taxId ? { type: 'eu_vat', value: 'x' } : null,
     });
   assert.equal(p(false, 'IT', false).rateBp, 2200, 'the buyer’s country’s rate (OSS)');
   assert.equal(p(true, 'AT', true).unitCents, 13900, 'Austrian businesses pay Austrian VAT');
   assert.equal(p(true, 'IT', true).regime, 'reverse_charge');
   assert.equal(p(true, 'IT', false).regime, 'oss', 'without a VAT id as a consumer');
-  assert.equal(p(true, 'CA', true).regime, 'export');
-  assert.equal(p(true, 'CA', true).taxCountry, null);
+  assert.equal(p(true, 'IT', true).taxCountry, null);
 });
 
 /** A stand-in for fetch that answers the VIES request. */

@@ -2,6 +2,14 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-11 · Licences are sold in the EU only
+
+Private persons and businesses alike must live or be established in the EU
+(`licenseCountryAllowed`); the form offers EU countries only and the server refuses others. The
+business countries outside the EU (CH, LI, NO, IS, GB, US, CA, AU) are gone, and with them
+their tax id formats and the `export` regime for licences. Tax ids are EU VAT ids only, checked
+with VIES. Older orders may still carry `export`; the database keeps the value.
+
 ## 2026-11-10 · Sold vouchers are money, promotional vouchers and codes are discounts
 
 There are two kinds of voucher, told apart by `vouchers.origin`, and they are booked differently:
@@ -51,8 +59,8 @@ and rate replace the estimate on the order.
 
 Prices: the set price includes Austrian VAT. Consumers (EU only) and Austrian businesses pay it
 (Stripe Tax applies Austrian or OSS VAT). Businesses elsewhere in the EU with a VAT id that VIES
-confirms, and businesses in CH, LI, NO, IS, GB, US, CA and AU (tax id required), pay the price
-without Austrian VAT, as an exclusive net price on a customer with `tax_exempt = reverse`.
+confirms (until 2026-11-11 also businesses in CH, LI, NO, IS, GB, US, CA and AU), pay the
+price without Austrian VAT, as an exclusive net price on a customer with `tax_exempt = reverse`.
 A VAT id VIES cannot confirm right now is not taken on trust: the form asks to try again or to
 buy with VAT. Licence mails come from the GmbH's mailbox (`license_seller.email`), with its
 details in the footer and its licence terms (`license_terms`) instead of the shop's AGB.

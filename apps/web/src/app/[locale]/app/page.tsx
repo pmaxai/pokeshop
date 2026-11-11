@@ -9,7 +9,6 @@ import {
   MAX_LICENSES_PER_ORDER,
   netLicensePrice,
 } from '@pokeshop/core/licenses';
-import { LICENSE_BUSINESS_COUNTRIES } from '@pokeshop/core/tax-id';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, licenseSalesConfigured } from '@/server/config';
@@ -97,15 +96,11 @@ export default async function AppPage({ params, searchParams }: Props) {
   );
 
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
-  const rows = await db()<{ code: string; is_eu: boolean }[]>`
-    SELECT code, is_eu FROM countries
-     WHERE is_eu OR code = ANY(${LICENSE_BUSINESS_COUNTRIES as unknown as string[]}::text[])`;
-  const byName = (list: { code: string }[]) =>
-    list
-      .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
-      .sort((a, b) => a.name.localeCompare(b.name, locale));
-  const euCountries = byName(rows.filter((r) => r.is_eu));
-  const otherCountries = byName(rows.filter((r) => !r.is_eu));
+  // Licences are sold in the EU only.
+  const rows = await db()<{ code: string }[]>`SELECT code FROM countries WHERE is_eu`;
+  const euCountries = rows
+    .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
+    .sort((a, b) => a.name.localeCompare(b.name, locale));
   const store = sales.playStoreUrl !== null;
   const sellerAddress = `${seller.street}, ${seller.postcode} ${seller.city}`;
 
@@ -231,7 +226,6 @@ export default async function AppPage({ params, searchParams }: Props) {
             values={values}
             errors={errorTexts}
             euCountries={euCountries}
-            otherCountries={otherCountries}
             grossCents={sales.priceCents}
             netCents={netLicensePrice(sales.priceCents)}
             max={MAX_LICENSES_PER_ORDER}
