@@ -1,6 +1,6 @@
 # Daily work in the admin
 
-Sign in at `https://pokemonkarten.at/admin` with your Microsoft account. Staff can pack, ship and
+Sign in at `https://overpricedcardboard.com/admin` with your Microsoft account. Staff can pack, ship and
 handle withdrawals; refunds and settings need the owner role.
 
 ## Packing and shipping

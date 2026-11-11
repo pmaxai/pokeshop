@@ -1,7 +1,7 @@
 {
   "name": "pokeshop",
   "private": true,
-  "description": "pokemonkarten.at \u2013 online shop for single Pok\u00e9mon TCG cards",
+  "description": "Overpriced Cardboard \u2013 online shop for single Pok\u00e9mon TCG cards",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.28.0",

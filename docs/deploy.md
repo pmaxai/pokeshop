@@ -34,7 +34,7 @@ internet ──► Caddy (infra/caddy) ──► pokeshop-web          ──►
   ```
 
 - Ports 80 and 443 (TCP) and 443 (UDP, HTTP/3) open in the Exoscale security group.
-- DNS: `pokemonkarten.at`, `www.pokemonkarten.at` and `staging.pokemonkarten.at` point to the
+- DNS: `overpricedcardboard.com`, `www.overpricedcardboard.com` and `staging.overpricedcardboard.com` point to the
   vServer (A and, if used, AAAA records). Caddy fetches certificates automatically once DNS resolves.
 
 ## 2. Databases on the PostgreSQL server
@@ -145,7 +145,7 @@ The worker log shows at start what it uses, e.g.
 `[worker] started (payments: stripe, mail: graph)`. Without Graph settings mails stay queued in
 the database and go out as soon as Graph is configured.
 
-Check: `infra/stack.sh production ps` (web and worker healthy), `curl -fsS https://pokemonkarten.at/api/health`.
+Check: `infra/stack.sh production ps` (web and worker healthy), `curl -fsS https://overpricedcardboard.com/api/health`.
 
 ## 7. First start
 
@@ -156,7 +156,7 @@ Check: `infra/stack.sh production ps` (web and worker healthy), `curl -fsS https
 3. Create the scanning app's key under _API-Schlüssel_ (owner only). The secret is shown once.
    Without the admin sign-in configured yet, the same works from the server:
    `infra/stack.sh production exec worker node apps/worker/src/cli.ts api-client create "Scanner Lager"`
-4. Point the scanning app at `https://staging.pokemonkarten.at/api/v1` first and send a test card;
+4. Point the scanning app at `https://staging.overpricedcardboard.com/api/v1` first and send a test card;
    it appears in the staging shop and under _Produkte_.
 
 ## 8. Roll back
@@ -219,10 +219,10 @@ are sent from the GmbH's mailbox set in Admin › App (`info@abc-it.at` to start
 mailbox must be in the same Microsoft 365 tenant and inside the mail app's scope
 (docs/m365-setup.md, A.3).
 
-Test on staging: buy as a private person in Austria (20 % VAT in the total), as a German
-business with a VAT id (net, reverse charge) and as a US business (net); check the invoice PDF in
-the licence mail and refund one order in the admin (Stripe credit note attached to the refund
-mail).
+Test on staging: buy as a private person in Austria (20 % VAT in the total) and as a German
+business with a VAT id (net, reverse charge); check the invoice PDF in the licence mail and refund
+one order in the admin (Stripe credit note attached to the refund mail). Countries outside the EU
+are not offered.
 
 ## 10. Backups and restore test
 

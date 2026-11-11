@@ -56,7 +56,7 @@ const HINTS: Record<number, string> = {
     'ENTRA_CLIENT_ID is not an app in this tenant. Check ENTRA_CLIENT_ID and ENTRA_TENANT_ID.',
   90002: 'ENTRA_TENANT_ID was not found. Use the "Directory (tenant) ID" of the app registration.',
   50105:
-    'The account is not assigned to the app. Enterprise applications → pokemonkarten-admin → ' +
+    'The account is not assigned to the app. Enterprise applications → overpricedcardboard-admin → ' +
     'Users and groups → add the user with a role.',
   65001: 'Consent is missing. API permissions → "Grant admin consent".',
   54005: 'The sign-in code was used twice (e.g. the callback page was reloaded). Sign in again.',

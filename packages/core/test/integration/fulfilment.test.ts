@@ -45,16 +45,16 @@ const company = {
   postcode: '2440',
   city: 'Moosbrunn',
   country: 'AT',
-  email: 'bestellung@pokemonkarten.at',
+  email: 'order@overpricedcardboard.com',
   vat_id: 'ATU79907228',
   register_number: 'FN 614039z',
   register_court: 'Landesgericht Korneuburg',
 };
 const ctx = () => ({
-  baseUrl: 'https://pokemonkarten.at',
+  baseUrl: 'https://overpricedcardboard.com',
   mediaDir,
   company,
-  replyTo: 'bestellung@pokemonkarten.at',
+  replyTo: 'order@overpricedcardboard.com',
 });
 
 class Memory implements MailTransport {

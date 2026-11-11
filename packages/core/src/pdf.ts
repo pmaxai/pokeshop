@@ -27,7 +27,7 @@ function newDoc(title: string, author: string) {
   return new PDFDocument({
     size: 'A4',
     margins: { top: 56, bottom: 64, left: 56, right: 56 },
-    info: { Title: title, Author: author, Creator: 'pokemonkarten.at' },
+    info: { Title: title, Author: author, Creator: 'Overpriced Cardboard' },
     lang: 'de-AT',
     bufferPages: true,
   } as PDFKit.PDFDocumentOptions);
@@ -197,8 +197,8 @@ export async function renderInvoicePdf(inv: InvoiceData): Promise<Buffer> {
     .font('Helvetica-Bold')
     .fontSize(18)
     .fillColor(INK)
-    .text('pokemonkarten', left, 56, { continued: true });
-  doc.fillColor(ACCENT).text('.at');
+    .text('Overpriced', left, 56, { continued: true });
+  doc.fillColor(ACCENT).text(' Cardboard');
   doc.font('Helvetica').fontSize(8.5).fillColor(MUTED);
   const seller = companyLines(inv.company, L);
   doc.text(seller.join('\n'), left + width / 2, 58, {
@@ -365,7 +365,7 @@ const VOUCHER_TEXT = {
     title: 'Gutschein',
     for: (n: string) => `für ${n}`,
     code: 'Gutscheincode',
-    where: 'Einlösbar für Karten auf pokemonkarten.at',
+    where: 'Einlösbar für Karten auf overpricedcardboard.com',
     noExpiry: 'Ohne Ablaufdatum',
     until: (d: string) => `Gültig bis ${d}`,
     howTitle: 'So löst du den Gutschein ein',
@@ -380,7 +380,7 @@ const VOUCHER_TEXT = {
     title: 'Gift voucher',
     for: (n: string) => `for ${n}`,
     code: 'Voucher code',
-    where: 'Redeemable for cards on pokemonkarten.at',
+    where: 'Redeemable for cards on overpricedcardboard.com',
     noExpiry: 'No expiry date',
     until: (d: string) => `Valid until ${d}`,
     howTitle: 'How to redeem the voucher',
@@ -406,7 +406,7 @@ const printable = (s: string) =>
 export async function renderVoucherPdf(v: VoucherPdfData): Promise<Buffer> {
   const t = VOUCHER_TEXT[v.locale];
   const L = v.locale;
-  const doc = newDoc(`${t.title} ${v.code}`, 'pokemonkarten.at');
+  const doc = newDoc(`${t.title} ${v.code}`, 'Overpriced Cardboard');
   const left = doc.page.margins.left;
   const width = doc.page.width - left - doc.page.margins.right;
   const top = 56;
@@ -425,8 +425,8 @@ export async function renderVoucherPdf(v: VoucherPdfData): Promise<Buffer> {
     .font('Helvetica-Bold')
     .fontSize(15)
     .fillColor(INK)
-    .text('pokemonkarten', inner, top + 30, { continued: true });
-  doc.fillColor(ACCENT).text('.at');
+    .text('Overpriced', inner, top + 30, { continued: true });
+  doc.fillColor(ACCENT).text(' Cardboard');
   doc
     .font('Helvetica')
     .fontSize(11)

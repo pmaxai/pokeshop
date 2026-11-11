@@ -16,7 +16,7 @@ const settings: EntraSettings = {
   tenantId: TENANT,
   clientId: CLIENT,
   clientSecret: 'abC8Q~exampleSecretValue.with-chars_0123456',
-  redirectUri: 'https://staging.pokemonkarten.at/admin/auth/callback',
+  redirectUri: 'https://staging.overpricedcardboard.com/admin/auth/callback',
 };
 
 test('settings are trimmed and checked for typical mix-ups', () => {
@@ -31,8 +31,14 @@ test('settings are trimmed and checked for typical mix-ups', () => {
   assert.deepEqual(s, settings);
   assert.equal(entraSettingsProblem(settings), null);
   assert.equal(entraSettingsFromEnv({ ENTRA_TENANT_ID: TENANT }, 'x'), null);
-  assert.equal(entraSettingsProblem({ ...settings, tenantId: 'pokemonkarten.at' }), 'tenant_id');
-  assert.equal(entraSettingsProblem({ ...settings, clientId: 'pokemonkarten-admin' }), 'client_id');
+  assert.equal(
+    entraSettingsProblem({ ...settings, tenantId: 'overpricedcardboard.com' }),
+    'tenant_id',
+  );
+  assert.equal(
+    entraSettingsProblem({ ...settings, clientId: 'overpricedcardboard-admin' }),
+    'client_id',
+  );
   // the "Secret ID" column of a client secret is a GUID
   assert.equal(
     entraSettingsProblem({ ...settings, clientSecret: '9a8b7c6d-5e4f-3a2b-1c0d-ffeeddccbbaa' }),

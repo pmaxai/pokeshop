@@ -3,7 +3,7 @@ import './admin.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: { default: 'Admin', template: '%s | Admin pokemonkarten.at' },
+  title: { default: 'Admin', template: '%s | Admin Overpriced Cardboard' },
   robots: { index: false, follow: false },
 };
 

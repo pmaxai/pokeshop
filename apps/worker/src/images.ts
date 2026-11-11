@@ -34,7 +34,7 @@ export function safeDownload(url: string, maxBytes = MAX_BYTES, redirects = 2): 
       {
         method: 'GET',
         timeout: 15_000,
-        headers: { 'User-Agent': 'pokemonkarten.at image fetcher', Accept: 'image/*' },
+        headers: { 'User-Agent': 'overpricedcardboard.com image fetcher', Accept: 'image/*' },
         // Every address the connection may use is checked, so DNS cannot point it inside.
         lookup: (host, opts, cb) =>
           lookup(host, { ...opts, all: true }, (err, addrs) => {

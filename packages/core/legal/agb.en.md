@@ -4,7 +4,7 @@ As of November 2026. This is a translation for your convenience; only the German
 
 ## 1. Scope and contracting party
 
-1. These terms and conditions apply to all orders placed in the online shop pokemonkarten.at.
+1. These terms and conditions apply to all orders placed in the online shop overpricedcardboard.com.
 2. Your contracting party is the operator of {{company.public_name}}, {{company.address}}, e-mail: {{company.email}} ("we", "us"). The operator's name and all further details are given in the legal notice: {{imprint_url}}.
 3. A consumer within the meaning of these terms is anyone who does not buy the cards for their business (§ 1 KSchG). Provisions that apply to consumers only are marked as such. Differing terms of customers apply only if we expressly agree to them in writing.
 

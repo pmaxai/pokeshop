@@ -20,7 +20,7 @@ export async function LegalPage({ kind, locale }: { kind: LegalKind; locale: Loc
   if (!text) {
     return (
       <div className="wrap prose">
-        <p>{t('missing', { email: String(company.email ?? 'bestellung@pokemonkarten.at') })}</p>
+        <p>{t('missing', { email: String(company.email ?? 'order@overpricedcardboard.com') })}</p>
       </div>
     );
   }

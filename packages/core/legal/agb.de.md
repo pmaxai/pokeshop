@@ -4,7 +4,7 @@ Stand: November 2026
 
 ## 1. Geltungsbereich und Vertragspartner
 
-1. Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Bestellungen über den Onlineshop pokemonkarten.at.
+1. Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Bestellungen über den Onlineshop overpricedcardboard.com.
 2. Ihr Vertragspartner ist der Betreiber von {{company.public_name}}, {{company.address}}, E-Mail: {{company.email}} („wir“, „uns“). Den Namen und alle weiteren Angaben zum Betreiber finden Sie im Impressum: {{imprint_url}}.
 3. Verbraucher im Sinne dieser AGB ist, wer die Karten nicht für sein Unternehmen kauft (§ 1 KSchG). Bestimmungen, die nur für Verbraucher gelten, sind als solche gekennzeichnet. Abweichende Bedingungen von Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich zustimmen.
 

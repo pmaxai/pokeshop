@@ -215,12 +215,12 @@ function layout(
     .filter(Boolean)
     .map(esc)
     .join(' · ');
-  return `<!doctype html><html lang="${locale === 'de' ? 'de-AT' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${brand === 'app' ? esc(APP_NAME) : 'pokemonkarten.at'}</title></head>
+  return `<!doctype html><html lang="${locale === 'de' ? 'de-AT' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${brand === 'app' ? esc(APP_NAME) : 'Overpriced Cardboard'}</title></head>
 <body style="margin:0;padding:0;background:${C.paper};color:${C.ink};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5">
 <span style="display:none;max-height:0;overflow:hidden">${esc(preheader)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid ${C.line};border-radius:6px">
-<tr><td style="padding:22px 28px 8px;font-size:20px;font-weight:bold;letter-spacing:-0.01em">${brand === 'app' ? `${esc(APP_NAME)}<span style="color:${C.muted};font-size:13px;font-weight:normal;letter-spacing:0"> · ${esc(co.name ?? '')}</span>` : `pokemonkarten<span style="color:${C.accent}">.at</span>`}</td></tr>
+<tr><td style="padding:22px 28px 8px;font-size:20px;font-weight:bold;letter-spacing:-0.01em">${brand === 'app' ? `${esc(APP_NAME)}<span style="color:${C.muted};font-size:13px;font-weight:normal;letter-spacing:0"> · ${esc(co.name ?? '')}</span>` : `Overpriced<span style="color:${C.accent}"> Cardboard</span>`}</td></tr>
 <tr><td style="padding:8px 28px 28px">${body}</td></tr></table>
 <p style="max-width:600px;margin:16px auto 0;color:${C.muted};font-size:12px;line-height:1.5">${foot}</p>
 </td></tr></table></body></html>`;
@@ -294,7 +294,7 @@ const TEXT = {
     promoVoucher: (c: string) => `Aktionsgutschein ${c}`,
     paidVoucher: (c: string) => `Bezahlt mit Gutschein ${c}`,
     paidRest: 'Bezahlt per Zahlungsmittel',
-    voucherSubject: 'Dein Geschenkgutschein von pokemonkarten.at',
+    voucherSubject: 'Dein Geschenkgutschein von Overpriced Cardboard',
     voucherIntro: (amount: string) =>
       `danke für deinen Einkauf! Dein Gutschein über <strong>${esc(amount)}</strong> ist fertig. Im Anhang ist er als PDF zum Ausdrucken oder Weiterschicken.`,
     voucherCode: 'Gutscheincode',
@@ -373,7 +373,7 @@ const TEXT = {
     promoVoucher: (c: string) => `Promotional voucher ${c}`,
     paidVoucher: (c: string) => `Paid with voucher ${c}`,
     paidRest: 'Paid by payment method',
-    voucherSubject: 'Your gift voucher from pokemonkarten.at',
+    voucherSubject: 'Your gift voucher from Overpriced Cardboard',
     voucherIntro: (amount: string) =>
       `thank you for your purchase! Your voucher for <strong>${esc(amount)}</strong> is ready. It is attached as a PDF to print or forward.`,
     voucherCode: 'Voucher code',
@@ -742,7 +742,7 @@ export async function renderTemplate(
       return { subject, html: layout('de', ctx, subject, body) };
     }
     case 'admin_alert': {
-      const subject = `[pokemonkarten.at] ${String(payload.subject ?? 'Hinweis')}`;
+      const subject = `[Overpriced Cardboard] ${String(payload.subject ?? 'Hinweis')}`;
       return { subject, html: layout('de', ctx, subject, p(esc(payload.text ?? ''))) };
     }
     case 'license_delivery':
@@ -1229,7 +1229,7 @@ export function mailTransportFromEnv(env: NodeJS.ProcessEnv = process.env): Mail
       clientId: env.GRAPH_CLIENT_ID,
       certPath: env.GRAPH_CLIENT_CERT_PATH || undefined,
       clientSecret: env.GRAPH_CLIENT_SECRET || undefined,
-      sender: env.GRAPH_SENDER ?? 'bestellung@pokemonkarten.at',
+      sender: env.GRAPH_SENDER ?? 'order@overpricedcardboard.com',
     });
   }
   if (env.MAIL_DIR) return fileTransport(env.MAIL_DIR);

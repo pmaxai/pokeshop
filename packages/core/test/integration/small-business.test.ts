@@ -44,7 +44,13 @@ test('the shop runs as sole trader under the small business scheme', async () =>
   assert.equal(settings.small_business, true);
   assert.equal(settings.high_value_threshold_cents, 5000, 'high value above € 50');
   assert.equal(company.name, 'Maximilian Pinter');
-  assert.equal(company.public_name, 'pokemonkarten.at');
+  assert.equal(company.public_name, 'Overpriced Cardboard');
+  assert.equal(company.email, 'order@overpricedcardboard.com');
+  assert.equal(settings.shop_mailbox, 'order@overpricedcardboard.com');
+  assert.ok(
+    (settings.admin_alert_recipients as string[]).includes('order@overpricedcardboard.com'),
+    'admin alerts go to the new mailbox',
+  );
   assert.equal(company.trade, 'Handel mit Waren aller Art');
   assert.equal(company.vat_id, '');
   assert.equal(company.register_number, '');
@@ -56,14 +62,22 @@ test('the shop runs as sole trader under the small business scheme', async () =>
 test('legal texts name the shop and point to the legal notice, not to the owner', async () => {
   for (const file of ['agb.de.md', 'agb.en.md', 'privacy.de.md', 'withdrawal.de.md']) {
     const md = await readFile(new URL(`../../legal/${file}`, import.meta.url), 'utf8');
-    const html = legalHtml(md, { company, baseUrl: 'https://pokemonkarten.at', locale: 'de' });
+    const html = legalHtml(md, {
+      company,
+      baseUrl: 'https://overpricedcardboard.com',
+      locale: 'de',
+    });
     assert.ok(!html.includes('Pinter'), `${file} does not name the owner`);
     assert.ok(!html.includes('{{'), `${file} has no unfilled placeholder`);
-    assert.match(html, /pokemonkarten\.at, Wienerstraße 1, 2440 Moosbrunn/);
+    assert.match(html, /Overpriced Cardboard, Wienerstraße 1, 2440 Moosbrunn/);
   }
   const agb = await readFile(new URL('../../legal/agb.de.md', import.meta.url), 'utf8');
-  const html = legalHtml(agb, { company, baseUrl: 'https://pokemonkarten.at', locale: 'de' });
-  assert.match(html, /https:\/\/pokemonkarten\.at\/impressum/);
+  const html = legalHtml(agb, {
+    company,
+    baseUrl: 'https://overpricedcardboard.com',
+    locale: 'de',
+  });
+  assert.match(html, /https:\/\/overpricedcardboard\.com\/impressum/);
   assert.match(html, /§ 6 Abs\. 1 Z 27 UStG/);
   assert.match(html, /Bestellung retournieren \(Vertrag widerrufen\)/);
   assert.match(
@@ -126,9 +140,9 @@ test('no VAT at checkout, in mails and on the invoice', async () => {
   assert.equal(o!.vatRateBp, 0);
 
   const ctx = {
-    baseUrl: 'https://pokemonkarten.at',
+    baseUrl: 'https://overpricedcardboard.com',
     mediaDir,
-    replyTo: 'bestellung@pokemonkarten.at',
+    replyTo: 'order@overpricedcardboard.com',
     company,
   };
   const t = new MemoryTransport();

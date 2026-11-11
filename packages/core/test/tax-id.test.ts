@@ -93,7 +93,7 @@ test('each Stripe account knows whose it is', () => {
 });
 
 test('the GmbH account comes from its own variables, never from the shop’s', () => {
-  const live = { PUBLIC_BASE_URL: 'https://pokemonkarten.at' };
+  const live = { PUBLIC_BASE_URL: 'https://overpricedcardboard.com' };
   assert.equal(paymentsFromEnv({ ...live, STRIPE_SECRET_KEY: 'sk_test_shop' }, 'gmbh'), null);
   assert.equal(
     paymentsFromEnv({ ...live, STRIPE_SECRET_KEY: 'sk_test_shop' }, 'shop')?.seller,

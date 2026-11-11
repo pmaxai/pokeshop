@@ -1,5 +1,5 @@
 /**
- * Minimal client for the pokemonkarten.at product API, for the scanning app.
+ * Minimal client for the overpricedcardboard.com product API, for the scanning app.
  * Only Node's built-in crypto and fetch are used; the same steps work in any language.
  *
  *   node docs/examples/sign-request.ts
@@ -34,7 +34,7 @@ export async function callApi(
   payload?: unknown,
   idempotencyKey: string = randomUUID(),
 ): Promise<Response> {
-  const base = process.env.POKESHOP_API_BASE ?? 'https://staging.pokemonkarten.at';
+  const base = process.env.POKESHOP_API_BASE ?? 'https://staging.overpricedcardboard.com';
   const body = payload === undefined ? '' : JSON.stringify(payload);
   const headers: Record<string, string> = {
     ...signRequest({

@@ -62,9 +62,9 @@ class MemoryTransport implements MailTransport {
   }
 }
 const mailCtx = () => ({
-  baseUrl: 'https://pokemonkarten.at',
+  baseUrl: 'https://overpricedcardboard.com',
   mediaDir,
-  replyTo: 'bestellung@pokemonkarten.at',
+  replyTo: 'order@overpricedcardboard.com',
   company: {
     name: 'Maximilian Pinter',
     street: 'Wienerstraße 1',
@@ -194,7 +194,7 @@ test('a bought gift voucher: paid through the shop, created on payment, PDF to t
   const t = new MemoryTransport();
   await sendDueMails(sql, t, mailCtx(), 20);
   const m = t.sent.find((x) => x.to === 'misty@example.com')!;
-  assert.equal(m.subject, 'Dein Geschenkgutschein von pokemonkarten.at');
+  assert.equal(m.subject, 'Dein Geschenkgutschein von Overpriced Cardboard');
   assert.ok(m.html.includes(sold.code));
   assert.deepEqual(
     m.attachments.map((a) => a.name),

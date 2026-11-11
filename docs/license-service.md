@@ -106,7 +106,7 @@ higher). `active_device` is null until the first activation; `activations` count
 
 ## API for the app (public)
 
-`https://license.pokemonkarten.at` (staging: `https://license.staging.pokemonkarten.at`).
+`https://license.overpricedcardboard.com` (staging: `https://license.staging.overpricedcardboard.com`).
 
 | Request                                                              | Answer                                                                                         |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -137,9 +137,9 @@ node apps/license/src/cli.ts revoke <licence id> [reason …]
    (`openssl rand -base64 32`), `LICENSE_SHOP_TOKEN` (`openssl rand -base64 32`),
    `LICENSE_SERVICE_URL=http://license:3100`. Keep a copy of `LICENSE_MASTER_KEY` with the
    database backup: without it the stored keys can't be sent again (activations keep working).
-3. DNS: `license.pokemonkarten.at` and `license.staging.pokemonkarten.at` to the server.
+3. DNS: `license.overpricedcardboard.com` and `license.staging.overpricedcardboard.com` to the server.
 4. Reload Caddy (`infra/caddy/Caddyfile` has both sites), then `infra/stack.sh <stack> up -d`.
-5. Check: `curl https://license.pokemonkarten.at/health` → `{"ok":true}`.
+5. Check: `curl https://license.overpricedcardboard.com/health` → `{"ok":true}`.
 6. Admin › App shows "Lizenzdienst: erreichbar". Upload the APK there (Caddy allows 400 MB on
    `/admin/app/upload` only); from then on the app page sells licences. Until the service is
    set up and an APK (or a Play Store link) exists, the page says sales start shortly.
