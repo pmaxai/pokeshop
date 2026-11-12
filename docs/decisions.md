@@ -7,7 +7,7 @@ Short records of choices that shape the code. Newest first.
 English is the default language at the domain root; German moved under /de with its translated
 paths (`/de/karten`, `/de/warenkorb`). Links built outside the web app (mails, legal texts) use
 `localePath` in core, which mirrors the routing. Old German root links redirect permanently to
-/de (next.config.ts, derived from the routing table). No automatic redirect by browser language.
+/de (the language proxy, apps/web/src/proxy.ts, derived from the routing table). No automatic redirect by browser language.
 
 All 27 EU countries are delivery countries. Migration 0016 gave the new ones Germany's terms
 (free standard shipping, € 20 minimum order, same insurance rules) and 4–10 working days; each

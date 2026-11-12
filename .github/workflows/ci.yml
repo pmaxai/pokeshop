@@ -105,15 +105,21 @@ jobs:
           }
           check /api/health
           check /
-          check /en/cards
-          check /karten
-          check /versand-und-zahlung
-          check /warenkorb
-          check /agb
-          check /en/withdraw
-          check /veranstaltungen
+          check /de
+          check /cards
+          check /de/karten
+          check /shipping-and-payment
+          check /de/versand-und-zahlung
+          check /cart
+          check /terms
+          check /de/agb
+          check /withdraw
+          check /de/veranstaltungen
           check /admin/login
-          curl -s http://localhost:3000/agb | grep -q 'Allgemeine Geschäftsbedingungen' || { echo 'legal texts not loaded'; exit 1; }
+          check '/og.png?l=de'
+          curl -s http://localhost:3000/de/agb | grep -q 'Allgemeine Geschäftsbedingungen' || { echo 'legal texts not loaded'; exit 1; }
+          # German pages used to sit at the root: old links redirect to /de
+          test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:3000/karten)" = '308 http://localhost:3000/de/karten' || { echo 'old German link not redirected'; exit 1; }
           docker run --rm --network host $ENV pokeshop:ci node apps/worker/src/cli.ts api-client list
           # the worker starts the card-data sync on the empty database; it must stay healthy meanwhile
           sleep 5 && docker exec worker node apps/worker/src/healthcheck.ts
