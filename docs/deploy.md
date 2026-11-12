@@ -200,7 +200,7 @@ admin the stock is counted down. Without a Stripe key the shop refuses to take o
 
 App licences are paid to the GmbH's own Stripe account. In that account (test mode for staging):
 
-1. **Payment methods** and **Branding** as above (name: Antalyse GmbH / ScanPM).
+1. **Payment methods** and **Branding** as above (name: Antalyse GmbH / Overpriced Cardboard Scanner).
 2. **Stripe Tax** (Settings → Tax): origin address Wienerstraße 1, 2440 Moosbrunn; registrations
    for Austria and the EU One-Stop-Shop (union scheme), so Stripe charges the buyer's country's
    VAT to consumers. Default tax behaviour does not matter: the shop sets it per payment.

@@ -1533,7 +1533,7 @@ p {
   color: var(--muted);
 }
 
-/* ---------- app page (ScanPM) ---------- */
+/* ---------- app page (Overpriced Cardboard Scanner) ---------- */
 .app-page {
   --scan: #23a05a; /* the frame turns this green when the app is sure */
   --screen: #0f1324;
@@ -1552,7 +1552,7 @@ p {
   }
 }
 .app-hero__title {
-  font-size: clamp(2.6rem, 1.6rem + 4.5vw, 4.6rem);
+  font-size: clamp(2.2rem, 1.3rem + 3.4vw, 3.8rem);
   font-stretch: 125%;
   letter-spacing: -0.02em;
   display: flex;
@@ -1842,6 +1842,47 @@ p {
   border: solid var(--ok);
   border-width: 0 2.5px 2.5px 0;
   transform: rotate(45deg);
+}
+.app-services__intro {
+  margin: 0 0 var(--s-5);
+  color: var(--muted);
+  max-width: 60ch;
+}
+.app-services {
+  display: grid;
+  gap: var(--s-5);
+}
+@media (min-width: 48rem) {
+  .app-services {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.app-service {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s-5);
+}
+.app-service h3 {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-stretch: 112%;
+}
+.app-service p {
+  margin: 0;
+}
+.app-service__needs {
+  font-weight: 700;
+}
+.app-service .btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+.app-service .app-ticks {
+  margin-bottom: var(--s-2);
 }
 .app-sub {
   margin: var(--s-5) 0 var(--s-3);

@@ -58,7 +58,7 @@ export default async function AppAdmin({
 
   return (
     <AdminShell user={user} active="app" notice={await searchParams}>
-      <h1>{APP_NAME}-App</h1>
+      <h1>App: {APP_NAME}</h1>
       <dl className="stats">
         <div>
           <dt>Verkauf</dt>

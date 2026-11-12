@@ -2,6 +2,14 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-12 · The app is called Overpriced Cardboard Scanner
+
+ScanPM is renamed to "Overpriced Cardboard Scanner" (`APP_NAME`) everywhere a buyer sees it: app
+page, footer, licence mails, invoice lines, licence terms and the other legal texts; the beta is
+called "Android-Beta". German texts avoid compounds with the long name ("Lizenz für …"). The app
+page also presents two services of Antalyse GmbH, Automatic Content Processing (for YouTube-mode
+recordings) and Webshop as a Service; enquiries go to the GmbH's mailbox.
+
 ## 2026-11-12 · English first, delivery to the whole EU
 
 English is the default language at the domain root; German moved under /de with its translated

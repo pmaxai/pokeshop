@@ -261,7 +261,7 @@ test('a consumer buys: GmbH Stripe with Stripe Tax and invoice, keys, e-mail', a
   assert.equal(order.totalCents, 27800);
   assert.deepEqual(
     session.input.lines.map((l) => [l.name, l.unitAmount, l.quantity]),
-    [['ScanPM-Lizenz (Beta)', 13900, 2]],
+    [['Lizenz Overpriced Cardboard Scanner (Android-Beta)', 13900, 2]],
   );
   // Stripe Tax works from the customer's address; prices include the VAT.
   assert.deepEqual(session.input.tax, { behavior: 'inclusive', code: 'txcd_10202000' });
@@ -352,7 +352,7 @@ test('the licence e-mail comes from the GmbH, with Stripe’s invoice and the li
   assert.ok(m, 'sent to the buyer');
   assert.equal(m.from, 'info@abc-it.at');
   assert.equal(m.replyTo, 'info@abc-it.at');
-  assert.equal(m.subject, 'Deine 2 ScanPM-Lizenzen');
+  assert.equal(m.subject, 'Deine 2 Lizenzen für Overpriced Cardboard Scanner');
   for (const l of licenses.all()) assert.ok(m.html.includes(l.key), 'key in the mail');
   assert.ok(m.html.includes(`https://overpricedcardboard.com/api/app/download/${token}`));
   assert.match(m.html, /Version 1\.2\.30/);
@@ -377,7 +377,9 @@ test('the licence e-mail comes from the GmbH, with Stripe’s invoice and the li
     2,
     'QR codes go out as inline images',
   );
-  const alert = t.sent.find((x) => /ScanPM-Lizenz verkauft/.test(x.subject));
+  const alert = t.sent.find((x) =>
+    /Lizenz verkauft \(Overpriced Cardboard Scanner\)/.test(x.subject),
+  );
   assert.ok(alert, 'the shop hears about the sale');
   assert.equal(alert.from ?? null, null, 'alerts still come from the shop');
   assert.match(alert.html, /an die GmbH/);
@@ -520,7 +522,9 @@ test('licence e-mail lost: one look-up per address and hour, sent by the GmbH', 
   assert.equal(await resendLicensesByEmail(sql, licenses, 'misty@example.com', 'en'), 2);
   const t = new MemoryTransport();
   await sendDueMails(sql, t, mailCtx(), 20);
-  const m = t.sent.find((x) => x.subject === 'Your ScanPM licence (sent again)')!;
+  const m = t.sent.find(
+    (x) => x.subject === 'Your Overpriced Cardboard Scanner licence (sent again)',
+  )!;
   assert.ok(m);
   assert.equal(m.from, 'info@abc-it.at');
   assert.ok(m.html.includes(`/api/app/download/${token}`));
@@ -570,7 +574,7 @@ test('refund: Stripe credit note of the GmbH, money back, keys revoked', async (
   await sendDueMails(sql, t, mailCtx(), 20);
   const m = t.sent.find((x) => x.subject.startsWith('Erstattung'))!;
   assert.equal(m.from, 'info@abc-it.at');
-  assert.match(m.html, /2 × ScanPM-Lizenz/);
+  assert.match(m.html, /2 × Lizenz für Overpriced Cardboard Scanner/);
   assert.match(m.html, /Rechnungskorrektur findest du im Anhang/);
   assert.deepEqual(
     m.attachments.map((a) => a.name),

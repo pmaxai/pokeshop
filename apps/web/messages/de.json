@@ -131,7 +131,7 @@
     "withdrawalInfo": "Widerrufsbelehrung",
     "withdraw": "Bestellung retournieren (Vertrag widerrufen)",
     "events": "Veranstaltungen",
-    "app": "ScanPM-App",
+    "app": "Overpriced Cardboard Scanner",
     "vouchers": "Gutscheine"
   },
   "Conditions": {
@@ -210,8 +210,8 @@
     "chamber": "Mitglied der",
     "authority": "Gewerbebehörde",
     "contact": "Kontakt",
-    "licenses": "Verkauf der App-Lizenzen (ScanPM)",
-    "licensesIntro": "Die Lizenzen für die App ScanPM verkauft und verrechnet:"
+    "licenses": "Verkauf der App-Lizenzen (Overpriced Cardboard Scanner)",
+    "licensesIntro": "Die Lizenzen für die App Overpriced Cardboard Scanner verkauft und verrechnet:"
   },
   "Privacy": {
     "title": "Datenschutz",
@@ -359,17 +359,17 @@
     "until": "bis"
   },
   "App": {
-    "metaTitle": "ScanPM – Pokémon-Karten scannen, Preise sehen",
-    "metaDescription": "Die Android-App von Overpriced Cardboard: Karte vor die Kamera halten und den Cardmarket-Preis der richtigen Variante sehen, auch offline. Beta, Einmal-Lizenz mit Updates.",
-    "beta": "Beta",
-    "tagline": "Karte vor die Kamera, Preis auf den Schirm. Auch ohne Netz.",
-    "lead": "ScanPM erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Börsen und Openings.",
+    "metaTitle": "Overpriced Cardboard Scanner – Pokémon-Karten scannen, Preise sehen",
+    "metaDescription": "Die Android-App von Overpriced Cardboard: Karte scannen und den Cardmarket-Preis der richtigen Variante sehen, auch ohne Empfang. Android-Beta, Einmal-Lizenz mit Updates.",
+    "beta": "Android-Beta",
+    "tagline": "Karte scannen und aktuelle Preise prüfen. Auch ohne Empfang.",
+    "lead": "Der Overpriced Cardboard Scanner erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Börsen und Openings.",
     "price": "{price} einmalig",
     "priceNote": "Einmal-Lizenz, Updates inklusive, inkl. USt.",
     "buy": "Lizenz kaufen",
     "seeFeatures": "Was die App kann",
-    "platformApk": "Nur für Android (ab Android 8). ScanPM ist noch nicht im Play Store: Du bekommst die App als APK-Datei.",
-    "platformStore": "Für Android (ab Android 8), im Google Play Store.",
+    "platformApk": "Aktuell nur für Android (ab Android 8). Der Overpriced Cardboard Scanner ist noch nicht im Play Store: Du bekommst die App als APK-Datei.",
+    "platformStore": "Aktuell nur für Android (ab Android 8), im Google Play Store.",
     "mock": {
       "label": "So sieht ein Scan aus: Die Karte liegt im grünen Rahmen, darunter stehen Name, Set und Cardmarket-Preis.",
       "sure": "Karte erkannt",
@@ -378,7 +378,7 @@
       "avg": "30 Tage",
       "low": "ab"
     },
-    "featuresTitle": "Was ScanPM kann",
+    "featuresTitle": "Was der Overpriced Cardboard Scanner kann",
     "features": {
       "recognise": {
         "title": "Erkennen",
@@ -406,11 +406,41 @@
       },
       "youtube": {
         "title": "YouTube-Modus",
-        "text": "Ein aufgeräumter Bildschirm für Opening-Videos: großer Preis, der hochzählt, ein Hit-Effekt über deiner Alarmgrenze und die Summe des Packs als CSV."
+        "text": "Ein aufgeräumter Bildschirm für Opening-Videos: großer Preis, der hochzählt, ein Hit-Effekt über deiner Alarmgrenze und die Summe des Packs als CSV. Im Aufnahme-Modus nimmt die App dein Opening gleich selbst auf; mit unserem Automatic Content Processing wird daraus ein fertiges Video (siehe unten)."
+      },
+      "webshop": {
+        "title": "Webshop-Modus",
+        "text": "Für Händler: Karte scannen, Sprache, Zustand, Preis und Lagerbox wählen, und sie ist samt Bild im eigenen Webshop eingebucht. Am Stand verkaufst du direkt aus dem Lager. Dazu passt unser Webshop as a Service (siehe unten)."
       }
     },
+    "services": {
+      "title": "Dazu buchbar",
+      "intro": "Zwei Dienste, die wir für dich betreiben. Angeboten von {seller}.",
+      "acp": {
+        "title": "Automatic Content Processing",
+        "text": "Eine automatische Pipeline für die Aufnahmen aus dem YouTube-Modus. Du lädst das Rohmaterial hoch, zurück kommen Videos, die du direkt posten kannst.",
+        "points": {
+          "cut": "Schnitt",
+          "voice": "Kommentar: allgemeine Stimme oder ein Klon deiner eigenen",
+          "music": "Hintergrundmusik und Soundeffekte",
+          "out": "Fertige Videos und Thumbnails"
+        }
+      },
+      "waas": {
+        "title": "Webshop as a Service",
+        "text": "Dein eigener Onlineshop für Einzelkarten, wie dieser hier. Wir hosten und betreiben ihn, du befüllst ihn mit dem Webshop-Modus der App.",
+        "needsTitle": "Du brauchst nur:",
+        "points": {
+          "domain": "eine Domain",
+          "mail": "eine Microsoft-365-Mailadresse mit Entra-Konto",
+          "stripe": "ein Stripe-Konto für die Zahlungen"
+        }
+      },
+      "ask": "Anfragen",
+      "askSubject": "Anfrage: {service}"
+    },
     "betaTitle": "Was Beta heißt",
-    "betaIntro": "ScanPM wird schon im Alltag benutzt, ist aber noch nicht fertig. Für dich heißt das:",
+    "betaIntro": "Der Overpriced Cardboard Scanner wird schon im Alltag benutzt, ist aber noch nicht fertig. Für dich heißt das:",
     "betaPoints": {
       "recognition": "Die Erkennung trifft meistens, aber nicht immer, vor allem wenn Karten sich berühren oder in Ordnern stecken. Dann zeigt dir die App die wahrscheinlichsten Treffer zur Auswahl.",
       "prices": "Preise kommen aus öffentlichen Daten und können bei einzelnen Karten fehlen oder danebenliegen. Die App warnt bei unsicheren Preisen; prüf wertvolle Karten vor dem Kauf.",
@@ -420,7 +450,7 @@
     "licenceTitle": "Die Lizenz",
     "licencePoints": {
       "once": "{price} einmalig, kein Abo. Während der Beta gibt es nur diese Einmal-Lizenz.",
-      "updates": "Alle Updates sind inklusive, solange wir ScanPM anbieten.",
+      "updates": "Alle Updates sind inklusive, solange wir den Overpriced Cardboard Scanner anbieten.",
       "device": "Eine Lizenz ist auf einem Gerät gleichzeitig aktiv. Neues Handy? Ein QR-Code aus der App überträgt sie, das alte Gerät hört dann auf.",
       "online": "Für die Aktivierung braucht die App einmal Internet."
     },
@@ -429,10 +459,10 @@
       "buy": "Lizenz hier im Shop kaufen.",
       "mail": "Direkt nach der Zahlung kommt eine E-Mail mit Lizenzschlüssel, QR-Code und Download-Link.",
       "installApk": "Die APK-Datei auf dem Handy öffnen. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben.",
-      "installStore": "ScanPM aus dem Google Play Store installieren.",
-      "activate": "ScanPM starten, den QR-Code scannen, fertig."
+      "installStore": "Den Overpriced Cardboard Scanner aus dem Google Play Store installieren.",
+      "activate": "Die App starten, den QR-Code scannen, fertig."
     },
-    "storeTarget": "Wir wollen ScanPM bis Ende November 2026 in den Google Play Store bringen. Bis dahin installierst du die App als APK-Datei; neue Versionen meldet die App selbst.",
+    "storeTarget": "Wir wollen den Overpriced Cardboard Scanner bis Ende November 2026 in den Google Play Store bringen. Bis dahin installierst du die App als APK-Datei; neue Versionen meldet die App selbst.",
     "needsTitle": "Was du brauchst",
     "needs": {
       "android": "Ein Android-Handy mit Android 8 oder neuer und Kamera",
@@ -512,10 +542,10 @@
       "refundedText": "Die Lizenz ist damit gesperrt.",
       "back": "Zurück zur App-Seite",
       "facts": "Bestellung {number} · {count, plural, one {# Lizenz} other {# Lizenzen}} · {total}",
-      "download": "ScanPM herunterladen",
+      "download": "Overpriced Cardboard Scanner herunterladen",
       "downloadMeta": "APK, Version {version}, {size}",
-      "store": "ScanPM im Play Store",
-      "installHint": "Öffne die Datei auf deinem Android-Handy. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben. Dann ScanPM starten und den QR-Code aus der E-Mail scannen."
+      "store": "Overpriced Cardboard Scanner im Play Store",
+      "installHint": "Öffne die Datei auf deinem Android-Handy. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben. Dann die App starten und den QR-Code aus der E-Mail scannen."
     },
     "priceBusiness": "Für Unternehmen in der EU außerhalb Österreichs mit UID-Nummer: {net} netto"
   },

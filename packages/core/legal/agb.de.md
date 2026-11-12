@@ -70,9 +70,9 @@ Beschwerden richten Sie bitte an {{company.email}}; wir antworten so schnell wie
 1. Es gilt österreichisches Recht unter Ausschluss des UN-Kaufrechts und der Verweisungsnormen des internationalen Privatrechts. Für Verbraucher gilt diese Rechtswahl nur, soweit ihnen dadurch nicht der Schutz entzogen wird, den ihnen die zwingenden Bestimmungen des Rechts des Staates gewähren, in dem sie ihren gewöhnlichen Aufenthalt haben.
 2. Für Klagen gegen Verbraucher mit Wohnsitz oder gewöhnlichem Aufenthalt in Österreich ist das Gericht zuständig, in dessen Sprengel der Verbraucher wohnt oder sich gewöhnlich aufhält (§ 14 KSchG). Für Unternehmer ist Gerichtsstand das für 2440 Moosbrunn sachlich zuständige Gericht.
 
-## 13. App-Lizenzen (ScanPM)
+## 13. App-Lizenzen (Overpriced Cardboard Scanner)
 
-Lizenzen für die App ScanPM, die auf der App-Seite des Shops ({{app_url}}) angeboten werden, verkaufen nicht wir, sondern die {{seller.name}}. Für den Kauf gelten ausschließlich deren Lizenzbedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
+Lizenzen für die App Overpriced Cardboard Scanner, die auf der App-Seite des Shops ({{app_url}}) angeboten werden, verkaufen nicht wir, sondern die {{seller.name}}. Für den Kauf gelten ausschließlich deren Lizenzbedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
 
 ## 14. Gutscheine und Rabattcodes
 

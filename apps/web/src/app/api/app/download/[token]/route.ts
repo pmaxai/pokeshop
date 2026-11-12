@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
     return new NextResponse('Not available', { status: 503 });
   }
   await recordDownload(db(), order.id);
-  const name = `${APP_NAME}-${release.version.replace(/[^0-9A-Za-z.-]/g, '')}.apk`;
+  const name = `${APP_NAME.replace(/\s+/g, '-')}-${release.version.replace(/[^0-9A-Za-z.-]/g, '')}.apk`;
   return new NextResponse(Readable.toWeb(createReadStream(path)) as ReadableStream, {
     headers: {
       'content-type': 'application/vnd.android.package-archive',

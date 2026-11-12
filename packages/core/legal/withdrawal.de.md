@@ -30,9 +30,9 @@ Sie müssen für einen etwaigen Wertverlust der Waren nur aufkommen, wenn dieser
 
 Diese Widerrufsbelehrung gilt auch für den Kauf von Geschenkgutscheinen. Die Widerrufsfrist beträgt dort vierzehn Tage ab dem Tag des Vertragsabschlusses (Eingang der Zahlung). Wurde der Gutschein bereits teilweise eingelöst, erstatten wir den nicht eingelösten Restwert.
 
-## App-Lizenzen (ScanPM)
+## App-Lizenzen (Overpriced Cardboard Scanner)
 
-Diese Widerrufsbelehrung gilt für Kartenbestellungen. Lizenzen für die App ScanPM verkauft die {{seller.name}}; die Widerrufsbelehrung dafür steht in deren Lizenzbedingungen: {{license_terms_url}}.
+Diese Widerrufsbelehrung gilt für Kartenbestellungen. Lizenzen für die App Overpriced Cardboard Scanner verkauft die {{seller.name}}; die Widerrufsbelehrung dafür steht in deren Lizenzbedingungen: {{license_terms_url}}.
 
 ---
 

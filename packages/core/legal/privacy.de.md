@@ -44,9 +44,9 @@ Bestellbestätigungen, Rechnungen und Antworten auf Ihre Nachrichten verschicken
 
 Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ widerrufen, speichern wir Ihre Angaben und den Zeitpunkt des Eingangs, schicken Ihnen eine Eingangsbestätigung und bearbeiten den Widerruf (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 13a FAGG). Wir bewahren diese Daten auf, solange daraus Ansprüche entstehen können, in der Regel drei Jahre.
 
-## 8. App-Lizenzen (ScanPM)
+## 8. App-Lizenzen (Overpriced Cardboard Scanner)
 
-Lizenzen für die App ScanPM verkauft die {{seller.name}}. Für die Daten des Lizenzkaufs und des Lizenzdienstes ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Lizenzbedingungen ({{license_terms_url}}). Wir betreiben dafür die App-Seite, das Bestellformular und den Server, auf dem auch der Lizenzdienst läuft, und verarbeiten die Daten dabei in ihrem Auftrag (Art. 28 DSGVO).
+Lizenzen für die App Overpriced Cardboard Scanner verkauft die {{seller.name}}. Für die Daten des Lizenzkaufs und des Lizenzdienstes ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Lizenzbedingungen ({{license_terms_url}}). Wir betreiben dafür die App-Seite, das Bestellformular und den Server, auf dem auch der Lizenzdienst läuft, und verarbeiten die Daten dabei in ihrem Auftrag (Art. 28 DSGVO).
 
 ## 9. Hosting
 

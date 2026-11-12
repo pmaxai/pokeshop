@@ -1,10 +1,10 @@
-# Licence terms for ScanPM
+# Licence terms for the Overpriced Cardboard Scanner
 
 As of November 2026
 
 ## 1. Scope and contracting party
 
-1. These licence terms apply to buying licences for the Android app ScanPM on the app page of the online shop overpricedcardboard.com ({{app_url}}).
+1. These licence terms apply to buying licences for the Android app Overpriced Cardboard Scanner on the app page of the online shop overpricedcardboard.com ({{app_url}}).
 2. Your contracting party is {{seller.name}}, {{seller.address}}, {{seller.register}}, VAT ID {{seller.vat_id}}, e-mail: {{seller.email}} ("we", "us"). Further details are in the legal notice: {{imprint_url}}.
 3. The cards in the shop are not sold by {{seller.name}} but by the operator of {{company.public_name}}. Card orders are governed by the operator's terms ({{terms_url}}); licences are governed only by these licence terms.
 4. A consumer is anyone who does not buy the licence for their business (§ 1 KSchG). Provisions that apply only to consumers are marked as such. Customers' own terms apply only if we expressly agree to them in writing.
