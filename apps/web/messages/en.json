@@ -363,21 +363,14 @@
     "metaDescription": "The Android app by Overpriced Cardboard: scan a card and see the Cardmarket price of the right printing, even without signal. Android beta, one-off licence with updates.",
     "beta": "Android Beta",
     "tagline": "Scan a card and check current prices. Even without signal.",
-    "lead": "The Overpriced Cardboard Scanner recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
+    "lead": "The Overpriced Cardboard Scanner recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, Card Shows and openings.",
     "price": "{price} one-off",
     "priceNote": "One-off licence, updates included, VAT included",
     "buy": "Buy a licence",
     "seeFeatures": "What the app does",
     "platformApk": "Currently Android only (Android 8 or newer). The Overpriced Cardboard Scanner isn’t in the Play Store yet: you get the app as an APK file.",
     "platformStore": "Currently Android only (Android 8 or newer), on Google Play.",
-    "mock": {
-      "label": "What a scan looks like: the card sits in the green frame, below it name, set and Cardmarket price.",
-      "sure": "Card recognised",
-      "trend": "Cardmarket trend",
-      "change": "▲ 12 % in 30 days",
-      "avg": "30 days",
-      "low": "from"
-    },
+    "screenshotAlt": "A scan in the app: the card Altaria from Silver Tempest sits in the green frame, with its name, set, number, Cardmarket trend and the price history of the last 90 days below.",
     "featuresTitle": "What the Overpriced Cardboard Scanner does",
     "features": {
       "recognise": {
@@ -402,7 +395,7 @@
       },
       "trading": {
         "title": "Trading Mode",
-        "text": "For card shows: market value by condition, a verdict on the vendor’s price with an opening offer and a walk-away price, a cart per booth, bundles, trades with a balance, a day budget and your deals as CSV."
+        "text": "For Card Shows: market value by condition, a verdict on the vendor’s price with an opening offer and a walk-away price, a cart per booth, bundles, trades with a balance, a day budget and your deals as CSV."
       },
       "youtube": {
         "title": "YouTube mode",

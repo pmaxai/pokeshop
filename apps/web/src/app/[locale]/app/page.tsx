@@ -129,15 +129,17 @@ export default async function AppPage({ params, searchParams }: Props) {
           </p>
           <p className="app-hero__platform">{store ? t('platformStore') : t('platformApk')}</p>
         </div>
-        <PhoneMock
-          label={t('mock.label')}
-          sure={t('mock.sure')}
-          trend={t('mock.trend')}
-          change={t('mock.change')}
-          avg={t('mock.avg')}
-          low={t('mock.low')}
-          locale={locale}
-        />
+        <figure className="app-shot">
+          <img
+            src="/images/app-scan-720.webp"
+            srcSet="/images/app-scan-480.webp 480w, /images/app-scan-720.webp 720w, /images/app-scan-960.webp 960w"
+            sizes="(min-width: 48rem) 20rem, 82vw"
+            width={720}
+            height={1246}
+            alt={t('screenshotAlt')}
+            fetchPriority="high"
+          />
+        </figure>
       </section>
 
       <section className="section" id="funktionen" aria-labelledby="features-title">
@@ -300,76 +302,5 @@ export default async function AppPage({ params, searchParams }: Props) {
         )}
       </section>
     </div>
-  );
-}
-
-/**
- * The hero picture: a phone mid-scan. Drawn with HTML and CSS (no card artwork), so it shows
- * the idea – card in the green frame, price below – without any third-party image.
- */
-function PhoneMock({
-  label,
-  sure,
-  trend,
-  change,
-  avg,
-  low,
-  locale,
-}: {
-  label: string;
-  sure: string;
-  trend: string;
-  change: string;
-  avg: string;
-  low: string;
-  locale: Locale;
-}) {
-  const eur = (c: number) => formatEuro(c, locale);
-  return (
-    <figure className="phone" role="img" aria-label={label}>
-      <div className="phone__screen" aria-hidden="true">
-        <div className="phone__camera">
-          <div className="phone__card">
-            <span className="phone__card-art" />
-            <span className="phone__card-line" />
-            <span className="phone__card-line phone__card-line--short" />
-          </div>
-          <span className="phone__frame" />
-          <span className="phone__sure">{sure}</span>
-        </div>
-        <div className="phone__panel">
-          <p className="phone__name">
-            Glurak-ex <span>199/165</span>
-          </p>
-          <p className="phone__set">151 · DE · 2023</p>
-          <p className="phone__price">{eur(5200)}</p>
-          <p className="phone__trend">
-            {trend} <strong>{change}</strong>
-          </p>
-          <svg className="phone__spark" viewBox="0 0 120 28" preserveAspectRatio="none">
-            <polyline
-              points="0,22 12,20 24,21 36,17 48,18 60,14 72,15 84,11 96,9 108,10 120,5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          </svg>
-          <p className="phone__chips">
-            <span className="phone__chip phone__chip--on">Holo</span>
-            <span className="phone__chip">Reverse</span>
-          </p>
-          <p className="phone__more">
-            <span>
-              {avg} {eur(4890)}
-            </span>
-            <span>
-              {low} {eur(4450)}
-            </span>
-          </p>
-        </div>
-      </div>
-    </figure>
   );
 }
