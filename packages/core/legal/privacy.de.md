@@ -40,19 +40,25 @@ Damit Ihr Paket ankommt, geben wir Name und Lieferadresse an die Österreichisch
 
 Bestellbestätigungen, Rechnungen und Antworten auf Ihre Nachrichten verschicken wir über Microsoft 365 (Microsoft Ireland Operations Limited, One Microsoft Place, South County Business Park, Leopardstown, Dublin 18, Irland) als unseren Auftragsverarbeiter. Wenn Sie uns schreiben, verwenden wir Ihre Angaben, um Ihre Anfrage zu beantworten (Art. 6 Abs. 1 lit. b oder f DSGVO), und löschen die Nachricht, wenn sie erledigt ist und keine Aufbewahrungspflicht besteht.
 
-## 7. Widerruf über das Online-Formular
+## 7. Kontaktformular
+
+Wenn Sie uns über das Kontaktformular ({{contact_url}}) schreiben, speichern wir Ihren Namen, Ihre E-Mail-Adresse, den Betreff, Ihre Nachricht und den Zeitpunkt, um Ihre Anfrage zu beantworten (Art. 6 Abs. 1 lit. b oder f DSGVO). Je nach Einstellung bekommen wir die Nachricht zusätzlich als E-Mail (Microsoft 365, siehe Punkt 6). Erledigte Nachrichten löschen wir nach zwölf Monaten automatisch.
+
+Gegen Spam löst Ihr Browser beim Anhaken von „Ich bin ein Mensch“ eine kleine Rechenaufgabe; dafür werden keine Cookies gesetzt und keine Dienste Dritter eingebunden. Um massenhafte Einsendungen abzuwehren, zählen wir Nachrichten je IP-Adresse 15 Minuten lang im Arbeitsspeicher mit; gespeichert wird die IP-Adresse nicht (Art. 6 Abs. 1 lit. f DSGVO).
+
+## 8. Widerruf über das Online-Formular
 
 Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ widerrufen, speichern wir Ihre Angaben und den Zeitpunkt des Eingangs, schicken Ihnen eine Eingangsbestätigung und bearbeiten den Widerruf (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 13a FAGG). Wir bewahren diese Daten auf, solange daraus Ansprüche entstehen können, in der Regel drei Jahre.
 
-## 8. App-Lizenzen (Overpriced Cardboard Scanner)
+## 9. App-Lizenzen (Overpriced Cardboard Scanner)
 
 Lizenzen für die App Overpriced Cardboard Scanner verkauft die {{seller.name}}. Für die Daten des Lizenzkaufs und des Lizenzdienstes ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Lizenzbedingungen ({{license_terms_url}}). Wir betreiben dafür die App-Seite, das Bestellformular und den Server, auf dem auch der Lizenzdienst läuft, und verarbeiten die Daten dabei in ihrem Auftrag (Art. 28 DSGVO).
 
-## 9. Hosting
+## 10. Hosting
 
 Der Shop und die Datenbank laufen auf Servern von Exoscale (Akenes SA, Boulevard de Grancy 19A, 1006 Lausanne, Schweiz) in einem Rechenzentrum in Europa. Exoscale verarbeitet die Daten in unserem Auftrag. Für die Schweiz hat die EU-Kommission ein angemessenes Datenschutzniveau festgestellt.
 
-## 10. Ihre Rechte
+## 11. Ihre Rechte
 
 Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung, auf Datenübertragbarkeit sowie das Recht, einer Verarbeitung auf Grundlage unseres berechtigten Interesses zu widersprechen (Art. 15 bis 21 DSGVO). Schreiben Sie uns dazu an {{company.email}}.
 

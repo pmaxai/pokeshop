@@ -1204,6 +1204,67 @@ p {
   justify-self: start;
 }
 
+/* ---------- contact ---------- */
+.contact-page {
+  padding-top: var(--s-6);
+  padding-bottom: var(--s-7);
+}
+.contact-page h1 {
+  font-size: var(--t-2xl);
+}
+.contact-page .lead {
+  max-width: 60ch;
+}
+.contact-form {
+  max-width: 40rem;
+}
+.contact-pair {
+  display: grid;
+  gap: var(--s-4);
+  align-items: start;
+}
+@media (min-width: 40rem) {
+  .contact-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+/* the honeypot: off screen, out of the tab order */
+.contact-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.human-check {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.human-check--error {
+  border-color: var(--warn);
+}
+.human-check .check {
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+.contact-sent {
+  max-width: 40rem;
+  margin-block: var(--s-5);
+  padding: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ok);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.contact-sent h2 {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-lg);
+}
+
 /* ---------- cart, checkout, order ---------- */
 .cart-page,
 .checkout-page,

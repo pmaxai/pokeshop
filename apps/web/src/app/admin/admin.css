@@ -433,3 +433,118 @@ tr.past td {
     border-bottom-color: #999;
   }
 }
+
+/* ---------- messages (contact form) ---------- */
+.admin-count {
+  display: inline-block;
+  min-width: 1.3rem;
+  margin-left: 0.3rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  line-height: 1.3rem;
+  text-align: center;
+}
+.notify-switch {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  margin: 0 0 var(--s-5);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  max-width: 48rem;
+}
+.switch {
+  flex: none;
+  position: relative;
+  width: 2.75rem;
+  height: 1.55rem;
+  margin-top: 0.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+.switch[aria-checked='true'] {
+  background: var(--ok);
+}
+.switch__knob {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 150ms ease;
+}
+.switch[aria-checked='true'] .switch__knob {
+  transform: translateX(1.2rem);
+}
+.switch:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch__knob {
+    transition: none;
+  }
+}
+.messages__unread td {
+  font-weight: 650;
+}
+.messages td .muted {
+  font-weight: 400;
+}
+.message-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s-1) var(--s-4);
+  margin: 0 0 var(--s-4);
+}
+.message-meta dt {
+  color: var(--muted);
+}
+.message-meta dd {
+  margin: 0;
+}
+.message-body {
+  max-width: 48rem;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+}
+.message-actions form {
+  margin: 0;
+}
+.message-delete summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.message-delete form {
+  margin-top: var(--s-2);
+}
+.btn--danger {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: #ffffff;
+}

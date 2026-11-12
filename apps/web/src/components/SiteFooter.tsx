@@ -38,6 +38,9 @@ export async function SiteFooter() {
                 <Link href="/versand">{t('shipping')}</Link>
               </li>
               <li>
+                <Link href="/kontakt">{t('contact')}</Link>
+              </li>
+              <li>
                 <Link href="/impressum">{t('imprint')}</Link>
               </li>
               <li>
