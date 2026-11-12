@@ -363,21 +363,14 @@
     "metaDescription": "Die Android-App von Overpriced Cardboard: Karte scannen und den Cardmarket-Preis der richtigen Variante sehen, auch ohne Empfang. Android-Beta, Einmal-Lizenz mit Updates.",
     "beta": "Android-Beta",
     "tagline": "Karte scannen und aktuelle Preise prüfen. Auch ohne Empfang.",
-    "lead": "Der Overpriced Cardboard Scanner erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Börsen und Openings.",
+    "lead": "Der Overpriced Cardboard Scanner erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Card Shows und Openings.",
     "price": "{price} einmalig",
     "priceNote": "Einmal-Lizenz, Updates inklusive, inkl. USt.",
     "buy": "Lizenz kaufen",
     "seeFeatures": "Was die App kann",
     "platformApk": "Aktuell nur für Android (ab Android 8). Der Overpriced Cardboard Scanner ist noch nicht im Play Store: Du bekommst die App als APK-Datei.",
     "platformStore": "Aktuell nur für Android (ab Android 8), im Google Play Store.",
-    "mock": {
-      "label": "So sieht ein Scan aus: Die Karte liegt im grünen Rahmen, darunter stehen Name, Set und Cardmarket-Preis.",
-      "sure": "Karte erkannt",
-      "trend": "Cardmarket-Trend",
-      "change": "▲ 12 % in 30 Tagen",
-      "avg": "30 Tage",
-      "low": "ab"
-    },
+    "screenshotAlt": "Scan in der App: Die Karte Altaria aus Silver Tempest liegt im grünen Rahmen, darunter Name, Set, Nummer, Cardmarket-Trend und der Preisverlauf der letzten 90 Tage.",
     "featuresTitle": "Was der Overpriced Cardboard Scanner kann",
     "features": {
       "recognise": {
@@ -402,7 +395,7 @@
       },
       "trading": {
         "title": "Trading-Modus",
-        "text": "Für Börsen: Marktwert nach Zustand, ein Urteil zum Preis des Händlers mit Gegenangebot und Schmerzgrenze, ein Warenkorb pro Stand, Bundles, Tausch mit Bilanz, Tagesbudget und deine Deals als CSV."
+        "text": "Für Card Shows: Marktwert nach Zustand, ein Urteil zum Preis des Händlers mit Gegenangebot und Schmerzgrenze, ein Warenkorb pro Stand, Bundles, Tausch mit Bilanz, Tagesbudget und deine Deals als CSV."
       },
       "youtube": {
         "title": "YouTube-Modus",
