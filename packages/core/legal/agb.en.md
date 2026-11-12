@@ -28,7 +28,7 @@ As of November 2026. This is a translation for your convenience; only the German
 
 1. All prices are final prices in euros. As a small business we are exempt from VAT under § 6 (1) Z 27 of the Austrian VAT Act (UStG); no VAT is charged or shown.
 2. Shipping is free. If your order contains a card priced at more than € 50, we ship it insured and charge 5 % of the goods value for this, at least € 5. Orders with a goods value of more than € 500 cannot be shipped insured. The shipping costs are shown in the cart and before you place the order.
-3. Each delivery country has a minimum order value for the goods. The delivery countries and minimum order values are listed on the page "Shipping and payment" ({{shipping_url}}) and in the cart. Delivery to other countries is currently available on request only, by separate agreement.
+3. Each delivery country has a minimum order value for the goods. We deliver to every member state of the European Union. The minimum order values are listed on the page "Shipping and payment" ({{shipping_url}}) and in the cart. Delivery to countries outside the EU is currently available on request only, by separate agreement.
 
 ## 5. Payment
 
@@ -39,7 +39,7 @@ As of November 2026. This is a translation for your convenience; only the German
 
 ## 6. Delivery and passing of risk
 
-1. We ship with Austrian Post to the delivery address you give. We usually hand your order to the post within three working days of receiving the payment. Postal delivery usually takes 1–3 working days within Austria and 3–6 working days to Germany. Should an ordered card unexpectedly not be available, we will inform you without delay and refund any amount already paid.
+1. We ship with Austrian Post to the delivery address you give. We usually hand your order to the post within three working days of receiving the payment. Postal delivery usually takes 1–3 working days within Austria, 3–6 working days to Germany and 4–10 working days to the other EU countries. Should an ordered card unexpectedly not be available, we will inform you without delay and refund any amount already paid.
 2. For consumers: the risk of loss of or damage to the cards passes to you only when the cards are delivered to you or to a third party named by you who is not the carrier (§ 7b KSchG).
 3. The cards remain our property until paid in full.
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
 import { LegalPage, legalTitle } from '@/components/LegalPage';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,10 @@ type Props = { params: Promise<{ locale: Locale }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  return { title: (await legalTitle('withdrawal', locale)) ?? undefined };
+  return {
+    title: (await legalTitle('withdrawal', locale)) ?? undefined,
+    alternates: pageAlternates('/widerrufsbelehrung', locale),
+  };
 }
 
 export default async function Page({ params }: Props) {

@@ -1,14 +1,16 @@
 {
   "Meta": {
     "siteName": "Overpriced Cardboard",
-    "homeTitle": "Pokémon-Einzelkarten kaufen – geprüft, in vielen Sprachen",
-    "homeDescription": "Pokémon-Einzelkarten aus allen Serien und vielen Sprachen, mit genau beschriebenem Zustand. Versandkostenfrei nach Österreich und Deutschland.",
+    "homeTitle": "Pokémon-Einzelkarten mit Gratisversand in die EU – Overpriced Cardboard",
+    "homeDescription": "Pokémon-Einzelkarten aus allen Serien und vielen Sprachen, mit genau beschriebenem Zustand. Versandkostenfrei in die ganze EU.",
     "cardsTitle": "Alle Karten",
     "cardsDescription": "Pokémon-Einzelkarten nach Sprache, Serie, Set, Seltenheit und Zustand filtern.",
     "searchTitle": "Suche nach „{q}“",
     "setsTitle": "Sets",
     "setsDescription": "Alle Pokémon-Sets, aus denen gerade Karten zu haben sind.",
-    "notFoundTitle": "Seite nicht gefunden"
+    "notFoundTitle": "Seite nicht gefunden",
+    "shippingDescription": "Versand in alle EU-Länder mit der Post, Standardversand kostenlos, wertvolle Karten versichert. Bezahlen mit Karte, Apple Pay, Google Pay, EPS oder PayPal.",
+    "conditionsDescription": "So bewerten wir den Zustand jeder Pokémon-Karte: Mint, Near Mint, Excellent, Good, Light Played, Played und Poor, und was jede Stufe bedeutet."
   },
   "Nav": {
     "cards": "Karten",
@@ -28,7 +30,7 @@
   },
   "Home": {
     "title": "Pokémon-Einzelkarten aus allen Serien und Sprachen",
-    "lead": "Versandkostenfrei nach Österreich und Deutschland.",
+    "lead": "Versandkostenfrei in die ganze EU.",
     "newest": "Neu eingetroffen",
     "allCards": "Alle Karten ansehen",
     "bySet": "Nach Set stöbern",
@@ -95,7 +97,7 @@
     "energy": "Typ",
     "conditionGuide": "Was bedeutet dieser Zustand?",
     "highValue": "Wertvolle Karte: Wir verschicken sie versichert. Die Versandkosten siehst du im Warenkorb.",
-    "shippingNote": "Lieferung nach Österreich und Deutschland mit der Österreichischen Post.",
+    "shippingNote": "Lieferung in alle EU-Länder mit der Österreichischen Post.",
     "moreFromSet": "Mehr aus {set}",
     "zoom": "Bild vergrößern",
     "close": "Schließen",
@@ -185,11 +187,12 @@
   "Shipping": {
     "title": "Versand und Zahlung",
     "countries": "Wir liefern nach",
+    "otherEu": "Übrige EU-Länder",
     "minimum": "Mindestbestellwert {amount}",
     "deliveryTime": "Lieferzeit {time}",
     "free": "Wir verschicken mit der Österreichischen Post. Der Versand ist kostenlos.",
     "insured": "Ist in deiner Bestellung eine Karte über {threshold}, verschicken wir versichert. Dafür berechnen wir {rate} des Warenwerts, mindestens {minimum}. Für Bestellungen über {limit} gibt es keinen versicherten Versand.",
-    "otherCountries": "In andere Länder liefern wir derzeit nur auf Anfrage. Schreib uns dafür an <mail>{email}</mail>.",
+    "otherCountries": "In Länder außerhalb der EU liefern wir derzeit nur auf Anfrage. Schreib uns dafür an <mail>{email}</mail>.",
     "payment": "Bezahlen kannst du mit Kreditkarte, Apple Pay, Google Pay, EPS und PayPal. Die Zahlung läuft über Stripe."
   },
   "Imprint": {

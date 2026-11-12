@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro } from '@pokeshop/core';
 import { listCatalog, productBySlug, type ProductPage } from '@pokeshop/core/storefront';
+import { deliveryCountries } from '@pokeshop/core/cart';
 import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db, getSetting } from '@/server/config';
@@ -11,6 +12,8 @@ import { CardImage } from '@/components/CardImage';
 import { CardTile } from '@/components/CardTile';
 import { ZoomCard } from '@/components/ZoomCard';
 import { addToCartAction } from '../../shop-actions';
+import { getCompany } from '@/server/shop';
+import { langAlternates, offerShipping, returnPolicy } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +49,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description: `${namesText(p.name, p.nameTranslations)}, ${p.setName ?? p.setCode} ${p.cardNumber}. ${t('language')}: ${tl(p.cardLanguage as never)}, ${t('condition')}: ${p.condition}. ${formatEuro(p.priceCents, locale)}.`,
-    alternates: { canonical: paths(p)[locale], languages: paths(p) },
-    openGraph: img ? { images: [{ url: img }] } : undefined,
+    alternates: langAlternates(paths(p), locale),
+    // Replaces the layout's Open Graph block as a whole, so name and language come along.
+    openGraph: img
+      ? {
+          siteName: (await getTranslations({ locale, namespace: 'Meta' }))('siteName'),
+          locale: locale === 'de' ? 'de_AT' : 'en_GB',
+          type: 'website',
+          images: [{ url: img }],
+        }
+      : undefined,
   };
 }
 
@@ -73,6 +84,7 @@ export default async function CardPage({ params }: Props) {
     .slice(0, 8);
   const big = largeImage(p);
   const alt = `${namesText(p.name, p.nameTranslations)}, ${p.setName ?? p.setCode} ${p.cardNumber}`;
+  const [countries, company] = await Promise.all([deliveryCountries(db()), getCompany()]);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -84,6 +96,7 @@ export default async function CardPage({ params }: Props) {
     sku: p.sku,
     image: big ? [`${config.baseUrl}${big}`] : undefined,
     category: 'Pokémon TCG single card',
+    description: `${alt}. ${t('language')}: ${tl(p.cardLanguage as never)}, ${t('condition')}: ${p.condition}.`,
     offers: {
       '@type': 'Offer',
       url: `${config.baseUrl}${paths(p)[locale]}`,
@@ -93,6 +106,9 @@ export default async function CardPage({ params }: Props) {
       itemCondition: ['M', 'NM'].includes(p.condition)
         ? 'https://schema.org/NewCondition'
         : 'https://schema.org/UsedCondition',
+      seller: { '@type': 'Organization', name: String(company.public_name) },
+      shippingDetails: offerShipping(countries, p.priceCents, p.highValue),
+      hasMerchantReturnPolicy: returnPolicy(countries.map((c) => c.code)),
     },
   };
 

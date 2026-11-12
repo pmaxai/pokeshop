@@ -2,6 +2,25 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-12 · English first, delivery to the whole EU
+
+English is the default language at the domain root; German moved under /de with its translated
+paths (`/de/karten`, `/de/warenkorb`). Links built outside the web app (mails, legal texts) use
+`localePath` in core, which mirrors the routing. Old German root links redirect permanently to
+/de (next.config.ts, derived from the routing table). No automatic redirect by browser language.
+
+All 27 EU countries are delivery countries. Migration 0016 gave the new ones Germany's terms
+(free standard shipping, € 20 minimum order, same insurance rules) and 4–10 working days; each
+country stays editable in the admin. The VAT setting is unchanged: under the small business
+scheme every order is VAT-free, which holds only while EU distance sales stay within € 10,000 a
+year; above that the destination country's VAT applies and the code needs OSS next to the
+small business scheme.
+
+Every indexable page has a canonical link and hreflang alternates with English as x-default
+(`pageAlternates`); the sitemap lists English URLs first. Card pages describe shipping per
+country group, the 14-day return policy and the seller in schema.org; the home page names the
+site and the shop. Pages without their own picture share /og.png.
+
 ## 2026-11-12 · The shop is Overpriced Cardboard at overpricedcardboard.com
 
 The shop moved from pokemonkarten.at to overpricedcardboard.com before the first order, with no

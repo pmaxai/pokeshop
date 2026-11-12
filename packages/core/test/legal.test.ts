@@ -19,9 +19,9 @@ test('placeholders: company, address and shop links per language', () => {
   const md = '{{company.name}}, {{company.address}} – {{withdraw_url}} {{unknown}}';
   assert.equal(
     fillPlaceholders(md, ctx),
-    'Antalyse GmbH, Wienerstraße 1, 2440 Moosbrunn, Österreich – https://overpricedcardboard.com/vertrag-widerrufen {{unknown}}',
+    'Antalyse GmbH, Wienerstraße 1, 2440 Moosbrunn, Österreich – https://overpricedcardboard.com/de/vertrag-widerrufen {{unknown}}',
   );
-  assert.match(fillPlaceholders('{{withdraw_url}}', { ...ctx, locale: 'en' }), /\/en\/withdraw$/);
+  assert.match(fillPlaceholders('{{withdraw_url}}', { ...ctx, locale: 'en' }), /\.com\/withdraw$/);
 });
 
 test('raw HTML in a legal text is shown as text, never rendered', () => {

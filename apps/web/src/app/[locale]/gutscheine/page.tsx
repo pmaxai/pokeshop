@@ -11,6 +11,7 @@ import { VOUCHER_FORM_FLASH } from '@/server/app-form';
 import { payments } from '@/server/payments';
 import { GiftVoucherForm } from '@/components/GiftVoucherForm';
 import { buyVoucherAction } from '../voucher-actions';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,11 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Vouchers' });
-  return { title: t('metaTitle'), description: t('metaDescription') };
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    alternates: pageAlternates('/gutscheine', locale),
+  };
 }
 
 type Flash = { values?: Record<string, string>; errors?: Record<string, string> };

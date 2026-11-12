@@ -30,6 +30,7 @@ import {
   renderVoucherPdf,
   type InvoiceData,
 } from './pdf.ts';
+import { localePath } from './locale-paths.ts';
 
 export type Attachment = {
   name: string;
@@ -456,9 +457,9 @@ async function orderToken(db: Db, id: number): Promise<string | null> {
 }
 
 const orderUrl = (ctx: MailContext, locale: 'de' | 'en', token: string) =>
-  `${ctx.baseUrl}${locale === 'de' ? '/bestellung' : '/en/order'}/${token}`;
+  ctx.baseUrl + localePath(locale, { de: `/bestellung/${token}`, en: `/order/${token}` });
 const withdrawUrl = (ctx: MailContext, locale: 'de' | 'en') =>
-  `${ctx.baseUrl}${locale === 'de' ? '/vertrag-widerrufen' : '/en/withdraw'}`;
+  ctx.baseUrl + localePath(locale, { de: '/vertrag-widerrufen', en: '/withdraw' });
 
 type Rendered = {
   subject: string;

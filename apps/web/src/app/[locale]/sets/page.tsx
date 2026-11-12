@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { setsForSale } from '@pokeshop/core/storefront';
-import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { SetList } from '@/components/SetList';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function generateMetadata({
   return {
     title: t('setsTitle'),
     description: t('setsDescription'),
-    alternates: { canonical: getPathname({ href: '/sets', locale }) },
+    alternates: pageAlternates('/sets', locale),
   };
 }
 

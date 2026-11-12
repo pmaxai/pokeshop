@@ -6,6 +6,7 @@ import { SMALL_BUSINESS_NOTE } from '@pokeshop/core/vat';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { getCompany } from '@/server/shop';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Imprint' });
-  return { title: t('title') };
+  return { title: t('title'), alternates: pageAlternates('/impressum', locale) };
 }
 
 /**

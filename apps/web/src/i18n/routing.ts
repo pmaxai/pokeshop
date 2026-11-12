@@ -1,12 +1,13 @@
 import { defineRouting } from 'next-intl/routing';
 
 /**
- * German at the domain root, English under /en with translated paths.
- * No automatic redirect by browser language (localeDetection: false).
+ * English at the domain root, German under /de with translated paths (packages/core/src/
+ * locale-paths.ts mirrors this for mails and legal texts). No automatic redirect by browser
+ * language (localeDetection: false); the language switch in the header changes it.
  */
 export const routing = defineRouting({
-  locales: ['de', 'en'],
-  defaultLocale: 'de',
+  locales: ['en', 'de'],
+  defaultLocale: 'en',
   localePrefix: 'as-needed',
   localeDetection: false,
   pathnames: {

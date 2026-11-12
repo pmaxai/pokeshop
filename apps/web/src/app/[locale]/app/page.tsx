@@ -9,13 +9,13 @@ import {
   MAX_LICENSES_PER_ORDER,
   netLicensePrice,
 } from '@pokeshop/core/licenses';
-import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, licenseSalesConfigured } from '@/server/config';
 import { getCompany } from '@/server/shop';
 import { LicenseForm } from '@/components/LicenseForm';
 import { APP_FORM_FLASH } from '@/server/app-form';
 import { buyLicenseAction, resendLicenseAction } from '../app-actions';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,13 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: t('metaTitle') },
     description: t('metaDescription'),
-    alternates: {
-      canonical: getPathname({ href: '/app', locale }),
-      languages: {
-        de: getPathname({ href: '/app', locale: 'de' }),
-        en: getPathname({ href: '/app', locale: 'en' }),
-      },
-    },
+    alternates: pageAlternates('/app', locale),
   };
 }
 

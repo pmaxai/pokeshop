@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { listCatalog, setInfo } from '@pokeshop/core/storefront';
-import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { CardTile } from '@/components/CardTile';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,22 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!s) return {};
   return {
     title: `${s.name}${s.series ? ` (${s.series})` : ''}`,
-    alternates: {
-      canonical: getPathname({
-        href: { pathname: '/sets/[set]', params: { set: s.setCode } },
-        locale,
-      }),
-      languages: {
-        de: getPathname({
-          href: { pathname: '/sets/[set]', params: { set: s.setCode } },
-          locale: 'de',
-        }),
-        en: getPathname({
-          href: { pathname: '/sets/[set]', params: { set: s.setCode } },
-          locale: 'en',
-        }),
-      },
-    },
+    alternates: pageAlternates({ pathname: '/sets/[set]', params: { set: s.setCode } }, locale),
   };
 }
 

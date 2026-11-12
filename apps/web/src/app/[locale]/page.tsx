@@ -3,10 +3,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { newestCards, setsForSale, listCatalog } from '@pokeshop/core/storefront';
 import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { db } from '@/server/config';
+import { config, db } from '@/server/config';
+import { deliveryCountries } from '@pokeshop/core/cart';
+import { getCompany } from '@/server/shop';
+import { JsonLd } from '@/components/JsonLd';
 import { CardTile } from '@/components/CardTile';
 import { CardImage } from '@/components/CardImage';
 import { SetList } from '@/components/SetList';
+import { pageAlternates, siteJsonLd } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,14 +24,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   return {
-    alternates: {
-      canonical: getPathname({ href: '/', locale }),
-      languages: {
-        de: getPathname({ href: '/', locale: 'de' }),
-        en: getPathname({ href: '/', locale: 'en' }),
-        'x-default': '/',
-      },
-    },
+    alternates: pageAlternates('/', locale),
   };
 }
 
@@ -48,8 +45,18 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
     .sort((a, b) => b.priceCents - a.priceCents)
     .slice(0, 3);
 
+  const [countries, company] = await Promise.all([deliveryCountries(db()), getCompany()]);
   return (
     <div className="wrap">
+      <JsonLd
+        data={siteJsonLd({
+          baseUrl: config.baseUrl,
+          name: String(company.public_name),
+          email: String(company.email),
+          searchPath: getPathname({ href: '/karten', locale }),
+          countries: countries.map((c) => c.code),
+        })}
+      />
       <section className="hero">
         <div>
           <h1>{t('title')}</h1>

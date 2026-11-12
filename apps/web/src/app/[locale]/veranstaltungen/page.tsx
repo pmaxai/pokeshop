@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { dateParts, eventPlace, eventTexts, eventWhen } from './format';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,11 @@ type Props = { params: Promise<{ locale: Locale }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Events' });
-  return { title: t('title'), description: t('intro') };
+  return {
+    title: t('title'),
+    description: t('intro'),
+    alternates: pageAlternates('/veranstaltungen', locale),
+  };
 }
 
 export default async function EventsPage({ params }: Props) {

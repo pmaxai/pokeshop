@@ -155,7 +155,11 @@ test('cart: no reservation, capped at free copies, minimum order per country', a
   view = await loadCart(sql, cart, 'de');
   assert.equal(view.check.ok, false);
   assert.deepEqual(view.check.problems, [{ code: 'below_minimum', minimum: 2000, missing: 200 }]);
-  assert.equal(await setCartCountry(sql, cart, 'FR'), false, 'France is not a delivery country');
+  assert.equal(
+    await setCartCountry(sql, cart, 'CH'),
+    false,
+    'Switzerland is not a delivery country',
+  );
 });
 
 test('paying: cards held for 10 minutes, committed on payment, mails queued, replay harmless', async () => {
@@ -269,7 +273,7 @@ test('checkout refuses an empty cart and a country we do not ship to', async () 
     createCheckoutOrder(sql, {
       cartId: cart,
       locale: 'de',
-      details: details({ shipping: { ...details().shipping, country: 'FR', postcode: '75001' } }),
+      details: details({ shipping: { ...details().shipping, country: 'CH', postcode: '8001' } }),
       reservationMinutes: 10,
       ossEnabled: false,
     }),
