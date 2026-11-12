@@ -44,9 +44,9 @@ We send order confirmations, invoices and replies to your messages with Microsof
 
 If you withdraw from the contract with "Return an order (withdraw from contract)", we store your details and the time of receipt, send you an acknowledgement of receipt and process the withdrawal (Art. 6 (1) (c) GDPR in conjunction with § 13a FAGG). We keep this data as long as claims may arise from it, usually three years.
 
-## 8. App licences (ScanPM)
+## 8. App licences (Overpriced Cardboard Scanner)
 
-Licences for the app ScanPM are sold by {{seller.name}}. It is the controller for the data of a licence purchase and of the licence service; what it processes is set out in the data protection section of its licence terms ({{license_terms_url}}). We run the app page, the order form and the server the licence service also runs on, and process the data on its behalf (Art. 28 GDPR).
+Licences for the app Overpriced Cardboard Scanner are sold by {{seller.name}}. It is the controller for the data of a licence purchase and of the licence service; what it processes is set out in the data protection section of its licence terms ({{license_terms_url}}). We run the app page, the order form and the server the licence service also runs on, and process the data on its behalf (Art. 28 GDPR).
 
 ## 9. Hosting
 

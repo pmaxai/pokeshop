@@ -42,7 +42,11 @@ const FEATURES = [
   'alert',
   'trading',
   'youtube',
+  'webshop',
 ] as const;
+
+const ACP_POINTS = ['cut', 'voice', 'music', 'out'] as const;
+const WAAS_POINTS = ['domain', 'mail', 'stripe'] as const;
 
 function megabytes(bytes: number, locale: Locale): string {
   return `${new Intl.NumberFormat(locale === 'de' ? 'de-AT' : 'en-GB', {
@@ -97,6 +101,9 @@ export default async function AppPage({ params, searchParams }: Props) {
     .sort((a, b) => a.name.localeCompare(b.name, locale));
   const store = sales.playStoreUrl !== null;
   const sellerAddress = `${seller.street}, ${seller.postcode} ${seller.city}`;
+  // The services are the GmbH's; enquiries go to its mailbox.
+  const ask = (service: string) =>
+    `mailto:${seller.email || email}?subject=${encodeURIComponent(t('services.askSubject', { service }))}`;
 
   return (
     <div className="wrap app-page">
@@ -145,6 +152,40 @@ export default async function AppPage({ params, searchParams }: Props) {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="section" id="dienste" aria-labelledby="services-title">
+        <h2 id="services-title" className="section__head">
+          {t('services.title')}
+        </h2>
+        <p className="app-services__intro">{t('services.intro', { seller: seller.name })}</p>
+        <div className="app-services">
+          <section className="app-service" aria-labelledby="acp-title">
+            <h3 id="acp-title">{t('services.acp.title')}</h3>
+            <p>{t('services.acp.text')}</p>
+            <ul className="app-ticks">
+              {ACP_POINTS.map((k) => (
+                <li key={k}>{t(`services.acp.points.${k}`)}</li>
+              ))}
+            </ul>
+            <a className="btn btn--quiet" href={ask(t('services.acp.title'))}>
+              {t('services.ask')}
+            </a>
+          </section>
+          <section className="app-service" aria-labelledby="waas-title">
+            <h3 id="waas-title">{t('services.waas.title')}</h3>
+            <p>{t('services.waas.text')}</p>
+            <p className="app-service__needs">{t('services.waas.needsTitle')}</p>
+            <ul className="app-ticks">
+              {WAAS_POINTS.map((k) => (
+                <li key={k}>{t(`services.waas.points.${k}`)}</li>
+              ))}
+            </ul>
+            <a className="btn btn--quiet" href={ask(t('services.waas.title'))}>
+              {t('services.ask')}
+            </a>
+          </section>
+        </div>
       </section>
 
       <div className="app-columns">

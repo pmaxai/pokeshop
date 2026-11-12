@@ -1,5 +1,5 @@
 /**
- * Licences for the ScanPM app, sold in the shop by Antalyse GmbH. A purchase is an order of
+ * Licences for the Overpriced Cardboard Scanner app, sold in the shop by Antalyse GmbH. A purchase is an order of
  * kind 'license' and seller 'gmbh': no cards and no shipping, paid through the GmbH's own
  * Stripe account, which works out the VAT (Stripe Tax) and issues invoice and credit notes.
  * After the payment the worker asks the licence service for the keys and e-mails key, QR code,
@@ -22,7 +22,7 @@ import { licenseCountryAllowed, parseTaxId, type TaxId, type ViesChecker } from 
 import { HOME_COUNTRY, STANDARD_VAT_RATES } from './vat.ts';
 import { findCode, holdRedemptions, licenseDiscount, type CodeProblem } from './vouchers.ts';
 
-export const APP_NAME = 'ScanPM';
+export const APP_NAME = 'Overpriced Cardboard Scanner';
 /** The licence service issues at most 50 keys per order. */
 export const MAX_LICENSES_PER_ORDER = 50;
 export const DEFAULT_LICENSE_PRICE_CENTS = 13900;
@@ -602,7 +602,8 @@ export async function licensePaymentLine(db: Db, orderId: number, locale: 'de' |
     SELECT quantity, unit_price_cents FROM order_licenses WHERE order_id = ${orderId}`;
   if (!l) return null;
   return {
-    name: locale === 'en' ? `${APP_NAME} licence (beta)` : `${APP_NAME}-Lizenz (Beta)`,
+    name:
+      locale === 'en' ? `${APP_NAME} licence (Android beta)` : `Lizenz ${APP_NAME} (Android-Beta)`,
     description:
       locale === 'en'
         ? 'One-off licence for the Android app, one device at a time, updates included'
@@ -615,8 +616,8 @@ export async function licensePaymentLine(db: Db, orderId: number, locale: 'de' |
 /** Invoice and credit-note line for the licences. */
 export function licenseDocumentLine(quantity: number, unitCents: number) {
   return {
-    de: `${APP_NAME} – Einmal-Lizenz für die Android-App (Beta), inkl. Updates`,
-    en: `${APP_NAME} – one-off licence for the Android app (beta), updates included`,
+    de: `${APP_NAME} – Einmal-Lizenz für die Android-App (Android-Beta), inkl. Updates`,
+    en: `${APP_NAME} – one-off licence for the Android app (Android beta), updates included`,
     quantity,
     unit_cents: unitCents,
   };
@@ -641,7 +642,7 @@ export async function licenseOrderPaid(
   await enqueueJob(tx, 'license.issue', { order_id: o.id }, { dedupeKey: `license.issue:${o.id}` });
   await alertShop(
     tx,
-    `${APP_NAME}-Lizenz verkauft: ${o.number}`,
+    `Lizenz verkauft (${APP_NAME}): ${o.number}`,
     session
       ? `Bezahlt${o.seller === 'gmbh' ? ' an die GmbH' : ''}: ${(total / 100).toFixed(2).replace('.', ',')} €. Der Schlüssel geht automatisch per E-Mail an den Kunden.`
       : 'Kostenlos mit Rabattcode, ohne Zahlung und ohne Rechnung. Der Schlüssel geht automatisch per E-Mail an den Kunden.',

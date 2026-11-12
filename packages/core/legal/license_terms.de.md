@@ -1,10 +1,10 @@
-# Lizenzbedingungen für ScanPM
+# Lizenzbedingungen für den Overpriced Cardboard Scanner
 
 Stand: November 2026
 
 ## 1. Geltungsbereich und Vertragspartner
 
-1. Diese Lizenzbedingungen gelten für den Kauf von Lizenzen für die Android-App ScanPM über die App-Seite des Onlineshops overpricedcardboard.com ({{app_url}}).
+1. Diese Lizenzbedingungen gelten für den Kauf von Lizenzen für die Android-App Overpriced Cardboard Scanner über die App-Seite des Onlineshops overpricedcardboard.com ({{app_url}}).
 2. Ihr Vertragspartner ist die {{seller.name}}, {{seller.address}}, {{seller.register}}, UID {{seller.vat_id}}, E-Mail: {{seller.email}} („wir“, „uns“). Weitere Angaben finden Sie im Impressum: {{imprint_url}}.
 3. Die Karten im Shop verkauft nicht die {{seller.name}}, sondern der Betreiber von {{company.public_name}}. Für Kartenbestellungen gelten dessen AGB ({{terms_url}}); für Lizenzen gelten ausschließlich diese Lizenzbedingungen.
 4. Verbraucher ist, wer die Lizenz nicht für sein Unternehmen kauft (§ 1 KSchG). Bestimmungen, die nur für Verbraucher gelten, sind als solche gekennzeichnet. Abweichende Bedingungen von Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich zustimmen.

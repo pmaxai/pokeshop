@@ -70,9 +70,9 @@ Please send complaints to {{company.email}}; we will reply as quickly as we can.
 1. Austrian law applies, excluding the UN Convention on Contracts for the International Sale of Goods and the conflict-of-law rules. For consumers, this choice of law applies only insofar as it does not deprive them of the protection afforded by the mandatory provisions of the law of the country in which they have their habitual residence.
 2. Actions against consumers resident or habitually staying in Austria must be brought before the court in whose district the consumer lives or habitually stays (§ 14 KSchG). For businesses, the place of jurisdiction is the court with subject-matter jurisdiction for 2440 Moosbrunn.
 
-## 13. App licences (ScanPM)
+## 13. App licences (Overpriced Cardboard Scanner)
 
-Licences for the app ScanPM offered on the shop's app page ({{app_url}}) are not sold by us but by {{seller.name}}. Buying them is governed only by its licence terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to them.
+Licences for the app Overpriced Cardboard Scanner offered on the shop's app page ({{app_url}}) are not sold by us but by {{seller.name}}. Buying them is governed only by its licence terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to them.
 
 ## 14. Vouchers and discount codes
 

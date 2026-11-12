@@ -131,7 +131,7 @@
     "withdrawalInfo": "Right of withdrawal",
     "withdraw": "Return an order (withdraw from contract)",
     "events": "Events",
-    "app": "ScanPM app",
+    "app": "Overpriced Cardboard Scanner",
     "vouchers": "Gift vouchers"
   },
   "Conditions": {
@@ -210,8 +210,8 @@
     "chamber": "Member of",
     "authority": "Trade authority",
     "contact": "Contact",
-    "licenses": "Sale of the app licences (ScanPM)",
-    "licensesIntro": "The licences for the app ScanPM are sold and invoiced by:"
+    "licenses": "Sale of the app licences (Overpriced Cardboard Scanner)",
+    "licensesIntro": "The licences for the app Overpriced Cardboard Scanner are sold and invoiced by:"
   },
   "Privacy": {
     "title": "Privacy",
@@ -359,17 +359,17 @@
     "until": "until"
   },
   "App": {
-    "metaTitle": "ScanPM – scan Pokémon cards, see prices",
-    "metaDescription": "The Android app by Overpriced Cardboard: hold a card to the camera and see the Cardmarket price of the right printing, offline too. Beta, one-off licence with updates.",
-    "beta": "Beta",
-    "tagline": "Card in front of the camera, price on the screen. No signal needed.",
-    "lead": "ScanPM recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
+    "metaTitle": "Overpriced Cardboard Scanner – scan Pokémon cards, see prices",
+    "metaDescription": "The Android app by Overpriced Cardboard: scan a card and see the Cardmarket price of the right printing, even without signal. Android beta, one-off licence with updates.",
+    "beta": "Android Beta",
+    "tagline": "Scan a card and check current prices. Even without signal.",
+    "lead": "The Overpriced Cardboard Scanner recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
     "price": "{price} one-off",
     "priceNote": "One-off licence, updates included, VAT included",
     "buy": "Buy a licence",
     "seeFeatures": "What the app does",
-    "platformApk": "Android only (Android 8 or newer). ScanPM isn’t in the Play Store yet: you get the app as an APK file.",
-    "platformStore": "For Android (Android 8 or newer), on Google Play.",
+    "platformApk": "Currently Android only (Android 8 or newer). The Overpriced Cardboard Scanner isn’t in the Play Store yet: you get the app as an APK file.",
+    "platformStore": "Currently Android only (Android 8 or newer), on Google Play.",
     "mock": {
       "label": "What a scan looks like: the card sits in the green frame, below it name, set and Cardmarket price.",
       "sure": "Card recognised",
@@ -378,7 +378,7 @@
       "avg": "30 days",
       "low": "from"
     },
-    "featuresTitle": "What ScanPM does",
+    "featuresTitle": "What the Overpriced Cardboard Scanner does",
     "features": {
       "recognise": {
         "title": "Recognise",
@@ -406,11 +406,41 @@
       },
       "youtube": {
         "title": "YouTube mode",
-        "text": "A clean screen for opening videos: a big price that counts up, a hit effect above your alert price and the pack total as CSV."
+        "text": "A clean screen for opening videos: a big price that counts up, a hit effect above your alert price and the pack total as CSV. In recording mode the app records your opening itself; our Automatic Content Processing turns it into a finished video (see below)."
+      },
+      "webshop": {
+        "title": "Webshop Mode",
+        "text": "For dealers: scan a card, pick language, condition, price and storage box, and it is in your own webshop, picture included. At your table you sell straight from stock. It pairs with our Webshop as a Service (see below)."
       }
     },
+    "services": {
+      "title": "Services to go with it",
+      "intro": "Two services we run for you. Offered by {seller}.",
+      "acp": {
+        "title": "Automatic Content Processing",
+        "text": "An automatic pipeline for the recordings from YouTube mode. You upload the raw footage and get back videos ready to post.",
+        "points": {
+          "cut": "Cutting",
+          "voice": "Commentary: a generic voice or a clone of your own",
+          "music": "Background music and sound effects",
+          "out": "Finished videos and thumbnails"
+        }
+      },
+      "waas": {
+        "title": "Webshop as a Service",
+        "text": "Your own online shop for single cards, like this one. We host and run it; you stock it with the app’s Webshop Mode.",
+        "needsTitle": "All you need:",
+        "points": {
+          "domain": "a domain",
+          "mail": "a Microsoft 365 mail address with an Entra account",
+          "stripe": "a Stripe account for payments"
+        }
+      },
+      "ask": "Get in touch",
+      "askSubject": "Enquiry: {service}"
+    },
     "betaTitle": "What beta means",
-    "betaIntro": "ScanPM is already used every day, but it isn’t finished. For you that means:",
+    "betaIntro": "The Overpriced Cardboard Scanner is already used every day, but it isn’t finished. For you that means:",
     "betaPoints": {
       "recognition": "Recognition is right most of the time, not always, especially when cards touch each other or sit in binders. The app then shows you the most likely matches to pick from.",
       "prices": "Prices come from public data and can be missing or off for some cards. The app warns you about uncertain prices; check valuable cards before you buy.",
@@ -420,7 +450,7 @@
     "licenceTitle": "The licence",
     "licencePoints": {
       "once": "{price} one-off, no subscription. During the beta this one-off licence is the only option.",
-      "updates": "All updates are included for as long as we offer ScanPM.",
+      "updates": "All updates are included for as long as we offer the Overpriced Cardboard Scanner.",
       "device": "A licence is active on one device at a time. New phone? A QR code from the app moves it, and the old device stops.",
       "online": "The app needs the internet once, to activate."
     },
@@ -429,10 +459,10 @@
       "buy": "Buy a licence here in the shop.",
       "mail": "Right after payment you get an e-mail with the licence key, a QR code and a download link.",
       "installApk": "Open the APK file on your phone. Android asks once whether your browser may install apps: allow it.",
-      "installStore": "Install ScanPM from Google Play.",
-      "activate": "Start ScanPM, scan the QR code, done."
+      "installStore": "Install the Overpriced Cardboard Scanner from Google Play.",
+      "activate": "Start the app, scan the QR code, done."
     },
-    "storeTarget": "We aim to have ScanPM on Google Play by the end of November 2026. Until then you install the app as an APK file; the app announces new versions itself.",
+    "storeTarget": "We aim to have the Overpriced Cardboard Scanner on Google Play by the end of November 2026. Until then you install the app as an APK file; the app announces new versions itself.",
     "needsTitle": "What you need",
     "needs": {
       "android": "An Android phone with Android 8 or newer and a camera",
@@ -512,10 +542,10 @@
       "refundedText": "Its licence no longer works.",
       "back": "Back to the app page",
       "facts": "Order {number} · {count, plural, one {# licence} other {# licences}} · {total}",
-      "download": "Download ScanPM",
+      "download": "Download Overpriced Cardboard Scanner",
       "downloadMeta": "APK, version {version}, {size}",
-      "store": "ScanPM on Google Play",
-      "installHint": "Open the file on your Android phone. Android asks once whether your browser may install apps: allow it. Then start ScanPM and scan the QR code from the e-mail."
+      "store": "Overpriced Cardboard Scanner on Google Play",
+      "installHint": "Open the file on your Android phone. Android asks once whether your browser may install apps: allow it. Then start the app and scan the QR code from the e-mail."
     },
     "priceBusiness": "EU businesses outside Austria with a VAT ID: {net} net"
   },

@@ -582,7 +582,7 @@ export async function renderTemplate(
       const [lic] = await db<{ quantity: number }[]>`
         SELECT quantity FROM order_licenses WHERE order_id = ${o.id}`;
       const licenseRow = lic
-        ? `<li>${lic.quantity} × ${esc(L === 'de' ? `${APP_NAME}-Lizenz (der Schlüssel ist damit gesperrt)` : `${APP_NAME} licence (the key no longer works)`)}</li>`
+        ? `<li>${lic.quantity} × ${esc(L === 'de' ? `Lizenz für ${APP_NAME} (der Schlüssel ist damit gesperrt)` : `${APP_NAME} licence (the key no longer works)`)}</li>`
         : '';
       const [gift] = await db<{ code: string }[]>`
         SELECT v.code FROM order_gift_vouchers g JOIN vouchers v ON v.id = g.voucher_id
@@ -758,9 +758,9 @@ export async function renderTemplate(
 
 const LICENSE_TEXT = {
   de: {
-    subject: `Deine ${APP_NAME}-Lizenz`,
-    subjectMany: (n: number) => `Deine ${n} ${APP_NAME}-Lizenzen`,
-    subjectAgain: `Deine ${APP_NAME}-Lizenz (erneut gesendet)`,
+    subject: `Deine Lizenz für ${APP_NAME}`,
+    subjectMany: (n: number) => `Deine ${n} Lizenzen für ${APP_NAME}`,
+    subjectAgain: `Deine Lizenz für ${APP_NAME} (erneut gesendet)`,
     intro: (n: number) =>
       n === 1
         ? `danke für deinen Kauf! Hier ist dein Lizenzschlüssel für ${APP_NAME}.`
@@ -776,14 +776,14 @@ const LICENSE_TEXT = {
     downloadButton: (v: string | null) =>
       v ? `${APP_NAME} herunterladen (Version ${v})` : `${APP_NAME} herunterladen`,
     storeButton: `${APP_NAME} im Play Store`,
-    stepStart: `${APP_NAME} starten und die Kamera erlauben. Beim ersten Start entpackt die App ihre Kartendatenbank, das dauert ein paar Sekunden.`,
+    stepStart: `Die App starten und die Kamera erlauben. Beim ersten Start entpackt die App ihre Kartendatenbank, das dauert ein paar Sekunden.`,
     stepActivate:
       'Den QR-Code oben scannen oder den Schlüssel eintippen (Groß- und Kleinschreibung, Leerzeichen und Bindestriche sind egal). Für die Aktivierung braucht die App einmal Internet.',
     goodTitle: 'Gut zu wissen',
     good: [
       'Eine Lizenz ist auf einem Gerät gleichzeitig aktiv. Für ein neues Handy öffnest du in der App ⚙ → Licence → „Show the licence QR code“ und scannst ihn mit dem neuen Gerät. Das alte hört dann auf.',
       'Updates sind in der Lizenz enthalten, solange wir die App anbieten. Die App meldet neue Versionen selbst (Leiste oben → Update), mit frischen Preisen.',
-      `${APP_NAME} ist in der Beta: Die Erkennung ist nicht perfekt und Preise können fehlen oder abweichen. Prüf wertvolle Karten vor dem Kauf.`,
+      `Der ${APP_NAME} ist in der Android-Beta: Die Erkennung ist nicht perfekt und Preise können fehlen oder abweichen. Prüf wertvolle Karten vor dem Kauf.`,
       'Heb diese E-Mail auf. Auf der App-Seite im Shop kannst du sie jederzeit neu anfordern.',
     ],
     facts: (n: string, total: string) => `Bestellnummer <strong>${esc(n)}</strong> · ${esc(total)}`,
@@ -819,14 +819,14 @@ const LICENSE_TEXT = {
     downloadButton: (v: string | null) =>
       v ? `Download ${APP_NAME} (version ${v})` : `Download ${APP_NAME}`,
     storeButton: `${APP_NAME} on Google Play`,
-    stepStart: `Start ${APP_NAME} and allow the camera. On the first start the app unpacks its card database, which takes a few seconds.`,
+    stepStart: `Start the app and allow the camera. On the first start the app unpacks its card database, which takes a few seconds.`,
     stepActivate:
       'Scan the QR code above or type the key (case, spaces and dashes don’t matter). Activating needs the internet once.',
     goodTitle: 'Good to know',
     good: [
       'A licence is active on one device at a time. For a new phone, open ⚙ → Licence → “Show the licence QR code” in the app and scan it with the new device. The old one then stops.',
       'Updates are included for as long as we offer the app. The app announces new versions itself (bar at the top → Update), with fresh prices.',
-      `${APP_NAME} is in beta: recognition isn’t perfect and prices can be missing or off. Check valuable cards before you buy.`,
+      `The ${APP_NAME} is in Android beta: recognition isn’t perfect and prices can be missing or off. Check valuable cards before you buy.`,
       'Keep this e-mail. You can ask for it again any time on the app page in the shop.',
     ],
     facts: (n: string, total: string) => `Order number <strong>${esc(n)}</strong> · ${esc(total)}`,

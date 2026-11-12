@@ -203,7 +203,7 @@ export default async function OrderDetail({
       <div className="two-col">
         {isLicense && license ? (
           <section>
-            <h2>{APP_NAME}-Lizenzen</h2>
+            <h2>Lizenzen ({APP_NAME})</h2>
             <p>
               {license.quantity} × {formatEuro(license.unit_price_cents)} · gesamt{' '}
               {formatEuro(o.total_cents)} <span className="muted">({taxText})</span>
