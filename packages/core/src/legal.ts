@@ -91,6 +91,7 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     withdraw_url:
       ctx.baseUrl + localePath(ctx.locale, { de: '/vertrag-widerrufen', en: '/withdraw' }),
     privacy_url: ctx.baseUrl + localePath(ctx.locale, { de: '/datenschutz', en: '/privacy' }),
+    contact_url: ctx.baseUrl + localePath(ctx.locale, { de: '/kontakt', en: '/contact' }),
     terms_url: ctx.baseUrl + localePath(ctx.locale, { de: '/agb', en: '/terms' }),
     withdrawal_url:
       ctx.baseUrl +

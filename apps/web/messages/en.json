@@ -132,7 +132,8 @@
     "withdraw": "Return an order (withdraw from contract)",
     "events": "Events",
     "app": "Overpriced Cardboard Scanner",
-    "vouchers": "Gift vouchers"
+    "vouchers": "Gift vouchers",
+    "contact": "Contact"
   },
   "Conditions": {
     "M": "Mint",
@@ -342,6 +343,37 @@
     "doneText": "Your withdrawal was received on {time}. The acknowledgement with the content of your statement is on its way by e-mail. Please send the cards back to {address} within 14 days.",
     "info": "Details are in the <link>withdrawal instructions</link>.",
     "errorsTitle": "Please check the marked fields."
+  },
+  "Contact": {
+    "title": "Contact",
+    "metaDescription": "Ask us about cards, your order or the app. Write to us with the form and we reply by e-mail.",
+    "intro": "Questions about a card, your order or the app? Write to us and we reply by e-mail. You can also reach us directly at <mail>{email}</mail>.",
+    "name": "Name",
+    "email": "E-mail address",
+    "emailHint": "We send the reply here.",
+    "subject": "Subject (optional)",
+    "message": "Message",
+    "human": "I am human",
+    "humanHint": "When you tick it, your browser solves a small puzzle against spam. No cookies, no third-party services.",
+    "humanWorking": "Checking …",
+    "humanDone": "Confirmed. You can send the message now.",
+    "humanFailed": "That didn’t work. Reload the page and tick it again.",
+    "submit": "Send message",
+    "sending": "Sending …",
+    "privacy": "We use your details only to answer your request. More in the <link>privacy policy</link>.",
+    "sentTitle": "Thank you, your message has arrived.",
+    "sentText": "We will reply to {email} as soon as we can.",
+    "noscript": "The form needs JavaScript. Otherwise just write to us at <mail>{email}</mail>.",
+    "errorsTitle": "Please check the marked fields.",
+    "errors": {
+      "required": "Please fill this in.",
+      "invalid_email": "This e-mail address is not right.",
+      "too_long": "This is too long.",
+      "human": "Please tick “I am human”.",
+      "expired": "The page was open for a long time. Please tick “I am human” again.",
+      "too_fast": "That was too quick. Please tick “I am human” again.",
+      "too_many": "We just received a lot of messages from you. Please try again in a quarter of an hour."
+    }
   },
   "Events": {
     "title": "Events",

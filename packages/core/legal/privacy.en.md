@@ -40,19 +40,25 @@ So that your parcel arrives, we pass your name and delivery address to Österrei
 
 We send order confirmations, invoices and replies to your messages with Microsoft 365 (Microsoft Ireland Operations Limited, One Microsoft Place, South County Business Park, Leopardstown, Dublin 18, Ireland) as our processor. If you write to us, we use your details to answer your request (Art. 6 (1) (b) or (f) GDPR) and delete the message once it has been dealt with and no retention obligation applies.
 
-## 7. Withdrawal through the online form
+## 7. Contact form
+
+If you write to us with the contact form ({{contact_url}}), we store your name, e-mail address, subject, message and the time, to answer your request (Art. 6 (1) (b) or (f) GDPR). Depending on our settings we also receive the message by e-mail (Microsoft 365, see point 6). We delete handled messages automatically after twelve months.
+
+Against spam, your browser solves a small puzzle when you tick "I am human"; no cookies are set and no third-party services are involved. To fend off mass submissions we count messages per IP address in memory for 15 minutes; the IP address is not stored (Art. 6 (1) (f) GDPR).
+
+## 8. Withdrawal through the online form
 
 If you withdraw from the contract with "Return an order (withdraw from contract)", we store your details and the time of receipt, send you an acknowledgement of receipt and process the withdrawal (Art. 6 (1) (c) GDPR in conjunction with § 13a FAGG). We keep this data as long as claims may arise from it, usually three years.
 
-## 8. App licences (Overpriced Cardboard Scanner)
+## 9. App licences (Overpriced Cardboard Scanner)
 
 Licences for the app Overpriced Cardboard Scanner are sold by {{seller.name}}. It is the controller for the data of a licence purchase and of the licence service; what it processes is set out in the data protection section of its licence terms ({{license_terms_url}}). We run the app page, the order form and the server the licence service also runs on, and process the data on its behalf (Art. 28 GDPR).
 
-## 9. Hosting
+## 10. Hosting
 
 The shop and the database run on servers of Exoscale (Akenes SA, Boulevard de Grancy 19A, 1006 Lausanne, Switzerland) in a data centre in Europe. Exoscale processes the data on our behalf. The European Commission has found that Switzerland ensures an adequate level of data protection.
 
-## 10. Your rights
+## 11. Your rights
 
 You have the right of access, rectification, erasure and restriction of processing, the right to data portability and the right to object to processing based on our legitimate interest (Art. 15 to 21 GDPR). To use them, write to us at {{company.email}}.
 

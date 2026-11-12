@@ -132,7 +132,8 @@
     "withdraw": "Bestellung retournieren (Vertrag widerrufen)",
     "events": "Veranstaltungen",
     "app": "Overpriced Cardboard Scanner",
-    "vouchers": "Gutscheine"
+    "vouchers": "Gutscheine",
+    "contact": "Kontakt"
   },
   "Conditions": {
     "M": "Mint",
@@ -342,6 +343,37 @@
     "doneText": "Dein Widerruf ist am {time} eingegangen. Die Eingangsbestätigung mit dem Inhalt deiner Erklärung ist per E-Mail unterwegs. Bitte schick die Karten innerhalb von 14 Tagen an {address} zurück.",
     "info": "Die Einzelheiten stehen in der <link>Widerrufsbelehrung</link>.",
     "errorsTitle": "Bitte prüfe die markierten Felder."
+  },
+  "Contact": {
+    "title": "Kontakt",
+    "metaDescription": "Frag uns zu Karten, deiner Bestellung oder der App. Schreib uns über das Formular, wir antworten per E-Mail.",
+    "intro": "Fragen zu einer Karte, deiner Bestellung oder der App? Schreib uns, wir antworten per E-Mail. Du erreichst uns auch direkt unter <mail>{email}</mail>.",
+    "name": "Name",
+    "email": "E-Mail-Adresse",
+    "emailHint": "Hierhin schicken wir die Antwort.",
+    "subject": "Betreff (optional)",
+    "message": "Nachricht",
+    "human": "Ich bin ein Mensch",
+    "humanHint": "Beim Anhaken löst dein Browser eine kleine Rechenaufgabe gegen Spam. Ohne Cookies, ohne Dienste von Dritten.",
+    "humanWorking": "Wird kurz geprüft …",
+    "humanDone": "Bestätigt. Du kannst die Nachricht jetzt senden.",
+    "humanFailed": "Das hat nicht geklappt. Lade die Seite neu und hake noch einmal an.",
+    "submit": "Nachricht senden",
+    "sending": "Wird gesendet …",
+    "privacy": "Wir verwenden deine Angaben nur, um deine Anfrage zu beantworten. Mehr dazu in der <link>Datenschutzerklärung</link>.",
+    "sentTitle": "Danke, deine Nachricht ist angekommen.",
+    "sentText": "Wir antworten dir so bald wie möglich an {email}.",
+    "noscript": "Das Formular braucht JavaScript. Schreib uns sonst einfach an <mail>{email}</mail>.",
+    "errorsTitle": "Bitte prüf die markierten Felder.",
+    "errors": {
+      "required": "Bitte ausfüllen.",
+      "invalid_email": "Diese E-Mail-Adresse stimmt nicht.",
+      "too_long": "Das ist zu lang.",
+      "human": "Bitte hake „Ich bin ein Mensch“ an.",
+      "expired": "Die Seite war lange offen. Bitte hake „Ich bin ein Mensch“ noch einmal an.",
+      "too_fast": "Das ging zu schnell. Bitte hake „Ich bin ein Mensch“ noch einmal an.",
+      "too_many": "Gerade kamen sehr viele Nachrichten von dir. Bitte versuch es in einer Viertelstunde noch einmal."
+    }
   },
   "Events": {
     "title": "Veranstaltungen",

@@ -2,6 +2,20 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-12 · Contact form with a proof of work instead of a captcha service
+
+The contact page (`/contact`, `/de/kontakt`) stores messages in `contact_messages`; they are read
+and handled in Admin › Nachrichten. Spam is kept out without a third party and without cookies:
+a hidden honeypot field (filled → "sent", nothing stored), a signed challenge per page view that
+must be at least 3 seconds and at most 2 hours old, a proof of work the browser solves when the
+visitor ticks "I am human" (SHA-256 with 15 leading zero bits, well under a second on a desktop),
+each challenge usable once (unique column), and at most 5 messages per IP address in 15 minutes,
+counted only in the web process's memory. The challenge key is derived from `API_KEY_MASTER_KEY`.
+
+A switch on the messages page (setting `contact_notify`, on by default) sends each new message
+to the admin alert recipients, with the sender as reply-to. Handled messages are deleted after
+twelve months by the worker, as the privacy policy says.
+
 ## 2026-11-12 · The app is called Overpriced Cardboard Scanner
 
 ScanPM is renamed to "Overpriced Cardboard Scanner" (`APP_NAME`) everywhere a buyer sees it: app

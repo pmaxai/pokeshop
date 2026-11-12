@@ -746,6 +746,38 @@ export async function renderTemplate(
       const subject = `[Overpriced Cardboard] ${String(payload.subject ?? 'Hinweis')}`;
       return { subject, html: layout('de', ctx, subject, p(esc(payload.text ?? ''))) };
     }
+    case 'contact_notification': {
+      // To the shop's recipients; "Reply" in the mail program answers the sender directly.
+      const [c] = await db<
+        {
+          id: number;
+          name: string;
+          email: string;
+          subject: string | null;
+          message: string;
+          locale: 'de' | 'en';
+          created_at: Date;
+        }[]
+      >`SELECT id, name, email, subject, message, locale, created_at FROM contact_messages
+         WHERE id = ${Number(payload.message_id)}`;
+      if (!c) throw new Error('contact message not found');
+      const row = (label: string, value: string) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:${C.muted};vertical-align:top">${esc(label)}</td><td style="padding:4px 0;white-space:pre-wrap">${esc(value)}</td></tr>`;
+      const subject = `Neue Nachricht von ${c.name}${c.subject ? `: ${c.subject}` : ''}`;
+      const body = [
+        p(
+          `Über das Kontaktformular, ${esc(dateTime(c.created_at, 'de'))}, Sprache ${c.locale === 'de' ? 'Deutsch' : 'Englisch'}. Mit „Antworten“ schreibst du direkt an ${esc(c.email)}.`,
+        ),
+        `<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;margin:0 0 16px">${[
+          row('Name', c.name),
+          row('E-Mail', c.email),
+          ...(c.subject ? [row('Betreff', c.subject)] : []),
+          row('Nachricht', c.message),
+        ].join('')}</table>`,
+        button(`${ctx.baseUrl}/admin/nachrichten/${c.id}`, 'Im Admin öffnen'),
+      ].join('\n');
+      return { subject, html: layout('de', ctx, subject, body), replyTo: c.email };
+    }
     case 'license_delivery':
     case 'license_resend':
       return renderLicenseMail(db, mail, ctx);

@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/gutscheine',
     '/zustand',
     '/versand',
+    '/kontakt',
     '/agb',
     '/widerrufsbelehrung',
     '/datenschutz',

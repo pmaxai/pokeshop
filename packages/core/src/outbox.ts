@@ -13,7 +13,8 @@ export type MailTemplate =
   | 'admin_alert'
   | 'license_delivery'
   | 'license_resend'
-  | 'voucher_purchase';
+  | 'voucher_purchase'
+  | 'contact_notification';
 
 export type MailAttachment =
   | { kind: 'document'; id: number }
@@ -60,7 +61,10 @@ export async function enqueueMail(
 /** Mail to the shop's own recipients (setting admin_alert_recipients). */
 export async function enqueueShopMail(
   db: Db,
-  template: Extract<MailTemplate, 'order_notification' | 'withdrawal_notification' | 'admin_alert'>,
+  template: Extract<
+    MailTemplate,
+    'order_notification' | 'withdrawal_notification' | 'admin_alert' | 'contact_notification'
+  >,
   payload: Record<string, unknown>,
   dedupeKey?: string,
 ): Promise<void> {

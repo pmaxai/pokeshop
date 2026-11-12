@@ -29,6 +29,7 @@ export default async function Dashboard({
         to_pack: number;
         packing: number;
         withdrawals: number;
+        messages: number;
         failed_mails: number;
         month_cents: number;
         month_orders: number;
@@ -37,6 +38,7 @@ export default async function Dashboard({
       SELECT (SELECT count(*) FROM orders WHERE status = 'paid')::int AS to_pack,
              (SELECT count(*) FROM orders WHERE status = 'packing')::int AS packing,
              (SELECT count(*) FROM withdrawals WHERE handled_at IS NULL)::int AS withdrawals,
+             (SELECT count(*) FROM contact_messages WHERE done_at IS NULL)::int AS messages,
              (SELECT count(*) FROM outbox WHERE status = 'failed')::int AS failed_mails,
              (SELECT coalesce(sum(total_cents - refunded_cents), 0) FROM orders
                WHERE paid_at >= date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') AT TIME ZONE 'Europe/Vienna')::bigint AS month_cents,
@@ -109,6 +111,12 @@ export default async function Dashboard({
             <a href="/admin/widerrufe">Offene Widerrufe</a>
           </dt>
           <dd>{todo!.withdrawals}</dd>
+        </div>
+        <div>
+          <dt>
+            <a href="/admin/nachrichten">Offene Nachrichten</a>
+          </dt>
+          <dd>{todo!.messages}</dd>
         </div>
         <div>
           <dt>Umsatz diesen Monat</dt>

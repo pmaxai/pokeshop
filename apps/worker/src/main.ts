@@ -2,6 +2,7 @@
 // card-data sync, cart clean-up.
 import { writeFile } from 'node:fs/promises';
 import { deleteStaleCarts } from '@pokeshop/core/cart';
+import { deleteOldContactMessages } from '@pokeshop/core/contact';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -203,6 +204,8 @@ async function schedule() {
   await requeueStaleJobs(sql);
   const carts = await deleteStaleCarts(sql);
   if (carts) console.log(`[carts] deleted ${carts} stale cart(s)`);
+  const messages = await deleteOldContactMessages(sql);
+  if (messages) console.log(`[contact] deleted ${messages} handled message(s) older than a year`);
 }
 
 async function main() {
