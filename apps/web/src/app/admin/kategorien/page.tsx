@@ -115,7 +115,7 @@ export default async function Categories({
                     </td>
                     <td>
                       <a
-                        href={`/karten?cat=${encodeURIComponent(c.slug)}`}
+                        href={`/de/karten?cat=${encodeURIComponent(c.slug)}`}
                         target="_blank"
                         rel="noreferrer"
                       >

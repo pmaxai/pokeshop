@@ -23,7 +23,7 @@ const str = (f: FormData, k: string) => {
   const v = f.get(k);
   return typeof v === 'string' ? v.trim() : '';
 };
-const localeOf = (f: FormData): Locale => (str(f, 'locale') === 'en' ? 'en' : 'de');
+const localeOf = (f: FormData): Locale => (str(f, 'locale') === 'de' ? 'de' : 'en');
 
 async function back(
   locale: Locale,

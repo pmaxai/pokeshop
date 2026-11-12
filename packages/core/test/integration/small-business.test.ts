@@ -77,14 +77,15 @@ test('legal texts name the shop and point to the legal notice, not to the owner'
     baseUrl: 'https://overpricedcardboard.com',
     locale: 'de',
   });
-  assert.match(html, /https:\/\/overpricedcardboard\.com\/impressum/);
+  assert.match(html, /https:\/\/overpricedcardboard\.com\/de\/impressum/);
   assert.match(html, /§ 6 Abs\. 1 Z 27 UStG/);
   assert.match(html, /Bestellung retournieren \(Vertrag widerrufen\)/);
   assert.match(
     html,
     /mehr als 50 €, versenden wir versichert und berechnen dafür 5 % des Warenwerts/,
   );
-  assert.match(html, /In andere Länder liefern wir derzeit nur auf Anfrage/);
+  assert.match(html, /Wir liefern in alle Mitgliedstaaten der Europäischen Union/);
+  assert.match(html, /In Länder außerhalb der EU liefern wir derzeit nur auf Anfrage/);
 });
 
 class MemoryTransport implements MailTransport {

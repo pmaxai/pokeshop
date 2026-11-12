@@ -4,6 +4,7 @@ import { formatEuro, formatRate } from '@pokeshop/core';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { getCompany } from '@/server/shop';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Shipping' });
-  return { title: t('title') };
+  const m = await getTranslations({ locale, namespace: 'Meta' });
+  return {
+    title: t('title'),
+    description: m('shippingDescription'),
+    alternates: pageAlternates('/versand', locale),
+  };
 }
 
 export default async function Shipping({ params }: { params: Promise<{ locale: Locale }> }) {
@@ -38,27 +44,44 @@ export default async function Shipping({ params }: { params: Promise<{ locale: L
   const first = countries[0];
   const threshold = await getSetting<number | null>('high_value_threshold_cents', null);
   const { email } = await getCompany();
+  // Countries on the same terms share a row, so 27 EU countries stay readable: Austria and
+  // Germany on their own, the rest together with their names listed.
+  type Country = (typeof countries)[number];
+  const timeOf = (c: Country) => (locale === 'de' ? c.delivery_time_de : c.delivery_time_en) ?? '';
+  const groups = new Map<string, Country[]>();
+  for (const c of countries) {
+    const key = `${c.min_order_cents}|${timeOf(c)}`;
+    groups.set(key, [...(groups.get(key) ?? []), c]);
+  }
+  const byName = (a: string, b: string) => a.localeCompare(b, locale);
+  const rows = [...groups.values()].sort((a, b) => a.length - b.length);
   return (
     <div className="wrap prose">
       <h1>{t('title')}</h1>
       <h2>{t('countries')}</h2>
       <dl className="grade-list">
-        {countries.map((c) => (
-          <div key={c.code} style={{ gridTemplateColumns: '10rem 1fr' }}>
-            <dt style={{ fontSize: 'var(--t-md)', fontStretch: '100%' }}>{names.of(c.code)}</dt>
-            <dd>
-              {t('minimum', { amount: formatEuro(c.min_order_cents, locale) })}
-              {(locale === 'de' ? c.delivery_time_de : c.delivery_time_en) && (
-                <>
-                  .{' '}
-                  {t('deliveryTime', {
-                    time: (locale === 'de' ? c.delivery_time_de : c.delivery_time_en)!,
-                  })}
-                </>
-              )}
-            </dd>
-          </div>
-        ))}
+        {rows.map((group) => {
+          const c = group[0]!;
+          const list = group.map((g) => names.of(g.code) ?? g.code).sort(byName);
+          const many = group.length > 3;
+          return (
+            <div key={c.code} style={{ gridTemplateColumns: '10rem 1fr' }}>
+              <dt style={{ fontSize: 'var(--t-md)', fontStretch: '100%' }}>
+                {many ? t('otherEu') : list.join(', ')}
+              </dt>
+              <dd>
+                {t('minimum', { amount: formatEuro(c.min_order_cents, locale) })}
+                {timeOf(c) && <>. {t('deliveryTime', { time: timeOf(c) })}</>}
+                {many && (
+                  <>
+                    <br />
+                    <small className="muted">{list.join(', ')}</small>
+                  </>
+                )}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
       <p style={{ marginTop: 'var(--s-4)' }}>
         {t.rich('otherCountries', {

@@ -8,6 +8,7 @@ import { many, one } from '@/server/shop';
 import { CardTile } from '@/components/CardTile';
 import { Filters, type FilterState } from '@/components/Filters';
 import { SortSelect } from '@/components/SortSelect';
+import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,13 +56,7 @@ export async function generateMetadata({
     description: t('cardsDescription'),
     // filtered and searched lists are not indexed; the plain list is
     robots: filtered ? { index: false, follow: true } : undefined,
-    alternates: {
-      canonical: getPathname({ href: '/karten', locale }),
-      languages: {
-        de: getPathname({ href: '/karten', locale: 'de' }),
-        en: getPathname({ href: '/karten', locale: 'en' }),
-      },
-    },
+    alternates: pageAlternates('/karten', locale),
   };
 }
 

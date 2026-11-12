@@ -56,6 +56,11 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   const errors = unpack((await searchParams).e);
   const draft = (view.checkoutDraft ?? {}) as Draft;
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
+  // Delivery countries in the select, alphabetical by their name in the page's language.
+  const byCountryName = <T extends { code: string }>(list: T[]) =>
+    [...list].sort((a, b) =>
+      (names.of(a.code) ?? a.code).localeCompare(names.of(b.code) ?? b.code, locale),
+    );
   const err = (key: string) => {
     const code = errors[key];
     return code ? t(`errors.${code}` as never) : null;
@@ -176,7 +181,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
                 defaultValue={view.country}
                 autoComplete="shipping country"
               >
-                {view.countries.map((c) => (
+                {byCountryName(view.countries).map((c) => (
                   <option key={c.code} value={c.code}>
                     {names.of(c.code)}
                   </option>

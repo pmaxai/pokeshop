@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { CONDITIONS } from '@pokeshop/core';
 import type { Locale } from '@/i18n/routing';
+import { pageAlternates } from '@/server/seo';
 
 export async function generateMetadata({
   params,
@@ -10,7 +11,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Conditions' });
-  return { title: t('title') };
+  const m = await getTranslations({ locale, namespace: 'Meta' });
+  return {
+    title: t('title'),
+    description: m('conditionsDescription'),
+    alternates: pageAlternates('/zustand', locale),
+  };
 }
 
 export default async function ConditionGuide({ params }: { params: Promise<{ locale: Locale }> }) {

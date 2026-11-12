@@ -6,10 +6,13 @@ DECLARE
   v_id bigint;
   failed boolean;
 BEGIN
-  -- Launch countries and minimums.
-  ASSERT (SELECT string_agg(code || ':' || min_order_cents, ',' ORDER BY code)
-            FROM countries WHERE delivery_enabled) = 'AT:1000,DE:2000', 'AT € 10, DE € 20';
+  -- Delivery to every EU country (0016): Austria € 10 minimum, the rest on Germany's € 20.
   ASSERT (SELECT count(*) FROM countries WHERE is_eu) = 27;
+  ASSERT (SELECT count(*) FROM countries WHERE delivery_enabled AND is_eu) = 27, 'whole EU';
+  ASSERT NOT EXISTS (SELECT 1 FROM countries WHERE delivery_enabled AND NOT is_eu), 'EU only';
+  ASSERT (SELECT min_order_cents FROM countries WHERE code = 'AT') = 1000, 'AT € 10';
+  ASSERT (SELECT count(*) FROM countries WHERE delivery_enabled AND code <> 'AT'
+            AND min_order_cents = 2000 AND delivery_time_en IS NOT NULL) = 26, 'others € 20';
   -- Insured shipping: 5 %, at least € 5, only up to € 500 order value.
   ASSERT (SELECT bool_and(insured_rate_bp = 500 AND insured_minimum_cents = 500
                           AND insured_max_order_cents = 50000)

@@ -6,6 +6,7 @@ import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db } from '@/server/config';
 import { dateParts, eventPlace, eventTexts, eventWhen } from '../format';
+import { langAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${title} – ${eventPlace(e)}`,
     description: `${eventWhen(e, locale, t('until'))}, ${eventPlace(e)}. ${description?.slice(0, 140) ?? ''}`,
-    alternates: { canonical: path(locale), languages: { de: path('de'), en: path('en') } },
+    alternates: langAlternates({ en: path('en'), de: path('de') }, locale),
   };
 }
 

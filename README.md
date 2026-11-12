@@ -1,6 +1,6 @@
 # pokeshop
 
-Online shop for single Pokémon TCG cards at **overpricedcardboard.com** – German first, English second,
+Online shop for single Pokémon TCG cards at **overpricedcardboard.com** – English first, German second,
 payments by Stripe, all e-mail through Microsoft Graph, stock fed by a scanning app through a
 signed API. Runs as Docker containers; no PHP.
 

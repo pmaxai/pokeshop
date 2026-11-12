@@ -37,7 +37,7 @@ async function back(
 
 /** "Zahlungspflichtig bestellen" for a gift voucher: the shop's Stripe, then the PDF by e-mail. */
 export async function buyVoucherAction(form: FormData) {
-  const locale: Locale = str(form, 'locale') === 'en' ? 'en' : 'de';
+  const locale: Locale = str(form, 'locale') === 'de' ? 'de' : 'en';
   const values = {
     amount: str(form, 'amount'),
     recipientName: str(form, 'recipientName'),

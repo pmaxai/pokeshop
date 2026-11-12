@@ -36,6 +36,11 @@ export default async function CartPage({ params, searchParams }: Props) {
   const cartId = await currentCartId();
   const view: CartView | null = cartId ? await loadCart(db(), cartId, locale) : null;
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
+  // Delivery countries in the select, alphabetical by their name in the page's language.
+  const byCountryName = <T extends { code: string }>(list: T[]) =>
+    [...list].sort((a, b) =>
+      (names.of(a.code) ?? a.code).localeCompare(names.of(b.code) ?? b.code, locale),
+    );
   const threshold = await getSetting<number | null>('high_value_threshold_cents', null);
 
   const notices = [
@@ -168,7 +173,7 @@ export default async function CartPage({ params, searchParams }: Props) {
           <label className="field">
             <span>{t('country')}</span>
             <select name="country" defaultValue={view.country}>
-              {view.countries.map((c) => (
+              {byCountryName(view.countries).map((c) => (
                 <option key={c.code} value={c.code}>
                   {names.of(c.code)}
                 </option>

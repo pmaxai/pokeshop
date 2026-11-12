@@ -3,6 +3,7 @@
 // order stores the versions the buyer accepted.
 import { Marked } from 'marked';
 import type { Db } from './db.ts';
+import { localePath } from './locale-paths.ts';
 
 /** license_terms: the app licence terms of Antalyse GmbH (seller of the licences). */
 export const LEGAL_KINDS = ['agb', 'withdrawal', 'privacy', 'license_terms'] as const;
@@ -75,7 +76,9 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     'seller.managing_director': sel.managing_director ?? '',
     'seller.chamber': sel.chamber ?? '',
     'seller.authority': sel.supervisory_authority ?? '',
-    license_terms_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/app/lizenzbedingungen' : '/en/app/license-terms'}`,
+    license_terms_url:
+      ctx.baseUrl +
+      localePath(ctx.locale, { de: '/app/lizenzbedingungen', en: '/app/license-terms' }),
     'company.name': c.name ?? '',
     // Shop pages and legal texts name the shop, not its owner (that is in the legal notice).
     'company.public_name': c.public_name || 'Overpriced Cardboard',
@@ -85,15 +88,21 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     'company.register': [c.register_number, c.register_court].filter(Boolean).join(', '),
     'company.vat_id': c.vat_id ?? '',
     shop_url: ctx.baseUrl,
-    withdraw_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/vertrag-widerrufen' : '/en/withdraw'}`,
-    privacy_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/datenschutz' : '/en/privacy'}`,
-    terms_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/agb' : '/en/terms'}`,
-    withdrawal_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/widerrufsbelehrung' : '/en/right-of-withdrawal'}`,
-    shipping_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/versand-und-zahlung' : '/en/shipping-and-payment'}`,
-    conditions_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/zustand' : '/en/condition-guide'}`,
-    imprint_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/impressum' : '/en/legal-notice'}`,
-    app_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/app' : '/en/app'}`,
-    vouchers_url: `${ctx.baseUrl}${ctx.locale === 'de' ? '/gutscheine' : '/en/gift-vouchers'}`,
+    withdraw_url:
+      ctx.baseUrl + localePath(ctx.locale, { de: '/vertrag-widerrufen', en: '/withdraw' }),
+    privacy_url: ctx.baseUrl + localePath(ctx.locale, { de: '/datenschutz', en: '/privacy' }),
+    terms_url: ctx.baseUrl + localePath(ctx.locale, { de: '/agb', en: '/terms' }),
+    withdrawal_url:
+      ctx.baseUrl +
+      localePath(ctx.locale, { de: '/widerrufsbelehrung', en: '/right-of-withdrawal' }),
+    shipping_url:
+      ctx.baseUrl +
+      localePath(ctx.locale, { de: '/versand-und-zahlung', en: '/shipping-and-payment' }),
+    conditions_url:
+      ctx.baseUrl + localePath(ctx.locale, { de: '/zustand', en: '/condition-guide' }),
+    imprint_url: ctx.baseUrl + localePath(ctx.locale, { de: '/impressum', en: '/legal-notice' }),
+    app_url: ctx.baseUrl + localePath(ctx.locale, { de: '/app', en: '/app' }),
+    vouchers_url: ctx.baseUrl + localePath(ctx.locale, { de: '/gutscheine', en: '/gift-vouchers' }),
   };
   return md.replace(/\{\{\s*([a-z_.]+)\s*\}\}/g, (m, k: string) => values[k] ?? m);
 }

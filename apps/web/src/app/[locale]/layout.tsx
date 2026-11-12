@@ -23,11 +23,16 @@ export async function generateMetadata({
     metadataBase: new URL(config.baseUrl),
     title: { default: t('homeTitle'), template: `%s | ${t('siteName')}` },
     description: t('homeDescription'),
+    applicationName: t('siteName'),
     openGraph: {
       siteName: t('siteName'),
       locale: locale === 'de' ? 'de_AT' : 'en_GB',
+      alternateLocale: locale === 'de' ? ['en_GB'] : ['de_AT'],
       type: 'website',
+      // Pages with a picture of their own (cards) replace it.
+      images: [{ url: `/og.png?l=${locale}`, width: 1200, height: 630, alt: t('siteName') }],
     },
+    twitter: { card: 'summary_large_image' },
   };
 }
 

@@ -105,7 +105,7 @@ export default async function ProductEdit({
         {p.card_language}, {p.condition}, {p.finish}
         {p.grading ? `, ${p.grading.company} ${p.grading.grade}` : ''}.{' '}
         {p.status === 'active' ? (
-          <a href={`/karten/${row!.slug}`} target="_blank" rel="noreferrer">
+          <a href={`/de/karten/${row!.slug}`} target="_blank" rel="noreferrer">
             Im Shop ansehen
           </a>
         ) : (

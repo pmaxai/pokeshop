@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 /** Stripe's "back" link: close the payment and give the cards back right away. */
 export async function GET(req: NextRequest) {
-  const locale = req.nextUrl.searchParams.get('l') === 'en' ? 'en' : 'de';
+  const locale = req.nextUrl.searchParams.get('l') === 'de' ? 'de' : 'en';
   const token = req.nextUrl.searchParams.get('o') ?? '';
   const order = await orderByToken(db(), token);
   // Card orders are paid to the shop's account, licences to the GmbH's.

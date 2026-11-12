@@ -99,7 +99,7 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
       sql,
       licenses,
       String(job.payload.email),
-      job.payload.locale === 'en' ? 'en' : 'de',
+      job.payload.locale === 'de' ? 'de' : 'en',
     );
   },
   // Invoice or credit note PDF requested in the admin before its mail went out.

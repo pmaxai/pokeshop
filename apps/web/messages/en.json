@@ -1,14 +1,16 @@
 {
   "Meta": {
     "siteName": "Overpriced Cardboard",
-    "homeTitle": "Buy single Pokémon cards – checked, in many languages",
-    "homeDescription": "Single Pokémon cards from every series and many languages, each with a clearly described condition. Free shipping to Austria and Germany.",
+    "homeTitle": "Single Pokémon cards with free EU shipping – Overpriced Cardboard",
+    "homeDescription": "Single Pokémon cards from every series and many languages, each with a clearly described condition. Free shipping across the EU.",
     "cardsTitle": "All cards",
     "cardsDescription": "Filter single Pokémon cards by language, series, set, rarity and condition.",
     "searchTitle": "Search for “{q}”",
     "setsTitle": "Sets",
     "setsDescription": "Every Pokémon set with cards for sale right now.",
-    "notFoundTitle": "Page not found"
+    "notFoundTitle": "Page not found",
+    "shippingDescription": "Delivery to every EU country with Austrian Post, free standard shipping, valuable cards sent insured. Pay by card, Apple Pay, Google Pay, EPS or PayPal.",
+    "conditionsDescription": "How we grade every Pokémon card: Mint, Near Mint, Excellent, Good, Light Played, Played and Poor, and what each grade means."
   },
   "Nav": {
     "cards": "Cards",
@@ -28,7 +30,7 @@
   },
   "Home": {
     "title": "Single Pokémon cards from every series and language",
-    "lead": "Free shipping to Austria and Germany.",
+    "lead": "Free shipping across the EU.",
     "newest": "Just arrived",
     "allCards": "See all cards",
     "bySet": "Browse by set",
@@ -95,7 +97,7 @@
     "energy": "Type",
     "conditionGuide": "What does this condition mean?",
     "highValue": "Valuable card: we ship it insured. You will see the shipping cost in your cart.",
-    "shippingNote": "Delivery to Austria and Germany with Austrian Post.",
+    "shippingNote": "Delivery to every EU country with Austrian Post.",
     "moreFromSet": "More from {set}",
     "zoom": "Enlarge image",
     "close": "Close",
@@ -185,11 +187,12 @@
   "Shipping": {
     "title": "Shipping and payment",
     "countries": "We deliver to",
+    "otherEu": "Other EU countries",
     "minimum": "Minimum order {amount}",
     "deliveryTime": "Delivery {time}",
     "free": "We ship with Austrian Post. Shipping is free.",
     "insured": "If your order contains a card over {threshold}, we ship it insured. For this we charge {rate} of the goods value, at least {minimum}. Orders over {limit} cannot be shipped insured.",
-    "otherCountries": "For now we deliver to other countries on request only. Just write to us at <mail>{email}</mail>.",
+    "otherCountries": "For now we deliver outside the EU on request only. Just write to us at <mail>{email}</mail>.",
     "payment": "You can pay by credit card, Apple Pay, Google Pay, EPS and PayPal. Payments are handled by Stripe."
   },
   "Imprint": {
