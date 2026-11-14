@@ -26,7 +26,9 @@
     "cartCount": "Warenkorb, {count, plural, =0 {leer} one {# Karte} other {# Karten}}",
     "events": "Veranstaltungen",
     "app": "App",
-    "vouchers": "Gutscheine"
+    "vouchers": "Gutscheine",
+    "account": "Konto",
+    "login": "Anmelden"
   },
   "Home": {
     "title": "Pokémon-Einzelkarten aus allen Serien und Sprachen",
@@ -300,7 +302,9 @@
       "too_long": "Das ist zu lang.",
       "terms": "Bitte bestätige die AGB.",
       "invalid": "Bitte prüfen."
-    }
+    },
+    "saveAddress": "Als meine Lieferadresse im Konto speichern",
+    "loginHint": "Du hast ein Konto? <login>Melde dich an</login>, dann füllt die Kasse deine Adresse aus."
   },
   "Order": {
     "title": "Bestellung {number}",
@@ -652,6 +656,108 @@
       "failedTitle": "Nicht bezahlt",
       "failedText": "Die Zahlung ist nicht durchgegangen oder wurde abgebrochen. Es wurde nichts abgebucht.",
       "again": "Noch einmal versuchen"
+    }
+  },
+  "Account": {
+    "nav": {
+      "label": "Konto",
+      "overview": "Übersicht",
+      "orders": "Bestellungen",
+      "address": "Lieferadresse",
+      "settings": "Einstellungen",
+      "logout": "Abmelden"
+    },
+    "login": {
+      "title": "Anmelden",
+      "intro": "Melde dich mit deiner E-Mail-Adresse an oder lege so dein Konto an. Wir schicken dir einen Link, ein Passwort gibt es nicht.",
+      "email": "E-Mail-Adresse",
+      "submit": "Login-Link senden",
+      "note": "Der Link gilt 20 Minuten. Gibt es zur Adresse noch kein Konto, wird es beim Öffnen des Links angelegt.",
+      "sentTitle": "Schau in dein Postfach",
+      "sentText": "Wir haben einen Login-Link an <b>{email}</b> geschickt. Öffne ihn, um dich anzumelden.",
+      "sentTextNoEmail": "Wir haben dir einen Login-Link geschickt. Öffne ihn, um dich anzumelden.",
+      "sentHint": "Nach ein paar Minuten noch nichts da? Schau im Spam-Ordner nach oder fordere einen neuen Link an.",
+      "again": "Neuen Link senden",
+      "errors": {
+        "invalid_email": "Bitte gib eine gültige E-Mail-Adresse ein.",
+        "too_long": "Diese Adresse ist zu lang.",
+        "too_many": "Zu viele Versuche von hier. Bitte warte ein paar Minuten."
+      }
+    },
+    "link": {
+      "confirm": "Als <b>{email}</b> anmelden?",
+      "button": "Anmelden",
+      "invalid": "Dieser Login-Link ist ungültig.",
+      "expired": "Dieser Login-Link ist abgelaufen. Links gelten 20 Minuten.",
+      "used": "Dieser Login-Link wurde schon benutzt. Jeder Link gilt nur ein Mal.",
+      "newLink": "Neuen Link anfordern"
+    },
+    "overview": {
+      "title": "Dein Konto",
+      "appTitle": "App-Abo",
+      "appText": "Mit Collector oder Creator bekommst du den Overpriced Cardboard Scanner und dieses Portal: deine Sammlung mit aktuellen Preisen, fehlende Karten und Teilen.",
+      "appLink": "Zu den Abos",
+      "ordersTitle": "Letzte Bestellungen",
+      "allOrders": "Alle Bestellungen",
+      "addressTitle": "Lieferadresse",
+      "addressChange": "Ändern",
+      "addressAdd": "Hinzufügen",
+      "noAddress": "Noch keine Lieferadresse gespeichert. Mit einer füllt die Kasse sie für dich aus."
+    },
+    "orders": {
+      "title": "Bestellungen",
+      "intro": "Deine Bestellungen im Shop, auch die, die du mit dieser E-Mail-Adresse vor deinem Konto aufgegeben hast.",
+      "empty": "Noch keine Bestellungen.",
+      "cards": "{count, plural, one {# Karte} other {# Karten}}",
+      "voucher": "Geschenkgutschein",
+      "license": "App-Lizenz"
+    },
+    "orderStatus": {
+      "awaiting_payment": "Zahlung offen",
+      "paid": "Bezahlt",
+      "packing": "Wird gepackt",
+      "shipped": "Versendet",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert",
+      "refunded": "Erstattet"
+    },
+    "address": {
+      "title": "Lieferadresse",
+      "intro": "Die Kasse füllt diese Adresse für deine Shop-Bestellungen aus. Für eine einzelne Bestellung kannst du sie dort trotzdem ändern.",
+      "name": "Name",
+      "company": "Firma (optional)",
+      "street": "Straße und Hausnummer",
+      "postcode": "PLZ",
+      "city": "Ort",
+      "country": "Land",
+      "phone": "Telefon (optional, für den Paketdienst)",
+      "save": "Adresse speichern",
+      "remove": "Adresse entfernen",
+      "saved": "Adresse gespeichert.",
+      "removed": "Adresse entfernt."
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "email": "E-Mail-Adresse",
+      "emailHint": "Mit dieser Adresse meldest du dich an. Zum Ändern <mail>schreib uns</mail>.",
+      "name": "Name",
+      "language": "Sprache",
+      "languageHint": "Für E-Mails und das Portal.",
+      "save": "Speichern",
+      "saved": "Gespeichert.",
+      "deleteTitle": "Konto löschen",
+      "deleteText": "Damit löschst du dein Konto und deine gespeicherte Adresse und wirst überall abgemeldet. Deine Bestellungen bleiben beim Shop, wie es das Gesetz verlangt, sind aber keinem Konto mehr zugeordnet.",
+      "deleteConfirm": "Ja, mein Konto löschen",
+      "deleteConfirmMissing": "Bitte bestätige mit dem Häkchen.",
+      "deleteButton": "Konto löschen"
+    },
+    "errors": {
+      "title": "Bitte prüfe die markierten Felder.",
+      "required": "Bitte ausfüllen.",
+      "too_long": "Das ist zu lang.",
+      "invalid_postcode": "Diese PLZ passt nicht zum Land.",
+      "invalid": "Bitte prüfen.",
+      "country": "In dieses Land liefern wir nicht."
     }
   }
 }

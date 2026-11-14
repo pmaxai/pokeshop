@@ -2,6 +2,24 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-15 · Customer accounts without passwords
+
+Customers log in with a one-time link by e-mail (20 minutes, single use); the first login
+creates the account, so typing someone else's address creates nothing. The link page asks for a
+click before it logs in, because mail scanners open links on their own. Sessions are a random
+cookie token (hash stored, 60 days from the last visit); no IP address or browser details are
+kept. At most five links per address and hour, ten requests per IP in 15 minutes (in memory).
+Earlier guest orders of the address join the account at login. The app never logs in with
+e-mail: it is paired by QR code (docs/app-account-api.md).
+
+## 2026-11-15 · The portal's prices come from the app's data pack
+
+The worker imports the app's nightly data pack (github.com/pmaxai/TCGdex, release `data-pack`:
+`pack.json` + `catalog.sqlite`) into `pack_*` tables: checked against its SHA-256, replaced in
+one transaction, looked for hourly. `pack-cards.ts` ports the app's printing and price rules
+(Catalog.kt), so portal and app show the same value for the same card. The shop's own TCGdex
+master data (`card_master`) stays as it is for products.
+
 ## 2026-11-12 · Contact form with a proof of work instead of a captcha service
 
 The contact page (`/contact`, `/de/kontakt`) stores messages in `contact_messages`; they are read

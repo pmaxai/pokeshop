@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import QRCode from 'qrcode';
 import type { Db, Sql } from './db.ts';
+import { renderAccountMail } from './mail-account.ts';
 import { cardNames, cardNameText } from './catalog.ts';
 import { formatEuro, formatRate } from './money.ts';
 import { SMALL_BUSINESS_NOTE, type VatRegime } from './vat.ts';
@@ -186,7 +187,7 @@ export const esc = (s: unknown) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-const C = {
+export const C = {
   ink: '#161c33',
   muted: '#586079',
   line: '#dce0e8',
@@ -199,7 +200,7 @@ const C = {
  * The shop's mails carry its name; the GmbH's licence mails the app's name and the GmbH's
  * details in the footer (pass a context whose company is the GmbH).
  */
-function layout(
+export function layout(
   locale: 'de' | 'en',
   ctx: MailContext,
   preheader: string,
@@ -227,9 +228,10 @@ function layout(
 </td></tr></table></body></html>`;
 }
 
-const p = (html: string) => `<p style="margin:0 0 14px">${html}</p>`;
-const h2 = (text: string) => `<h2 style="margin:22px 0 8px;font-size:16px">${esc(text)}</h2>`;
-const button = (href: string, label: string) =>
+export const p = (html: string) => `<p style="margin:0 0 14px">${html}</p>`;
+export const h2 = (text: string) =>
+  `<h2 style="margin:22px 0 8px;font-size:16px">${esc(text)}</h2>`;
+export const button = (href: string, label: string) =>
   `<p style="margin:18px 0"><a href="${esc(href)}" style="display:inline-block;background:#ef5b0c;color:#ffffff;text-decoration:none;font-weight:bold;padding:11px 18px;border-radius:6px">${esc(label)}</a></p>`;
 
 const dateTime = (d: Date, locale: 'de' | 'en', seconds = false) =>
@@ -461,7 +463,7 @@ const orderUrl = (ctx: MailContext, locale: 'de' | 'en', token: string) =>
 const withdrawUrl = (ctx: MailContext, locale: 'de' | 'en') =>
   ctx.baseUrl + localePath(locale, { de: '/vertrag-widerrufen', en: '/withdraw' });
 
-type Rendered = {
+export type Rendered = {
   subject: string;
   html: string;
   inline?: Attachment[];
@@ -781,6 +783,8 @@ export async function renderTemplate(
     case 'license_delivery':
     case 'license_resend':
       return renderLicenseMail(db, mail, ctx);
+    case 'account_login':
+      return renderAccountMail(db, mail, ctx);
   }
 }
 

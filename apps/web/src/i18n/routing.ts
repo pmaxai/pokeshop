@@ -34,6 +34,12 @@ export const routing = defineRouting({
     '/gutscheine/[token]': { de: '/gutscheine/[token]', en: '/gift-vouchers/[token]' },
     '/app/lizenzbedingungen': { de: '/app/lizenzbedingungen', en: '/app/license-terms' },
     '/app/lizenz/[token]': { de: '/app/lizenz/[token]', en: '/app/license/[token]' },
+    '/anmelden': { de: '/anmelden', en: '/login' },
+    '/anmelden/link': { de: '/anmelden/link', en: '/login/link' },
+    '/konto': { de: '/konto', en: '/account' },
+    '/konto/bestellungen': { de: '/konto/bestellungen', en: '/account/orders' },
+    '/konto/adresse': { de: '/konto/adresse', en: '/account/address' },
+    '/konto/einstellungen': { de: '/konto/einstellungen', en: '/account/settings' },
   },
 });
 

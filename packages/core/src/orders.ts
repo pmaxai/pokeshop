@@ -134,6 +134,8 @@ export async function createCheckoutOrder(
     ossEnabled: boolean;
     /** Setting `small_business`: no VAT (Kleinunternehmerregelung). */
     smallBusiness?: boolean;
+    /** The logged-in customer: the order appears in the account. */
+    accountId?: number | null;
     now?: Date;
   },
 ): Promise<CreatedOrder> {
@@ -208,14 +210,15 @@ export async function createCheckoutOrder(
                             discount_cents, shipping_discount_cents, voucher_cents,
                             shipping_method, vat_regime, tax_country, vat_rate_bp, vat_cents,
                             reserved_until, agb_version, privacy_version, withdrawal_version,
-                            terms_accepted_at, cart_id, created_at)
+                            terms_accepted_at, cart_id, created_at, account_id)
         VALUES (${number}, ${token}, 'checkout', ${input.locale}, ${view.country}, ${d.email},
                 ${d.shipping.name}, ${d.phone ?? null}, ${tx.json((d.billing ?? d.shipping) as never)},
                 ${tx.json(d.shipping as never)}, ${view.check.goodsSubtotal},
                 ${view.check.shipping.price}, ${price.total}, ${price.discount},
                 ${price.shippingDiscount}, ${price.voucher}, ${view.check.shipping.method},
                 ${vat.regime}, ${vat.taxCountry}, ${vat.rate}, ${vat.vat}, ${until},
-                ${legal.agb}, ${legal.privacy}, ${legal.withdrawal}, ${now}, ${input.cartId}, ${now})
+                ${legal.agb}, ${legal.privacy}, ${legal.withdrawal}, ${now}, ${input.cartId}, ${now},
+                ${input.accountId ?? null})
         RETURNING id`;
       const orderId = o!.id;
 

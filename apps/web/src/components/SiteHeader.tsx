@@ -4,6 +4,7 @@ import { cartCount } from '@pokeshop/core/cart';
 import { Link } from '@/i18n/navigation';
 import { db } from '@/server/config';
 import { currentCartId } from '@/server/cart';
+import { currentAccount } from '@/server/account';
 import { LanguageSwitch } from './LanguageSwitch';
 import { SearchForm } from './SearchForm';
 
@@ -12,6 +13,7 @@ export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets';
   // Reading the cookie makes every page dynamic, which the shop pages are anyway.
   const cartId = await currentCartId();
   const count = cartId ? await cartCount(db(), cartId) : 0;
+  const account = await currentAccount();
   return (
     <header className="site-header">
       <a className="skip" href="#main">
@@ -40,6 +42,23 @@ export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets';
         <Suspense fallback={<span className="lang-switch">{t('switchLanguage')}</span>}>
           <LanguageSwitch label={t('switchLanguage')} title={t('switchLanguageLabel')} />
         </Suspense>
+        <Link
+          href={account ? '/konto' : '/anmelden'}
+          className="account-link"
+          aria-label={account ? `${t('account')}: ${account.email}` : t('login')}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="8.2" r="3.7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path
+              d="M4.6 20c.9-3.7 3.9-5.8 7.4-5.8s6.5 2.1 7.4 5.8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="account-link__label">{account ? t('account') : t('login')}</span>
+        </Link>
         <Link href="/warenkorb" className="cart-link" aria-label={t('cartCount', { count })}>
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
             <path
