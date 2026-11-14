@@ -100,7 +100,11 @@ export default async function AccountSettingsPage({ params, searchParams }: Prop
             <input type="checkbox" name="confirm" /> {t('settings.deleteConfirm')}
           </label>
           {errors.confirm && (
-            <small className="field__error">{t('settings.deleteConfirmMissing')}</small>
+            <small className="field__error">
+              {errors.confirm === 'subscription'
+                ? t('settings.deleteSubscription')
+                : t('settings.deleteConfirmMissing')}
+            </small>
           )}
           <button type="submit" className="btn btn--danger-outline">
             {t('settings.deleteButton')}

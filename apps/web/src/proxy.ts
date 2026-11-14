@@ -11,9 +11,22 @@ const germanOnly = Object.values(routing.pathnames)
   .flatMap((p) => (typeof p === 'string' ? [] : [p.de]))
   .map((de) => new RegExp(`^${de.replace(/\[\w+\]/g, '[^/]+')}$`));
 
+// Pages that moved (the licence terms became the subscription terms on 2026-11-15).
+const MOVED: Record<string, string> = {
+  '/app/license-terms': '/app/subscription-terms',
+  '/de/app/lizenzbedingungen': '/de/app/abo-bedingungen',
+  '/app/lizenzbedingungen': '/de/app/abo-bedingungen',
+};
+
 // Language routing for the storefront only; API, admin, media and static files are left alone.
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const moved = MOVED[pathname];
+  if (moved) {
+    const url = req.nextUrl.clone();
+    url.pathname = moved;
+    return NextResponse.redirect(url, 308);
+  }
   if (germanOnly.some((r) => r.test(pathname))) {
     const url = req.nextUrl.clone();
     url.pathname = `/de${pathname}`;

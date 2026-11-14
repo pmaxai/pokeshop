@@ -16,6 +16,8 @@ import { config, db } from './config';
 export const ACCOUNT_COOKIE = 'oc_account';
 /** Carries the address to the "check your inbox" view, so it is not in the URL. */
 export const LOGIN_SENT_COOKIE = 'oc_login_sent';
+/** The pairing code just made in the portal ("code.expiresMs"), for the devices page. */
+export const PAIR_COOKIE = 'oc_pair';
 
 /** The logged-in customer of this request (one lookup per request). */
 export const currentAccount = cache(async (): Promise<Account | null> => {

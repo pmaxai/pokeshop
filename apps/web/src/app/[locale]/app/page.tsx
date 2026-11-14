@@ -1,28 +1,17 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro } from '@pokeshop/core';
-import {
-  appSales,
-  APP_NAME,
-  licenseSeller,
-  MAX_LICENSES_PER_ORDER,
-  netLicensePrice,
-} from '@pokeshop/core/licenses';
+import { APP_NAME, currentRelease, licenseSeller } from '@pokeshop/core/licenses';
+import { netPrice, subscriptionPrices } from '@pokeshop/core/subscriptions';
+import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { db, licenseSalesConfigured } from '@/server/config';
+import { db, getSetting } from '@/server/config';
 import { getCompany } from '@/server/shop';
-import { LicenseForm } from '@/components/LicenseForm';
-import { APP_FORM_FLASH } from '@/server/app-form';
-import { buyLicenseAction, resendLicenseAction } from '../app-actions';
 import { pageAlternates } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
-type Props = {
-  params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ e?: string; sent?: string; cancelled?: string }>;
-};
+type Props = { params: Promise<{ locale: Locale }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
@@ -54,53 +43,27 @@ function megabytes(bytes: number, locale: Locale): string {
   }).format(bytes / 1_000_000)} MB`;
 }
 
-type Flash = { values?: Record<string, string>; errors?: Record<string, string> };
-
-export default async function AppPage({ params, searchParams }: Props) {
+export default async function AppPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const sp = await searchParams;
   const t = await getTranslations('App');
-  const sales = await appSales(db(), licenseSalesConfigured());
-  const seller = await licenseSeller(db());
-  const { email } = await getCompany();
-  const price = formatEuro(sales.priceCents, locale);
-  const netPrice = formatEuro(netLicensePrice(sales.priceCents), locale);
-
-  let flash: Flash = {};
-  if (sp.e) {
-    const raw = (await cookies()).get(APP_FORM_FLASH)?.value;
-    try {
-      flash = raw ? (JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as Flash) : {};
-    } catch {
-      flash = {};
-    }
-  }
-  const values = flash.values ?? {};
-  const errors = flash.errors ?? {};
-  const tCodes = await getTranslations('Codes');
-  const errorText = (k: string) =>
-    errors[k]!.startsWith('code_')
-      ? (tCodes as (key: string, v?: Record<string, string>) => string)(errors[k]!.slice(5), {
-          min: '',
-        })
-      : (t as (key: string, v?: Record<string, number>) => string)(`form.errors.${errors[k]}`, {
-          max: MAX_LICENSES_PER_ORDER,
-        });
-  const errorTexts = Object.fromEntries(
-    Object.keys(errors)
-      .filter((k) => k !== '_')
-      .map((k) => [k, errorText(k)]),
-  );
-
-  const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
-  // Licences are sold in the EU only.
-  const rows = await db()<{ code: string }[]>`SELECT code FROM countries WHERE is_eu`;
-  const euCountries = rows
-    .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
-    .sort((a, b) => a.name.localeCompare(b.name, locale));
+  const tSub = await getTranslations('Subscription');
+  const [prices, seller, { email }, release, playStore] = await Promise.all([
+    subscriptionPrices(db()),
+    licenseSeller(db()),
+    getCompany(),
+    currentRelease(db()),
+    getSetting<string | null>('app_play_store_url', null),
+  ]);
+  const eur = (c: number) => formatEuro(c, locale);
+  const price = eur(prices.collector);
+  const netFrom = eur(netPrice(prices.collector));
+  const sales = {
+    release,
+    playStoreUrl:
+      typeof playStore === 'string' && playStore.startsWith('https://') ? playStore : null,
+  };
   const store = sales.playStoreUrl !== null;
-  const sellerAddress = `${seller.street}, ${seller.postcode} ${seller.city}`;
   // The services are the GmbH's; enquiries go to its mailbox.
   const ask = (service: string) =>
     `mailto:${seller.email || email}?subject=${encodeURIComponent(t('services.askSubject', { service }))}`;
@@ -117,10 +80,10 @@ export default async function AppPage({ params, searchParams }: Props) {
           <p className="app-hero__price">
             <strong>{t('price', { price })}</strong>
             <span>{t('priceNote')}</span>
-            <span className="app-hero__net">{t('priceBusiness', { net: netPrice })}</span>
+            <span className="app-hero__net">{t('priceBusiness', { net: netFrom })}</span>
           </p>
           <p className="hero__actions">
-            <a className="btn btn--accent" href="#kaufen">
+            <a className="btn btn--accent" href="#abos">
               {t('buy')}
             </a>
             <a className="btn btn--quiet" href="#funktionen">
@@ -209,10 +172,10 @@ export default async function AppPage({ params, searchParams }: Props) {
         <section aria-labelledby="licence-title">
           <h2 id="licence-title">{t('licenceTitle')}</h2>
           <ul className="app-ticks">
-            <li>{t('licencePoints.once', { price })}</li>
-            <li>{t('licencePoints.updates')}</li>
-            <li>{t('licencePoints.device')}</li>
-            <li>{t('licencePoints.online')}</li>
+            <li>{t('subPoints.monthly', { price })}</li>
+            <li>{t('subPoints.portal')}</li>
+            <li>{t('subPoints.device')}</li>
+            <li>{t('subPoints.online')}</li>
           </ul>
           <h3 className="app-sub">{t('needsTitle')}</h3>
           <ul className="app-ticks">
@@ -232,74 +195,45 @@ export default async function AppPage({ params, searchParams }: Props) {
           {t('howTitle')}
         </h2>
         <ol className="app-steps">
-          <li>{t('steps.buy')}</li>
-          <li>{t('steps.mail')}</li>
-          <li>{store ? t('steps.installStore') : t('steps.installApk')}</li>
-          <li>{t('steps.activate')}</li>
+          <li>{t('steps.subscribe')}</li>
+          <li>{store ? t('steps.installStore') : t('steps.download')}</li>
+          <li>{t('steps.connect')}</li>
         </ol>
         {!store && <p className="app-store-note">{t('storeTarget')}</p>}
       </section>
 
-      <section className="section app-buy" id="kaufen" aria-labelledby="buy-title">
+      <section className="section app-buy" id="abos" aria-labelledby="buy-title">
         <h2 id="buy-title" className="section__head">
-          {t('form.title')}
+          {t('plansTitle')}
         </h2>
-        {sp.cancelled && (
-          <p className="notice notice--warn" role="status">
-            {t('thanks.unpaidText')}
-          </p>
-        )}
-        {Object.keys(errors).length > 0 && (
-          <p className="notice notice--warn" role="alert">
-            {errors._ === 'payment_unavailable'
-              ? t('form.paymentUnavailable')
-              : t('form.errorsTitle')}
-          </p>
-        )}
-        {sales.open ? (
-          <LicenseForm
-            action={buyLicenseAction}
-            locale={locale}
-            values={values}
-            errors={errorTexts}
-            euCountries={euCountries}
-            grossCents={sales.priceCents}
-            netCents={netLicensePrice(sales.priceCents)}
-            max={MAX_LICENSES_PER_ORDER}
-            sellerName={seller.name}
-            sellerAddress={sellerAddress}
-            title={
-              <>
-                {APP_NAME} <span className="app-beta">{t('beta')}</span>
-              </>
-            }
-          />
-        ) : (
-          <p className="notice notice--warn">{t('form.closed')}</p>
-        )}
-      </section>
-
-      <section className="section app-lost" id="verloren" aria-labelledby="lost-title">
-        <h2 id="lost-title">{t('lost.title')}</h2>
-        {sp.sent ? (
-          <p className="notice" role="status">
-            {t('lost.done')}
-          </p>
-        ) : (
-          <>
-            <p>{t('lost.text')}</p>
-            <form action={resendLicenseAction} className="app-lost__form">
-              <input type="hidden" name="locale" value={locale} />
-              <label className="field" htmlFor="lost-email">
-                <span>{t('lost.email')}</span>
-                <input id="lost-email" name="email" type="email" autoComplete="email" required />
-              </label>
-              <button type="submit" className="btn">
-                {t('lost.submit')}
-              </button>
-            </form>
-          </>
-        )}
+        <p className="app-services__intro">{t('plansIntro')}</p>
+        <div className="plan-cards">
+          {(['collector', 'creator'] as const).map((k) => (
+            <section key={k} className={`plan-card plan-card--${k}`} aria-labelledby={`plan-${k}`}>
+              <h3 id={`plan-${k}`}>{tSub(`plans.${k}.name`)}</h3>
+              <p className="plan-card__price">
+                <span className="num">{eur(prices[k])}</span> {tSub('perMonth')}
+              </p>
+              <ul className="app-ticks">
+                {(tSub.raw(`plans.${k}.points`) as string[]).map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+              <p className="small muted">
+                {tSub('extraDevice', { price: eur(prices[`${k}_device`]) })}
+              </p>
+              <p>
+                <Link
+                  href={{ pathname: '/konto/abo', query: { plan: k } }}
+                  className={k === 'creator' ? 'btn btn--accent' : 'btn'}
+                >
+                  {t('planCta', { plan: tSub(`plans.${k}.name`) })}
+                </Link>
+              </p>
+            </section>
+          ))}
+        </div>
+        <p className="small muted">{t('plansNote', { net: netFrom, seller: seller.name })}</p>
       </section>
     </div>
   );

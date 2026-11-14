@@ -1,9 +1,13 @@
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
+import type Stripe from 'stripe';
+import { isBillingEvent, normaliseBillingEvent } from '@pokeshop/core/billing';
 import { claimStripeEvent, finishStripeEvent, handlePaymentEvent } from '@pokeshop/core/orders';
+import { handleBillingEvent } from '@pokeshop/core/subscriptions';
 import type { Seller } from '@pokeshop/core/payments';
 import { db } from '@/server/config';
 import { payments } from '@/server/payments';
+import { billing } from '@/server/billing';
 
 /**
  * Stripe webhook of one account. The signature is checked on the raw body with that account's
@@ -30,7 +34,12 @@ export async function stripeWebhook(req: NextRequest, seller: Seller) {
     return NextResponse.json({ received: true, duplicate: true });
   }
   try {
-    const result = await handlePaymentEvent(sql, provider, event);
+    // The GmbH's account also carries the app subscriptions (Stripe Billing).
+    const parsed = JSON.parse(raw) as Stripe.Event;
+    const sub = seller === 'gmbh' && isBillingEvent(parsed as never) ? billing() : null;
+    const result = sub
+      ? await handleBillingEvent(sql, sub, normaliseBillingEvent(parsed))
+      : await handlePaymentEvent(sql, provider, event);
     await finishStripeEvent(sql, event.id);
     return NextResponse.json({ received: true, result });
   } catch (e) {

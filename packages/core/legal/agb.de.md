@@ -70,14 +70,15 @@ Beschwerden richten Sie bitte an {{company.email}}; wir antworten so schnell wie
 1. Es gilt österreichisches Recht unter Ausschluss des UN-Kaufrechts und der Verweisungsnormen des internationalen Privatrechts. Für Verbraucher gilt diese Rechtswahl nur, soweit ihnen dadurch nicht der Schutz entzogen wird, den ihnen die zwingenden Bestimmungen des Rechts des Staates gewähren, in dem sie ihren gewöhnlichen Aufenthalt haben.
 2. Für Klagen gegen Verbraucher mit Wohnsitz oder gewöhnlichem Aufenthalt in Österreich ist das Gericht zuständig, in dessen Sprengel der Verbraucher wohnt oder sich gewöhnlich aufhält (§ 14 KSchG). Für Unternehmer ist Gerichtsstand das für 2440 Moosbrunn sachlich zuständige Gericht.
 
-## 13. App-Lizenzen (Overpriced Cardboard Scanner)
+## 13. Kundenkonto und App-Abo (Overpriced Cardboard Scanner)
 
-Lizenzen für die App Overpriced Cardboard Scanner, die auf der App-Seite des Shops ({{app_url}}) angeboten werden, verkaufen nicht wir, sondern die {{seller.name}}. Für den Kauf gelten ausschließlich deren Lizenzbedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
+1. Ein Kundenkonto ist kostenlos und freiwillig; Sie können auch ohne Konto bestellen. Mit Konto füllt die Kasse Ihre gespeicherte Lieferadresse aus, und Ihre Bestellungen, auch frühere mit derselben E-Mail-Adresse, stehen im Konto.
+2. Das Abo für die App Overpriced Cardboard Scanner mit dem Web-Portal ({{app_url}}) verkaufen nicht wir, sondern die {{seller.name}}. Dafür gelten ausschließlich deren Abo-Bedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
 
 ## 14. Gutscheine und Rabattcodes
 
 1. Geschenkgutscheine kaufen Sie auf {{vouchers_url}} über einen Betrag von 10 bis 300 Euro. Der Vertrag kommt mit Eingang der Zahlung zustande; den Gutschein mit seinem Code erhalten Sie unmittelbar danach per E-Mail als PDF.
-2. Gutscheine können für Karten in diesem Shop eingelöst werden, nicht für App-Lizenzen. Sie werden im Warenkorb eingegeben und bezahlen den Rechnungsbetrag ganz oder teilweise, auch die Versandkosten. Mehrere Gutscheine lassen sich in einer Bestellung kombinieren. Ein nicht verbrauchter Restbetrag bleibt auf dem Gutschein.
+2. Gutscheine können für Karten in diesem Shop eingelöst werden, nicht für das App-Abo. Sie werden im Warenkorb eingegeben und bezahlen den Rechnungsbetrag ganz oder teilweise, auch die Versandkosten. Mehrere Gutscheine lassen sich in einer Bestellung kombinieren. Ein nicht verbrauchter Restbetrag bleibt auf dem Gutschein.
 3. Gekaufte Gutscheine haben kein Ablaufdatum; es gilt die gesetzliche Verjährungsfrist von 30 Jahren. Geschenkte Aktionsgutscheine können befristet sein; das Ablaufdatum steht auf dem Gutschein.
 4. Gutscheine werden nicht bar ausbezahlt, außer das Gesetz verlangt es. Wer den Code kennt, kann den Gutschein einlösen; bewahren Sie ihn daher wie Bargeld auf. Wird uns ein Missbrauch gemeldet, sperren wir den Gutschein mit dem dann vorhandenen Restwert.
 5. Wird eine mit Gutschein bezahlte Bestellung ganz oder teilweise erstattet, geht der mit dem Gutschein bezahlte Anteil auf den Gutschein zurück, der Rest auf das ursprüngliche Zahlungsmittel.

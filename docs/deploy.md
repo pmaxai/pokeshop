@@ -196,33 +196,56 @@ the order page shows "Danke für deine Bestellung!", the confirmation mail arriv
 admin the stock is counted down. Without a Stripe key the shop refuses to take orders (except on
 `localhost`, where a stand-in payment page is used for development).
 
-### Stripe of Antalyse GmbH (app licences)
+### Stripe of Antalyse GmbH (app subscriptions)
 
-App licences are paid to the GmbH's own Stripe account. In that account (test mode for staging):
+The app subscriptions (Collector, Creator, extra devices) are paid to the GmbH's own Stripe
+account with Stripe Billing. In that account (test mode for staging):
 
-1. **Payment methods** and **Branding** as above (name: Antalyse GmbH / Overpriced Cardboard Scanner).
+1. **Payment methods** and **Branding** as above (name: Antalyse GmbH / Overpriced Cardboard
+   Scanner). For subscriptions Stripe offers only methods that can be charged again (cards,
+   Apple Pay, Google Pay, SEPA Direct Debit, PayPal where enabled); EPS is not offered there.
 2. **Stripe Tax** (Settings → Tax): origin address Wienerstraße 1, 2440 Moosbrunn; registrations
    for Austria and the EU One-Stop-Shop (union scheme), so Stripe charges the buyer's country's
-   VAT to consumers. Default tax behaviour does not matter: the shop sets it per payment.
+   VAT to consumers. The shop creates the products and prices itself on first use (lookup keys
+   `oc_collector_700_incl`, … with tax code SaaS); prices are changed in Admin › Kunden & Abos ›
+   Abo-Preise, which creates new Stripe prices for new subscriptions.
 3. **Invoices** (Settings → Billing → Invoices): add the UID ATU79907228 as the account's tax id
-   and make it the default on invoices (or put its `txi_…` id into
-   `STRIPE_LICENSE_ACCOUNT_TAX_IDS`); choose the invoice number prefix and the PDF template. Leave
-   "Email finalized invoices to customers" off: the shop sends invoice and credit note itself.
-4. **API key** into `STRIPE_LICENSE_SECRET_KEY` (a restricted key needs write access to Checkout
-   Sessions, Customers, Invoices, Credit Notes and Refunds).
-5. **Webhook** `https://<host>/api/stripe/webhook-licenses` with the same six events as above;
-   its signing secret into `STRIPE_LICENSE_WEBHOOK_SECRET`.
+   and make it the default on invoices; choose the invoice number prefix and the PDF template.
+   Leave "Email finalized invoices to customers" and "Successful payments" e-mails off: the shop
+   sends the welcome mail and each invoice itself (with the PDF).
+4. **Subscriptions** (Settings → Billing → Subscriptions and emails): retries for failed payments
+   ("Smart Retries", e.g. 4 tries within 2 weeks), then **cancel the subscription**. The customer
+   gets the shop's "payment failed" mail after each failed try.
+5. **Customer portal** (Settings → Billing → Customer portal): activate it with "Update payment
+   methods" and "Invoice history" on. Subscription changes and cancellation happen in the shop's
+   account pages, so they can stay off in the portal.
+6. **API key** into `STRIPE_LICENSE_SECRET_KEY` (a restricted key needs write access to Checkout
+   Sessions, Customers, Products, Prices, Subscriptions, Invoices, Credit Notes, Refunds and
+   Billing Portal Sessions).
+7. **Webhook** `https://<host>/api/stripe/webhook-licenses` with these events; its signing secret
+   into `STRIPE_LICENSE_WEBHOOK_SECRET`:
 
-Business buyers' EU VAT ids are checked live against VIES
-(`ec.europa.eu/taxation_customs/vies`); the server must be able to reach it. The licence e-mails
-are sent from the GmbH's mailbox set in Admin › App (`info@abc-it.at` to start with): that
-mailbox must be in the same Microsoft 365 tenant and inside the mail app's scope
-(docs/m365-setup.md, A.3).
+- `checkout.session.completed`
+- `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+- `invoice.paid`, `invoice.payment_failed`
+- for the old licence orders still: `checkout.session.async_payment_succeeded`,
+  `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`,
+  `charge.dispute.created`
 
-Test on staging: buy as a private person in Austria (20 % VAT in the total) and as a German
-business with a VAT id (net, reverse charge); check the invoice PDF in the licence mail and refund
-one order in the admin (Stripe credit note attached to the refund mail). Countries outside the EU
-are not offered.
+Business customers' EU VAT ids are checked live against VIES
+(`ec.europa.eu/taxation_customs/vies`); the server must be able to reach it. The subscription
+e-mails are sent from the GmbH's mailbox set in Admin › App: that mailbox must be in the same
+Microsoft 365 tenant and inside the mail app's scope (docs/m365-setup.md, A.3).
+
+Test on staging (card `4242 4242 4242 4242`): log in with an e-mail link, subscribe to Collector as
+a private person in Austria (€ 7,00 incl. 20 % VAT), check the welcome mail with the invoice PDF,
+connect a phone under Konto › Geräte, change to Creator (charged pro rata right away), cancel
+(ends at the end of the month). A German business with a VAT id pays € 5,83 net (reverse charge).
+Stripe's test clock (Billing → Test clocks) shows renewals and failed payments without waiting.
+
+The app checks the subscription at `https://<host>/api/app/v1/…` (docs/app-account-api.md). The
+old licence service (`license.<host>`) keeps answering app builds with licence keys until the app
+is switched to account pairing; licences are no longer sold.
 
 ## 10. Backups and restore test
 

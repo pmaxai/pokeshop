@@ -2,6 +2,31 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-15 · Subscriptions instead of licences
+
+The app is sold as a monthly subscription by Antalyse GmbH (Stripe Billing on its account):
+Collector (€ 7) and Creator (€ 12) incl. VAT, one device included, extra devices € 4 / € 7. Prices
+are Stripe Price objects found by lookup key (`oc_<item>_<cents>_<incl|excl>`), created on first
+use; changing a price in the admin makes new ones, running subscriptions keep theirs. EU
+businesses with a VIES-checked VAT id outside Austria get the net ("excl") prices, reverse charge.
+Stripe is the source of truth: every webhook re-reads the subscription and stores it in
+`subscriptions` (one row per account). `entitlements()` turns that row (or a complimentary one
+from the admin) into what the portal and the app may use; the app may run offline until the paid
+period plus 3 days, at most 35 days. Upgrades are charged right away and only apply once paid
+(`pending_if_incomplete`); downgrades are credited on the next invoice. Licence sales stopped;
+the licence service stays for old app builds until the app pairs by QR code.
+
+Consumers keep the 14-day right of withdrawal and pay pro rata for the days used (§ 16 FAGG),
+because the subscription is mostly a service; the licence's "ends with delivery" wording is gone.
+
+## 2026-11-15 · App pairing by QR code
+
+The portal shows a one-time code (12 Crockford base32 characters, 10 minutes) as a QR code with
+the URL `https://<host>/pair/<code>`; the app posts it to `/api/app/v1/pair` and gets a device
+token (hash stored). A device belongs to one account at a time; ended pairings keep their row so
+the app is told why (`removed`, `transferred`, `replaced`, `disconnected`). A transfer code from
+the app moves its slot to a new phone without a free slot.
+
 ## 2026-11-15 · Customer accounts without passwords
 
 Customers log in with a one-time link by e-mail (20 minutes, single use); the first login

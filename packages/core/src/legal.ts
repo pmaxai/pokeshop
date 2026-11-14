@@ -5,7 +5,7 @@ import { Marked } from 'marked';
 import type { Db } from './db.ts';
 import { localePath } from './locale-paths.ts';
 
-/** license_terms: the app licence terms of Antalyse GmbH (seller of the licences). */
+/** license_terms: the app subscription terms of Antalyse GmbH (formerly the licence terms). */
 export const LEGAL_KINDS = ['agb', 'withdrawal', 'privacy', 'license_terms'] as const;
 export type LegalKind = (typeof LEGAL_KINDS)[number];
 export type LegalLocale = 'de' | 'en';
@@ -78,7 +78,7 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     'seller.authority': sel.supervisory_authority ?? '',
     license_terms_url:
       ctx.baseUrl +
-      localePath(ctx.locale, { de: '/app/lizenzbedingungen', en: '/app/license-terms' }),
+      localePath(ctx.locale, { de: '/app/abo-bedingungen', en: '/app/subscription-terms' }),
     'company.name': c.name ?? '',
     // Shop pages and legal texts name the shop, not its owner (that is in the legal notice).
     'company.public_name': c.public_name || 'Overpriced Cardboard',

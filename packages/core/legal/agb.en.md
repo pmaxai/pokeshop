@@ -70,14 +70,15 @@ Please send complaints to {{company.email}}; we will reply as quickly as we can.
 1. Austrian law applies, excluding the UN Convention on Contracts for the International Sale of Goods and the conflict-of-law rules. For consumers, this choice of law applies only insofar as it does not deprive them of the protection afforded by the mandatory provisions of the law of the country in which they have their habitual residence.
 2. Actions against consumers resident or habitually staying in Austria must be brought before the court in whose district the consumer lives or habitually stays (§ 14 KSchG). For businesses, the place of jurisdiction is the court with subject-matter jurisdiction for 2440 Moosbrunn.
 
-## 13. App licences (Overpriced Cardboard Scanner)
+## 13. Customer account and app subscription (Overpriced Cardboard Scanner)
 
-Licences for the app Overpriced Cardboard Scanner offered on the shop's app page ({{app_url}}) are not sold by us but by {{seller.name}}. Buying them is governed only by its licence terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to them.
+1. A customer account is free and optional; you can also order without one. With an account, checkout fills in your saved shipping address, and your orders, including earlier ones with the same e-mail address, are listed in the account.
+2. The subscription for the app Overpriced Cardboard Scanner with the web portal ({{app_url}}) is not sold by us but by {{seller.name}}. It is governed only by its subscription terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to it.
 
 ## 14. Vouchers and discount codes
 
 1. You can buy gift vouchers on {{vouchers_url}} for an amount from 10 to 300 euros. The contract is concluded when the payment arrives; you receive the voucher with its code right after by e-mail as a PDF.
-2. Vouchers can be redeemed for cards in this shop, not for app licences. They are entered in the cart and pay the invoice amount in full or in part, including shipping. Several vouchers can be combined in one order. Any amount not used stays on the voucher.
+2. Vouchers can be redeemed for cards in this shop, not for the app subscription. They are entered in the cart and pay the invoice amount in full or in part, including shipping. Several vouchers can be combined in one order. Any amount not used stays on the voucher.
 3. Bought vouchers have no expiry date; the statutory limitation period of 30 years applies. Promotional vouchers given away may be limited in time; the expiry date is printed on the voucher.
 4. Vouchers are not paid out in cash unless the law requires it. Anyone who knows the code can redeem the voucher, so keep it like cash. If misuse is reported to us, we block the voucher with the balance left at that time.
 5. If an order paid with a voucher is refunded in full or in part, the part paid with the voucher goes back onto the voucher and the rest to the original means of payment.
