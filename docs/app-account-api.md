@@ -248,7 +248,8 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
 
 ### `GET /api/app/v1/services/s3`
 
-Only when `services.s3.enabled`; otherwise `403 feature_not_included`.
+Creator only, and only when the shop switched the service on (`features.s3_upload`); otherwise
+`403 feature_not_included`. `404 not_configured` while the shop has not entered the settings yet.
 
 ```json
 {
@@ -413,9 +414,13 @@ e-mail when a matching card is in the shop. Requires `features.wanted`.
 }
 ```
 
-`language`, `finish`, `min_condition`, `max_price_cents` are optional (`null` = any). `state`:
-`searching`, `offer` (the shop made an offer, see the portal), `available` (a matching card is in
-the shop).
+`language`, `finish`, `min_condition` (that condition or better), `max_price_cents` are optional
+(`null` = any); `value_cents` is the data pack's value of a copy as wished (NM when no condition is
+given). `state`: `searching`, `offer` (the shop made an offer: the customer takes it or declines it
+in the portal under Missing cards), `available` (a matching card is in the shop right now).
+
+A card the customer buys in the shop leaves the list by itself (and goes into the collection).
+At most 500 cards on a list (`fields.card_id = "too_many"`).
 
 ### Endpoints
 
@@ -423,7 +428,10 @@ the shop).
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /api/app/v1/wanted`         | `{ "items": [Missing card, …] }` (open ones, newest first)                                                                                                                                                        |
 | `POST /api/app/v1/wanted`        | `client_ref`, `card_id`, optional `language`, `finish`, `min_condition`, `max_price_cents`, `note` → `201` (`200` for a repeated `client_ref`, or when the same card with the same wishes is already on the list) |
-| `DELETE /api/app/v1/wanted/{id}` | `204`                                                                                                                                                                                                             |
+| `DELETE /api/app/v1/wanted/{id}` | `204` (also when it is already gone)                                                                                                                                                                              |
+
+`POST` errors: `400 invalid_request` with `fields`, e.g. `{ "card_id": "unknown" }`,
+`{ "min_condition": "invalid" }`, `{ "max_price_cents": "invalid" }` (1 – 100,000,000 cents).
 
 ---
 
@@ -484,7 +492,10 @@ no longer included falls back to Scanner.
    note.
 3. When `features.wanted`: **☆ Missing** on the result panel and in Search adds the card to the
    missing cards (language = the card's, finish = selected printing, other fields empty);
-   a second tap on the filled ☆ removes it (`DELETE /wanted/{id}`).
+   a second tap on the filled ☆ removes it (`DELETE /wanted/{id}`). The filled ☆ comes from
+   `GET /wanted` (cached, refreshed at start and after each change). A card with `state: offer`
+   shows "Offer from the shop" and opens `portal_url` + `/missing`
+   (`https://overpricedcardboard.com/account/missing`); `available` shows "In the shop now".
 4. Offline: queue adds and removes with their `client_ref` and send them in order when online;
    show queued items as "waiting to sync". Never drop a queued add because of a 5xx; drop it only
    on a `400` (show why) or when the user deletes it.
