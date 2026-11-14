@@ -12,7 +12,7 @@ Verantwortlich ist der Betreiber von {{company.public_name}}, {{company.address}
 
 - **Keine Zugriffsprotokolle, kein Tracking.** Wir speichern beim Aufruf der Seiten keine IP-Adressen und setzen keine Analyse-, Werbe- oder Tracking-Werkzeuge ein.
 - **Alles von unserem Server.** Schriften und Kartenbilder werden von unserem eigenen Server ausgeliefert; Ihr Browser baut dafür keine Verbindung zu Dritten auf. Die Kartenbilder beziehen wir serverseitig von TCGdex, ohne dabei Daten über Sie weiterzugeben.
-- **Cookies.** Wir verwenden nur technisch notwendige Cookies: „pk_cart“ merkt sich Ihren Warenkorb (bis zu 30 Tage), Formular-Cookies wie „pk_app_form“ behalten Ihre Eingaben für zwei Minuten, wenn ein Feld noch fehlt, und „pk_admin“ hält die Anmeldung unserer Mitarbeiterinnen und Mitarbeiter im Verwaltungsbereich. Für diese Cookies ist keine Einwilligung nötig (§ 165 Abs. 3 TKG 2021).
+- **Cookies.** Wir verwenden nur technisch notwendige Cookies: „pk_cart“ merkt sich Ihren Warenkorb (bis zu 30 Tage), „oc_account“ hält Sie in Ihrem Kundenkonto angemeldet (60 Tage ab dem letzten Besuch), „oc_login_sent“ und „oc_pair“ zeigen nach dem Anfordern eines Anmeldelinks bzw. QR-Codes die nächste Seite an (höchstens 30 Minuten), Formular-Cookies wie „pk_voucher_form“ behalten Ihre Eingaben für zwei Minuten, wenn ein Feld noch fehlt, und „pk_admin“ hält die Anmeldung unserer Mitarbeiterinnen und Mitarbeiter im Verwaltungsbereich. Für diese Cookies ist keine Einwilligung nötig (§ 165 Abs. 3 TKG 2021).
 
 Rechtsgrundlage ist unser berechtigtes Interesse an einem sicheren, funktionierenden Shop (Art. 6 Abs. 1 lit. f DSGVO).
 
@@ -50,15 +50,23 @@ Gegen Spam löst Ihr Browser beim Anhaken von „Ich bin ein Mensch“ eine klei
 
 Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ widerrufen, speichern wir Ihre Angaben und den Zeitpunkt des Eingangs, schicken Ihnen eine Eingangsbestätigung und bearbeiten den Widerruf (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 13a FAGG). Wir bewahren diese Daten auf, solange daraus Ansprüche entstehen können, in der Regel drei Jahre.
 
-## 9. App-Lizenzen (Overpriced Cardboard Scanner)
+## 9. Kundenkonto
 
-Lizenzen für die App Overpriced Cardboard Scanner verkauft die {{seller.name}}. Für die Daten des Lizenzkaufs und des Lizenzdienstes ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Lizenzbedingungen ({{license_terms_url}}). Wir betreiben dafür die App-Seite, das Bestellformular und den Server, auf dem auch der Lizenzdienst läuft, und verarbeiten die Daten dabei in ihrem Auftrag (Art. 28 DSGVO).
+Ein Kundenkonto legen Sie mit Ihrer E-Mail-Adresse an: Wir schicken Ihnen einen Anmeldelink, der 20 Minuten und einmal gilt; beim ersten Öffnen entsteht das Konto. Wir speichern Ihre E-Mail-Adresse, Ihre Sprache, den Zeitpunkt der letzten Anmeldung und, wenn Sie sie angeben, Name, Telefonnummer und eine Lieferadresse, mit der die Kasse Ihre Bestellungen ausfüllt. Ihre Bestellungen ordnen wir dem Konto zu, auch frühere Bestellungen mit derselben E-Mail-Adresse. Für die Anmeldung speichern wir zum Cookie „oc_account“ nur einen gehashten Wert, keine IP-Adresse und keine Angaben zu Ihrem Browser. Anmeldelinks löschen wir nach sieben Tagen. Gegen Missbrauch zählen wir Anmeldeversuche je IP-Adresse 15 Minuten lang im Arbeitsspeicher, ohne sie zu speichern.
 
-## 10. Hosting
+Rechtsgrundlage ist die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), für den Schutz vor Missbrauch unser berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO). Sie können Ihr Konto jederzeit unter „Einstellungen“ löschen; Bestellungen bewahren wir weiter auf (Punkt 3), aber ohne Konto.
+
+## 10. App-Abo und Portal (Overpriced Cardboard Scanner)
+
+Das Abo für die App Overpriced Cardboard Scanner mit dem Web-Portal (Sammlung, Preise, fehlende Karten, Teilen, Geräte) verkauft und erbringt die {{seller.name}}. Für die Daten des Abos ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Abo-Bedingungen ({{license_terms_url}}). Wir betreiben dafür Website, Kundenkonto und Server und verarbeiten die Daten in ihrem Auftrag (Art. 28 DSGVO).
+
+Zusätzlich sehen wir als Shop Ihre Liste fehlender Karten, um Ihnen Angebote zu machen und Sie zu benachrichtigen, sobald eine passende Karte im Shop ist, und wir tragen Karten, die Sie im Shop kaufen, in Ihre Sammlung ein. Das ist Teil der Leistung, die Sie mit dem Abo nutzen (Art. 6 Abs. 1 lit. b DSGVO).
+
+## 11. Hosting
 
 Der Shop und die Datenbank laufen auf Servern von Exoscale (Akenes SA, Boulevard de Grancy 19A, 1006 Lausanne, Schweiz) in einem Rechenzentrum in Europa. Exoscale verarbeitet die Daten in unserem Auftrag. Für die Schweiz hat die EU-Kommission ein angemessenes Datenschutzniveau festgestellt.
 
-## 11. Ihre Rechte
+## 12. Ihre Rechte
 
 Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung, auf Datenübertragbarkeit sowie das Recht, einer Verarbeitung auf Grundlage unseres berechtigten Interesses zu widersprechen (Art. 15 bis 21 DSGVO). Schreiben Sie uns dazu an {{company.email}}.
 

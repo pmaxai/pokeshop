@@ -46,6 +46,8 @@ Pairing returns a **device token** (43 characters, base64url). Every other call 
 Authorization: Bearer 9fJ2kQ…
 ```
 
+Every call may also send `X-App-Version: 1.3.4`; the portal shows it with the device.
+
 The server stores only a hash of the token. A token stays valid until the device is removed in
 the portal, transferred to another device, paired to another account, or disconnected by the app.
 It does **not** expire with the subscription: when the subscription ends the token keeps working
@@ -147,8 +149,9 @@ and offers to remove a device or add one.
 - Pairing the same `device_id` again on the same account gives it a new token in the same slot
   (the old token then answers `unpaired` / `replaced`).
 - Pairing a `device_id` that belongs to another account moves it: it leaves the other account.
-- Errors: `invalid_code`, `unknown_code`, `code_expired`, `device_limit`,
-  `subscription_required`, `rate_limited` (10 attempts per address and 15 minutes).
+- Errors: `invalid_code`, `unknown_code`, `code_expired`, `device_limit` (with `"seats": 2`),
+  `subscription_required`, `rate_limited` (10 attempts per address and 15 minutes; other
+  calls: 600 per address and 15 minutes).
 
 ### `POST /api/app/v1/transfer` – switch to a new phone
 

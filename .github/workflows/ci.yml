@@ -117,6 +117,17 @@ jobs:
           check /de/veranstaltungen
           check /admin/login
           check '/og.png?l=de'
+          check /app
+          check /login
+          check /de/anmelden
+          check /app/subscription-terms
+          check /de/app/abo-bedingungen
+          curl -s http://localhost:3000/de/app/abo-bedingungen | grep -q 'Abo-Bedingungen' || { echo 'subscription terms not loaded'; exit 1; }
+          test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:3000/app/license-terms)" = '308 http://localhost:3000/app/subscription-terms' || { echo 'old terms link not redirected'; exit 1; }
+          # app API: no token, and a code that doesn't exist
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/app/v1/status)" = 401 || { echo 'status without token'; exit 1; }
+          curl -s -X POST http://localhost:3000/api/app/v1/pair -H 'content-type: application/json' \
+            -d '{"code":"ABCD-EFGH-JKMN","device_id":"ci-device-1"}' | grep -q '"unknown_code"' || { echo 'pair'; exit 1; }
           curl -s http://localhost:3000/de/agb | grep -q 'Allgemeine Geschäftsbedingungen' || { echo 'legal texts not loaded'; exit 1; }
           # German pages used to sit at the root: old links redirect to /de
           test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' http://localhost:3000/karten)" = '308 http://localhost:3000/de/karten' || { echo 'old German link not redirected'; exit 1; }

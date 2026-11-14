@@ -4,10 +4,13 @@ import { Link } from '@/i18n/navigation';
 import type { AppPathname, Locale } from '@/i18n/routing';
 import { logoutAction } from '@/app/[locale]/account-actions';
 
-export type AccountSection = 'overview' | 'orders' | 'address' | 'settings';
+export type AccountSection =
+  'overview' | 'subscription' | 'devices' | 'orders' | 'address' | 'settings';
 
 const NAV: { key: AccountSection; href: AppPathname }[] = [
   { key: 'overview', href: '/konto' },
+  { key: 'subscription', href: '/konto/abo' },
+  { key: 'devices', href: '/konto/geraete' },
   { key: 'orders', href: '/konto/bestellungen' },
   { key: 'address', href: '/konto/adresse' },
   { key: 'settings', href: '/konto/einstellungen' },

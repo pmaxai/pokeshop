@@ -104,3 +104,28 @@ export const localInput = (d: Date | string | null | undefined) => {
   }).format(new Date(d));
   return parts.replace(' ', 'T');
 };
+
+/** Status of a customer's subscription in the admin's words. */
+export function subscriptionStatusLabel(r: {
+  source: string | null;
+  status: string | null;
+  cancelAtPeriodEnd: boolean;
+  endsAt: Date | null;
+}) {
+  if (!r.status) return '–';
+  if (r.source === 'complimentary') {
+    return r.endsAt && r.endsAt <= new Date() ? 'Gratis, abgelaufen' : 'Gratis';
+  }
+  const map: Record<string, string> = {
+    active: 'Aktiv',
+    trialing: 'Aktiv',
+    past_due: 'Zahlung offen',
+    canceled: 'Beendet',
+    unpaid: 'Unbezahlt',
+    incomplete: 'Zahlung läuft',
+    incomplete_expired: 'Nicht zustande gekommen',
+    paused: 'Pausiert',
+  };
+  const s = map[r.status] ?? r.status;
+  return r.cancelAtPeriodEnd && r.status !== 'canceled' ? `${s}, gekündigt` : s;
+}

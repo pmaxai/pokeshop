@@ -30,9 +30,9 @@ You are only liable for any diminished value of the goods resulting from the han
 
 This withdrawal information also applies to buying gift vouchers. There, the withdrawal period is fourteen days from the day the contract is concluded (receipt of the payment). If the voucher has already been redeemed in part, we refund the balance not yet redeemed.
 
-## App licences (Overpriced Cardboard Scanner)
+## App subscription (Overpriced Cardboard Scanner)
 
-This withdrawal information applies to card orders. Licences for the app Overpriced Cardboard Scanner are sold by {{seller.name}}; the withdrawal information for them is in its licence terms: {{license_terms_url}}.
+This withdrawal information applies to card orders. The subscription for the app Overpriced Cardboard Scanner is sold by {{seller.name}}; the withdrawal information for it is in its subscription terms: {{license_terms_url}}.
 
 ---
 

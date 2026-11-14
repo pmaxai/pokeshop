@@ -1,5 +1,9 @@
 # License service (scanner app)
 
+> **Since 2026-11-15 licences are no longer sold.** The app is sold as a subscription and paired
+> to the customer's account by QR code (docs/app-account-api.md). This service keeps answering
+> app builds that still use licence keys until the app has switched; then it can be removed.
+
 One-off licences for the scanner app. A licence never expires and is active on **one device at
 a time**: activating it on another device suspends the device that had it. The app keeps working
 offline; it stops only after the service has told it that another device took over (or that the

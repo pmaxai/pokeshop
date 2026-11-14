@@ -12,7 +12,7 @@ The controller is the operator of {{company.public_name}}, {{company.address}}, 
 
 - **No access logs, no tracking.** We do not store IP addresses when you visit the pages and we use no analytics, advertising or tracking tools.
 - **Everything from our server.** Fonts and card pictures are delivered by our own server; your browser does not connect to third parties for them. We fetch the card pictures from TCGdex on the server side without passing on any data about you.
-- **Cookies.** We use only technically necessary cookies: "pk_cart" remembers your cart (up to 30 days), form cookies such as "pk_app_form" keep your entries for two minutes when a field still needs fixing, and "pk_admin" keeps our staff signed in to the administration area. These cookies need no consent (§ 165 (3) TKG 2021).
+- **Cookies.** We use only technically necessary cookies: "pk_cart" remembers your cart (up to 30 days), "oc_account" keeps you logged in to your customer account (60 days from your last visit), "oc_login_sent" and "oc_pair" show the next page after you request a login link or a QR code (at most 30 minutes), form cookies such as "pk_voucher_form" keep your entries for two minutes when a field still needs fixing, and "pk_admin" keeps our staff signed in to the administration area. These cookies need no consent (§ 165 (3) TKG 2021).
 
 The legal basis is our legitimate interest in a secure, working shop (Art. 6 (1) (f) GDPR).
 
@@ -50,15 +50,23 @@ Against spam, your browser solves a small puzzle when you tick "I am human"; no 
 
 If you withdraw from the contract with "Return an order (withdraw from contract)", we store your details and the time of receipt, send you an acknowledgement of receipt and process the withdrawal (Art. 6 (1) (c) GDPR in conjunction with § 13a FAGG). We keep this data as long as claims may arise from it, usually three years.
 
-## 9. App licences (Overpriced Cardboard Scanner)
+## 9. Customer account
 
-Licences for the app Overpriced Cardboard Scanner are sold by {{seller.name}}. It is the controller for the data of a licence purchase and of the licence service; what it processes is set out in the data protection section of its licence terms ({{license_terms_url}}). We run the app page, the order form and the server the licence service also runs on, and process the data on its behalf (Art. 28 GDPR).
+You create a customer account with your e-mail address: we send you a login link that works for 20 minutes and once; opening it the first time creates the account. We store your e-mail address, your language, the time of your last login and, if you give them, your name, phone number and a shipping address with which checkout fills in your orders. We link your orders to the account, including earlier orders with the same e-mail address. For staying logged in we store only a hashed value of the cookie "oc_account", no IP address and no details about your browser. We delete login links after seven days. Against misuse we count login attempts per IP address in memory for 15 minutes, without storing them.
 
-## 10. Hosting
+The legal basis is the performance of the contract (Art. 6 (1) (b) GDPR), for protection against misuse our legitimate interest (Art. 6 (1) (f) GDPR). You can delete your account at any time under "Settings"; we keep orders (point 3), but without the account.
+
+## 10. App subscription and portal (Overpriced Cardboard Scanner)
+
+The subscription for the app Overpriced Cardboard Scanner with the web portal (collection, prices, missing cards, sharing, devices) is sold and provided by {{seller.name}}. It is the controller for the subscription's data; what it processes is set out in the data protection section of its subscription terms ({{license_terms_url}}). We run the website, the customer account and the server for it and process the data on its behalf (Art. 28 GDPR).
+
+In addition, as the shop we see your list of missing cards so we can make you offers and tell you as soon as a matching card is in the shop, and we add cards you buy in the shop to your collection. This is part of the service you use with the subscription (Art. 6 (1) (b) GDPR).
+
+## 11. Hosting
 
 The shop and the database run on servers of Exoscale (Akenes SA, Boulevard de Grancy 19A, 1006 Lausanne, Switzerland) in a data centre in Europe. Exoscale processes the data on our behalf. The European Commission has found that Switzerland ensures an adequate level of data protection.
 
-## 11. Your rights
+## 12. Your rights
 
 You have the right of access, rectification, erasure and restriction of processing, the right to data portability and the right to object to processing based on our legitimate interest (Art. 15 to 21 GDPR). To use them, write to us at {{company.email}}.
 

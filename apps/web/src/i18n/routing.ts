@@ -32,7 +32,7 @@ export const routing = defineRouting({
     '/app': '/app',
     '/gutscheine': { de: '/gutscheine', en: '/gift-vouchers' },
     '/gutscheine/[token]': { de: '/gutscheine/[token]', en: '/gift-vouchers/[token]' },
-    '/app/lizenzbedingungen': { de: '/app/lizenzbedingungen', en: '/app/license-terms' },
+    '/app/lizenzbedingungen': { de: '/app/abo-bedingungen', en: '/app/subscription-terms' },
     '/app/lizenz/[token]': { de: '/app/lizenz/[token]', en: '/app/license/[token]' },
     '/anmelden': { de: '/anmelden', en: '/login' },
     '/anmelden/link': { de: '/anmelden/link', en: '/login/link' },
@@ -40,6 +40,9 @@ export const routing = defineRouting({
     '/konto/bestellungen': { de: '/konto/bestellungen', en: '/account/orders' },
     '/konto/adresse': { de: '/konto/adresse', en: '/account/address' },
     '/konto/einstellungen': { de: '/konto/einstellungen', en: '/account/settings' },
+    '/konto/abo': { de: '/konto/abo', en: '/account/subscription' },
+    '/konto/geraete': { de: '/konto/geraete', en: '/account/devices' },
+    '/pair/[code]': '/pair/[code]',
   },
 });
 

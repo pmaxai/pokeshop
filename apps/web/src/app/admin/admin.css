@@ -548,3 +548,13 @@ tr.past td {
   border-color: var(--warn);
   color: #ffffff;
 }
+.plain--kv {
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-2) var(--s-5);
+}
+.plain--kv dt {
+  color: var(--muted);
+}
+.plain--kv dd {
+  margin: 0;
+}

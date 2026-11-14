@@ -473,7 +473,7 @@ export type Rendered = {
 };
 
 /** Context for a mail the GmbH sends: its details in the footer and the legal PDFs. */
-function gmbhContext(ctx: MailContext): MailContext & { sender: string | null } {
+export function gmbhContext(ctx: MailContext): MailContext & { sender: string | null } {
   const seller = ctx.licenseSeller;
   if (!seller?.name) throw new Error('setting license_seller is missing – run migrate');
   return { ...ctx, company: seller, sender: seller.email || null };
@@ -784,6 +784,10 @@ export async function renderTemplate(
     case 'license_resend':
       return renderLicenseMail(db, mail, ctx);
     case 'account_login':
+    case 'subscription_welcome':
+    case 'subscription_invoice':
+    case 'subscription_payment_failed':
+    case 'subscription_ended':
       return renderAccountMail(db, mail, ctx);
   }
 }

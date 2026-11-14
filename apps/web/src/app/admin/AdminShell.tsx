@@ -6,6 +6,7 @@ import { db } from '@/server/config';
 const LINKS = [
   { href: '/admin', label: 'Übersicht', key: 'home' },
   { href: '/admin/bestellungen', label: 'Bestellungen', key: 'orders' },
+  { href: '/admin/kunden', label: 'Kunden & Abos', key: 'customers' },
   { href: '/admin/produkte', label: 'Produkte', key: 'products' },
   { href: '/admin/kategorien', label: 'Kategorien', key: 'categories' },
   { href: '/admin/gutscheine', label: 'Gutscheine', key: 'vouchers' },
