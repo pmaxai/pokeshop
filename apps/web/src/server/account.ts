@@ -9,6 +9,7 @@ import {
   sessionAccount,
   type Account,
 } from '@pokeshop/core/accounts';
+import { accountEntitlements, type Entitlements } from '@pokeshop/core/subscriptions';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db } from './config';
@@ -38,6 +39,19 @@ export async function requireAccount(locale: Locale, here: string): Promise<Acco
 }
 
 /** Logs the customer in. No IP address or browser details are stored with the session. */
+/**
+ * For portal pages (collection, cards, missing cards, sharing): the customer and what the
+ * subscription allows. Pages show a "needs a subscription" panel when `portal` is false.
+ */
+export async function requirePortal(
+  locale: Locale,
+  here: string,
+): Promise<{ account: Account; ent: Entitlements; portal: boolean }> {
+  const account = await requireAccount(locale, here);
+  const ent = await accountEntitlements(db(), account);
+  return { account, ent, portal: ent.features.collection };
+}
+
 export async function startAccountSession(accountId: number): Promise<void> {
   const token = await createAccountSession(db(), accountId);
   (await cookies()).set(ACCOUNT_COOKIE, token, {

@@ -19,7 +19,8 @@ export type MailTemplate =
   | 'subscription_welcome'
   | 'subscription_invoice'
   | 'subscription_payment_failed'
-  | 'subscription_ended';
+  | 'subscription_ended'
+  | 'collection_shared';
 
 export type MailAttachment =
   | { kind: 'document'; id: number }

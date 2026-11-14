@@ -58,6 +58,15 @@ const TEXT = {
       'dein Abo für den Overpriced Cardboard Scanner ist beendet. Die App ist gesperrt, deine Sammlung bleibt gespeichert.',
     endedAgain: 'Du kannst jederzeit wieder ein Abo abschließen; deine Geräte bleiben verbunden.',
     toSubscription: 'Abo abschließen',
+    sharedSubject: (who: string) => `${who} zeigt dir eine Kartensammlung`,
+    sharedIntro: (who: string) => `${who} hat eine Kartensammlung mit dir geteilt.`,
+    sharedTitled: (who: string, title: string) =>
+      `${who} hat die Kartensammlung „${title}“ mit dir geteilt.`,
+    sharedNote: 'Nachricht:',
+    sharedValid: (d: string) =>
+      `Der Link funktioniert bis ${d}. Ein Konto brauchst du dafür nicht.`,
+    sharedOpen: 'Sammlung ansehen',
+    someone: 'Jemand',
   },
   en: {
     loginSubject: 'Your login link for Overpriced Cardboard',
@@ -99,6 +108,14 @@ const TEXT = {
       'your Overpriced Cardboard Scanner subscription has ended. The app is locked; your collection stays saved.',
     endedAgain: 'You can subscribe again any time; your devices stay connected.',
     toSubscription: 'Subscribe',
+    sharedSubject: (who: string) => `${who} is showing you a card collection`,
+    sharedIntro: (who: string) => `${who} shared a card collection with you.`,
+    sharedTitled: (who: string, title: string) =>
+      `${who} shared the card collection “${title}” with you.`,
+    sharedNote: 'Message:',
+    sharedValid: (d: string) => `The link works until ${d}. You don’t need an account for it.`,
+    sharedOpen: 'View the collection',
+    someone: 'Someone',
   },
 } as const;
 
@@ -190,6 +207,43 @@ export async function renderAccountMail(
         from: g.sender,
         replyTo: g.sender,
       };
+    }
+    case 'collection_shared': {
+      const [sh] = await db<
+        {
+          title: string | null;
+          message: string | null;
+          expires_at: Date | null;
+          owner_name: string | null;
+          owner_email: string;
+        }[]
+      >`SELECT s.title, s.message, s.expires_at, a.name AS owner_name, a.email AS owner_email
+          FROM collection_shares s JOIN accounts a ON a.id = s.account_id
+         WHERE s.id = ${Number(payload.share_id)} AND s.revoked_at IS NULL`;
+      if (!sh) throw new Error('share not found or revoked');
+      const who = sh.owner_name || sh.owner_email;
+      const url = String(payload.url ?? '');
+      if (!url.startsWith(ctx.baseUrl)) throw new Error('share link for another host');
+      const subject = t.sharedSubject(who);
+      const until = sh.expires_at
+        ? new Intl.DateTimeFormat(L === 'de' ? 'de-AT' : 'en-GB', {
+            dateStyle: 'long',
+            timeStyle: 'short',
+            timeZone: 'Europe/Vienna',
+          }).format(sh.expires_at)
+        : '';
+      const body = [
+        p(esc(t.hello)),
+        p(esc(sh.title ? t.sharedTitled(who, sh.title) : t.sharedIntro(who))),
+        ...(sh.message
+          ? [
+              `<p style="margin:0 0 14px;padding:10px 14px;border-left:3px solid ${C.line};white-space:pre-wrap">${esc(sh.message)}</p>`,
+            ]
+          : []),
+        button(url, t.sharedOpen),
+        ...(until ? [p(esc(t.sharedValid(until)))] : []),
+      ].join('\n');
+      return { subject, html: layout(L, ctx, subject, body) };
     }
     default:
       throw new Error(`not an account mail: ${mail.template}`);

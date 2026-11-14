@@ -81,6 +81,7 @@ const card = (over: Partial<PackCard> = {}): PackCard => ({
   rarity: 'Rare',
   category: 'Pokemon',
   image: null,
+  imageSource: null,
   printings: printings({
     variants: { holo: true },
     rarity: 'Rare Holo',
