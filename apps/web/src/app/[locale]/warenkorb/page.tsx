@@ -7,6 +7,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
 import { currentCartId } from '@/server/cart';
+import { currentAccount } from '@/server/account';
 import { AltNames } from '@/components/AltNames';
 import { CardImage } from '@/components/CardImage';
 import { AutoSubmit } from '@/components/AutoSubmit';
@@ -34,13 +35,22 @@ export default async function CartPage({ params, searchParams }: Props) {
   const tl = await getTranslations('Languages');
   const tc = await getTranslations('Card');
   const cartId = await currentCartId();
-  const view: CartView | null = cartId ? await loadCart(db(), cartId, locale) : null;
+  const account = await currentAccount();
+  const view: CartView | null = cartId
+    ? await loadCart(db(), cartId, locale, { accountId: account?.id })
+    : null;
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
   // Delivery countries in the select, alphabetical by their name in the page's language.
   const byCountryName = <T extends { code: string }>(list: T[]) =>
     [...list].sort((a, b) =>
       (names.of(a.code) ?? a.code).localeCompare(names.of(b.code) ?? b.code, locale),
     );
+  const offerDate = (d: Date) =>
+    new Intl.DateTimeFormat(locale === 'de' ? 'de-AT' : 'en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Europe/Vienna',
+    }).format(d);
   const threshold = await getSetting<number | null>('high_value_threshold_cents', null);
 
   const notices = [
@@ -103,23 +113,18 @@ export default async function CartPage({ params, searchParams }: Props) {
         <ul className="cart-lines">
           {view.lines.map((l) => {
             const problem = problems.get(l.id);
-            const max = Math.max(l.quantity, Math.min(l.available, 99));
+            const max = l.offer ? 1 : Math.max(l.quantity, Math.min(l.available, 99));
+            // a card offered from the shop's drafts has no public page; the offer is in the account
+            const href = l.offer
+              ? ('/konto/fehlend' as const)
+              : { pathname: '/karten/[slug]' as const, params: { slug: l.slug } };
             return (
               <li key={l.id} className="cart-line">
-                <Link
-                  href={{ pathname: '/karten/[slug]', params: { slug: l.slug } }}
-                  className="cart-line__img"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                >
+                <Link href={href} className="cart-line__img" tabIndex={-1} aria-hidden="true">
                   <CardImage image={l.image} alt="" sizes="5rem" noImageLabel={tc('noImage')} />
                 </Link>
                 <div className="cart-line__body">
-                  <Link
-                    href={{ pathname: '/karten/[slug]', params: { slug: l.slug } }}
-                    className="cart-line__name"
-                    lang={l.nameLang}
-                  >
+                  <Link href={href} className="cart-line__name" lang={l.nameLang}>
                     {l.name}
                   </Link>
                   <AltNames translations={l.nameTranslations} className="cart-line__alt" />
@@ -127,6 +132,11 @@ export default async function CartPage({ params, searchParams }: Props) {
                     {l.setName ?? l.setCode} <span className="num">{l.cardNumber}</span> ·{' '}
                     {tl(l.cardLanguage as never)} · {l.condition}
                   </span>
+                  {l.offer && (
+                    <span className="cart-line__offer">
+                      {t('offer', { date: offerDate(l.offer.expiresAt) })}
+                    </span>
+                  )}
                   {problem && (
                     <span className="cart-line__problem">
                       {problem.available > 0
@@ -148,6 +158,9 @@ export default async function CartPage({ params, searchParams }: Props) {
                   </select>
                 </label>
                 <span className="cart-line__price">
+                  {l.offer?.listPriceCents && l.offer.listPriceCents > l.priceCents ? (
+                    <s className="cart-line__was">{formatEuro(l.offer.listPriceCents, locale)}</s>
+                  ) : null}
                   {formatEuro(l.lineTotal, locale)}
                   {l.quantity > 1 && (
                     <small>

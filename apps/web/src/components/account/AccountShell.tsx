@@ -8,6 +8,7 @@ export type AccountSection =
   | 'overview'
   | 'collection'
   | 'cards'
+  | 'missing'
   | 'subscription'
   | 'devices'
   | 'orders'
@@ -18,6 +19,7 @@ const NAV: { key: AccountSection; href: AppPathname }[] = [
   { key: 'overview', href: '/konto' },
   { key: 'collection', href: '/konto/sammlung' },
   { key: 'cards', href: '/konto/karten' },
+  { key: 'missing', href: '/konto/fehlend' },
   { key: 'subscription', href: '/konto/abo' },
   { key: 'devices', href: '/konto/geraete' },
   { key: 'orders', href: '/konto/bestellungen' },

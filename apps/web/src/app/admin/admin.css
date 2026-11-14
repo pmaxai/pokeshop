@@ -17,6 +17,13 @@
   text-decoration: none;
   font-weight: 600;
 }
+.admin-bar nav {
+  flex-wrap: wrap;
+  row-gap: var(--s-2);
+}
+.admin-bar nav a {
+  white-space: nowrap;
+}
 .admin-bar a[aria-current='page'] {
   box-shadow: inset 0 -2px 0 var(--accent);
 }
@@ -557,4 +564,33 @@ tr.past td {
 }
 .plain--kv dd {
   margin: 0;
+}
+
+/* Gesuchte Karten */
+.wanted-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  text-decoration: none;
+}
+.wanted-row img {
+  border-radius: 3px;
+  flex: none;
+}
+.wanted-head {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+.wanted-head img {
+  border-radius: 6px;
+  flex: none;
+}
+.wanted-head h1 {
+  margin-top: 0;
+}
+.panel .plain--kv + form,
+.panel .table-wrap + form {
+  margin-top: 1rem;
 }

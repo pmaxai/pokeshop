@@ -238,6 +238,7 @@
     "remove": "Remove",
     "each": "each",
     "onlyLeft": "{count, plural, one {Only # copy left} other {Only # copies left}} – please adjust the quantity.",
+    "offer": "Your offer · open until {date}",
     "soldOut": "No longer available – please remove it.",
     "country": "Delivery country",
     "apply": "Apply",
@@ -612,7 +613,8 @@
       "subscription": "Subscription",
       "devices": "Devices",
       "collection": "Collection",
-      "cards": "Cards"
+      "cards": "Cards",
+      "missing": "Missing cards"
     },
     "login": {
       "title": "Log in",
@@ -1029,6 +1031,55 @@
         "too_long": "That’s too long.",
         "invalid": "Please check."
       }
+    },
+    "wanted": {
+      "title": "Missing cards",
+      "lead": "Cards you are still missing. We see your list and make you an offer as soon as we have a matching card. When a matching card comes into the shop, you get an e-mail.",
+      "removed": "Taken off the list.",
+      "declined": "Offer declined.",
+      "offerProblem": {
+        "expired": "The offer has expired.",
+        "sold": "The card from this offer is gone.",
+        "unknown": "This offer no longer exists."
+      },
+      "offersTitle": "Offers for you",
+      "offerUntil": "Open until {date}.",
+      "offerHeld": "We keep the card for you until then.",
+      "offerOpen": "Until then, someone else may also buy it in the shop.",
+      "yourPrice": "your price",
+      "toCart": "Add to cart",
+      "decline": "Decline",
+      "listTitle": "{count, plural, =0 {Your list} one {Your list (# card)} other {Your list (# cards)}}",
+      "add": "Find a card",
+      "empty": "No missing cards yet. Find a card and tap “Mark as missing”.",
+      "state": {
+        "searching": "We’re looking out for it",
+        "available": "In the shop now",
+        "offer": "Offer for you"
+      },
+      "marketValue": "market value",
+      "remove": "Remove",
+      "foundTitle": "Found",
+      "cardTitle": "Missing this card?",
+      "cardText": "Mark it: we make you an offer as soon as we have it, and e-mail you when it comes into the shop.",
+      "wishes": "Wishes (optional)",
+      "mark": "Mark as missing",
+      "added": "On your list.",
+      "toList": "Missing cards",
+      "language": "Language",
+      "finish": "Printing",
+      "minCondition": "Condition at least",
+      "maxPrice": "At most (€)",
+      "maxPricePlaceholder": "e.g. 120",
+      "priceError": "Please enter an amount in euros, e.g. 120 or 89.90.",
+      "note": "Note for us",
+      "notePlaceholder": "e.g. “Unlimited is fine too”",
+      "any": "Any",
+      "anyLanguage": "Any language",
+      "otherFinishes": "Other printings",
+      "fromCondition": "{condition} or better",
+      "upTo": "up to {price}",
+      "inShop": "In the shop"
     }
   },
   "Shared": {

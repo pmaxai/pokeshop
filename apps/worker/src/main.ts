@@ -6,6 +6,7 @@ import { deleteOldDevices } from '@pokeshop/core/devices';
 import { deleteStaleCarts } from '@pokeshop/core/cart';
 import { deleteOldTombstones, syncShopPurchases } from '@pokeshop/core/collection';
 import { deleteOldContactMessages } from '@pokeshop/core/contact';
+import { sendWantedAlerts, syncWantedPurchases } from '@pokeshop/core/wanted';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -239,6 +240,13 @@ async function schedule() {
       `[collection] shop purchases: ${purchases.added} added, ${purchases.removed} removed`,
     );
   }
+  // missing cards: bought ones off the list, offers accepted; "now in the shop" mails
+  const wanted = await syncWantedPurchases(sql);
+  if (wanted.offers || wanted.found) {
+    console.log(`[wanted] ${wanted.offers} offer(s) bought, ${wanted.found} card(s) found`);
+  }
+  const alerts = await sendWantedAlerts(sql);
+  if (alerts) console.log(`[wanted] ${alerts} "now in the shop" mail(s) queued`);
   await deleteOldDevices(sql);
   const messages = await deleteOldContactMessages(sql);
   if (messages) console.log(`[contact] deleted ${messages} handled message(s) older than a year`);

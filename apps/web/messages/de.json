@@ -238,6 +238,7 @@
     "remove": "Entfernen",
     "each": "je",
     "onlyLeft": "{count, plural, one {Nur noch # Exemplar frei} other {Nur noch # Exemplare frei}} – bitte Anzahl anpassen.",
+    "offer": "Dein Angebot · gilt bis {date}",
     "soldOut": "Nicht mehr verfügbar – bitte entfernen.",
     "country": "Lieferland",
     "apply": "Übernehmen",
@@ -612,7 +613,8 @@
       "subscription": "Abo",
       "devices": "Geräte",
       "collection": "Sammlung",
-      "cards": "Karten"
+      "cards": "Karten",
+      "missing": "Fehlende Karten"
     },
     "login": {
       "title": "Anmelden",
@@ -1029,6 +1031,55 @@
         "too_long": "Das ist zu lang.",
         "invalid": "Bitte prüfen."
       }
+    },
+    "wanted": {
+      "title": "Fehlende Karten",
+      "lead": "Karten, die dir noch fehlen. Wir sehen deine Liste und machen dir ein Angebot, sobald wir eine passende Karte haben. Kommt eine passende Karte in den Shop, bekommst du eine E-Mail.",
+      "removed": "Von der Liste genommen.",
+      "declined": "Angebot abgelehnt.",
+      "offerProblem": {
+        "expired": "Das Angebot ist abgelaufen.",
+        "sold": "Die Karte aus diesem Angebot ist nicht mehr da.",
+        "unknown": "Dieses Angebot gibt es nicht mehr."
+      },
+      "offersTitle": "Angebote für dich",
+      "offerUntil": "Gilt bis {date}.",
+      "offerHeld": "Wir halten die Karte bis dahin für dich zurück.",
+      "offerOpen": "Bis dahin kann sie auch jemand anders im Shop kaufen.",
+      "yourPrice": "dein Preis",
+      "toCart": "In den Warenkorb",
+      "decline": "Ablehnen",
+      "listTitle": "{count, plural, =0 {Deine Liste} one {Deine Liste (# Karte)} other {Deine Liste (# Karten)}}",
+      "add": "Karte suchen",
+      "empty": "Noch keine fehlenden Karten. Such eine Karte und tippe auf „Als fehlend merken“.",
+      "state": {
+        "searching": "Wir halten Ausschau",
+        "available": "Jetzt im Shop",
+        "offer": "Angebot für dich"
+      },
+      "marketValue": "Marktwert",
+      "remove": "Entfernen",
+      "foundTitle": "Gefunden",
+      "cardTitle": "Fehlt dir diese Karte?",
+      "cardText": "Merk sie dir: Wir machen dir ein Angebot, sobald wir sie haben, und schreiben dir, wenn sie in den Shop kommt.",
+      "wishes": "Wünsche (optional)",
+      "mark": "Als fehlend merken",
+      "added": "Auf deiner Liste.",
+      "toList": "Fehlende Karten",
+      "language": "Sprache",
+      "finish": "Variante",
+      "minCondition": "Zustand mindestens",
+      "maxPrice": "Höchstens (€)",
+      "maxPricePlaceholder": "z. B. 120",
+      "priceError": "Bitte einen Betrag in Euro, z. B. 120 oder 89,90.",
+      "note": "Notiz für uns",
+      "notePlaceholder": "z. B. „Unlimited geht auch“",
+      "any": "Egal",
+      "anyLanguage": "Jede Sprache",
+      "otherFinishes": "Andere Varianten",
+      "fromCondition": "ab {condition}",
+      "upTo": "bis {price}",
+      "inShop": "Im Shop"
     }
   },
   "Shared": {

@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import type { Db, Sql, Tx } from './db.ts';
 import { isPgError, SQLSTATE } from './db.ts';
-import { emptyCart, loadCart, saveCheckoutDraft } from './cart.ts';
+import { emptyCart, loadCart, saveCheckoutDraft, validOffer } from './cart.ts';
 import { cardNames, translationText } from './catalog.ts';
 import type { CheckoutProblem } from './checkout.ts';
 import { currentLegalVersions } from './legal.ts';
@@ -160,7 +160,9 @@ export async function createCheckoutOrder(
       await tx`UPDATE carts SET country = ${d.shipping.country}, locale = ${input.locale}
                 WHERE id = ${input.cartId}
                   AND EXISTS (SELECT 1 FROM countries WHERE code = ${d.shipping.country} AND delivery_enabled)`;
-      const view = await loadCart(tx, input.cartId, input.locale);
+      const view = await loadCart(tx, input.cartId, input.locale, {
+        accountId: input.accountId ?? null,
+      });
       if (view.country !== d.shipping.country) {
         throw new CheckoutRejected([
           { code: 'country_not_delivered', country: d.shipping.country },
@@ -225,11 +227,13 @@ export async function createCheckoutOrder(
       await tx`
         INSERT INTO order_items (order_id, product_id, sku, name_de, name_en, name_local, set_code, set_name_de,
                                  set_name_en, card_number, card_language, condition, finish,
-                                 unit_price_cents, quantity, high_value)
+                                 unit_price_cents, quantity, high_value, offer_id)
         SELECT ${orderId}, p.id, p.sku, p.name_de, p.name_en, p.name_local, p.set_code, p.set_name_de, p.set_name_en,
-               p.card_number, p.card_language, p.condition, p.finish, p.price_cents, ci.quantity,
-               p.high_value
+               p.card_number, p.card_language, p.condition, p.finish,
+               coalesce(o.price_cents, p.price_cents), CASE WHEN o.id IS NULL THEN ci.quantity ELSE 1 END,
+               p.high_value, o.id
           FROM cart_items ci JOIN products p ON p.id = ci.product_id
+          LEFT JOIN wanted_offers o ${validOffer(tx, input.accountId ?? null)}
          WHERE ci.cart_id = ${input.cartId}
          ORDER BY ci.added_at`;
       const [sum] = await tx<{ goods: number }[]>`
@@ -286,7 +290,9 @@ export async function createCheckoutOrder(
     if (e instanceof CheckoutRejected) {
       // The cart page shows exactly which card is gone.
       if (e.problems.some((p) => p.code === 'unavailable' && p.available === 0)) {
-        const view = await loadCart(sql, input.cartId, input.locale);
+        const view = await loadCart(sql, input.cartId, input.locale, {
+          accountId: input.accountId ?? null,
+        });
         if (view.check.problems.length) throw new CheckoutRejected(view.check.problems);
       }
     }

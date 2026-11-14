@@ -112,7 +112,7 @@ export async function cartCodeAction(form: FormData) {
     revalidatePath('/', 'layout');
     redirect(`${cartPath(locale)}#codes`);
   }
-  const view = await loadCart(db(), cart, locale);
+  const view = await loadCart(db(), cart, locale, { accountId: (await currentAccount())?.id });
   const r = await addCartCode(db(), cart, str(form, 'code'), view.check.goodsSubtotal);
   revalidatePath('/', 'layout');
   const q = r.ok

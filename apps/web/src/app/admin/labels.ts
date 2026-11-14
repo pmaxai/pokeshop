@@ -79,6 +79,8 @@ export const MAIL_LABELS: Record<string, string> = {
   license_delivery: 'App-Lizenz mit Rechnung',
   license_resend: 'App-Lizenz erneut angefordert',
   voucher_purchase: 'Gutschein mit PDF',
+  wanted_available: 'Gesuchte Karte im Shop',
+  wanted_offer: 'Angebot für eine gesuchte Karte',
 };
 
 export const dateTime = (d: Date | string | null | undefined) =>
