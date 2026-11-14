@@ -5,10 +5,19 @@ import type { AppPathname, Locale } from '@/i18n/routing';
 import { logoutAction } from '@/app/[locale]/account-actions';
 
 export type AccountSection =
-  'overview' | 'subscription' | 'devices' | 'orders' | 'address' | 'settings';
+  | 'overview'
+  | 'collection'
+  | 'cards'
+  | 'subscription'
+  | 'devices'
+  | 'orders'
+  | 'address'
+  | 'settings';
 
 const NAV: { key: AccountSection; href: AppPathname }[] = [
   { key: 'overview', href: '/konto' },
+  { key: 'collection', href: '/konto/sammlung' },
+  { key: 'cards', href: '/konto/karten' },
   { key: 'subscription', href: '/konto/abo' },
   { key: 'devices', href: '/konto/geraete' },
   { key: 'orders', href: '/konto/bestellungen' },

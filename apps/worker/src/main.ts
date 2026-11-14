@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { deleteExpiredLogins } from '@pokeshop/core/accounts';
 import { deleteOldDevices } from '@pokeshop/core/devices';
 import { deleteStaleCarts } from '@pokeshop/core/cart';
+import { deleteOldTombstones, syncShopPurchases } from '@pokeshop/core/collection';
 import { deleteOldContactMessages } from '@pokeshop/core/contact';
 import { createSql } from '@pokeshop/core/db';
 import {
@@ -230,6 +231,14 @@ async function schedule() {
   const carts = await deleteStaleCarts(sql);
   if (carts) console.log(`[carts] deleted ${carts} stale cart(s)`);
   await deleteExpiredLogins(sql);
+  await deleteOldTombstones(sql);
+  // cards bought in the shop into the buyer's collection (and out again after a refund)
+  const purchases = await syncShopPurchases(sql);
+  if (purchases.added || purchases.removed) {
+    console.log(
+      `[collection] shop purchases: ${purchases.added} added, ${purchases.removed} removed`,
+    );
+  }
   await deleteOldDevices(sql);
   const messages = await deleteOldContactMessages(sql);
   if (messages) console.log(`[contact] deleted ${messages} handled message(s) older than a year`);

@@ -100,8 +100,10 @@ export type PackCard = {
   releaseDate: string | null;
   rarity: string | null;
   category: string | null;
-  /** TCGdex image base (append /low.webp or /high.webp) or a full URL from the second source. */
+  /** Picture through the shop's image route (/media/card/…), small and large. */
   image: { small: string; large: string } | null;
+  /** The picture's original address for the app (TCGdex base without size, or the second source). */
+  imageSource: string | null;
   printings: Printing[];
   priceCheck: PriceCheck | null;
   /** PSA prices (USD) by printing kind; '' = printing unknown. */
@@ -291,9 +293,20 @@ type CardRow = {
   release_date: string | null;
 };
 
+const TCGDEX_ASSETS = 'https://assets.tcgdex.net/';
+
+/**
+ * TCGdex pictures through the shop's own image route (/media/card/…), so visitors' browsers
+ * never contact a third party. Pictures from the pack's second source aren't proxied: those
+ * cards show the card back on the web (the app shows them).
+ */
 function imageOf(r: CardRow): PackCard['image'] {
-  if (r.image_url) return { small: `${r.image_url}/low.webp`, large: `${r.image_url}/high.webp` };
-  if (r.image_alt) return { small: r.image_alt, large: r.image_alt_large ?? r.image_alt };
+  if (r.image_url?.startsWith(TCGDEX_ASSETS)) {
+    const path = r.image_url.slice(TCGDEX_ASSETS.length).replace(/\/$/, '');
+    if (/^[A-Za-z0-9._/-]+$/.test(path) && !path.includes('..')) {
+      return { small: `/media/card/${path}/low.webp`, large: `/media/card/${path}/high.webp` };
+    }
+  }
   return null;
 }
 
@@ -428,6 +441,7 @@ export async function packCards(
       rarity: inf?.rarity ?? null,
       category: inf?.category ?? null,
       image: withImage ? imageOf(withImage) : null,
+      imageSource: withImage ? (withImage.image_url ?? withImage.image_alt) : null,
       printings: printings({
         variants: inf?.variants ?? null,
         rarity: inf?.rarity ?? null,

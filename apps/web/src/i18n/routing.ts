@@ -43,6 +43,12 @@ export const routing = defineRouting({
     '/konto/abo': { de: '/konto/abo', en: '/account/subscription' },
     '/konto/geraete': { de: '/konto/geraete', en: '/account/devices' },
     '/pair/[code]': '/pair/[code]',
+    '/konto/sammlung': { de: '/konto/sammlung', en: '/account/collection' },
+    '/konto/sammlung/[id]': { de: '/konto/sammlung/[id]', en: '/account/collection/[id]' },
+    '/konto/karten': { de: '/konto/karten', en: '/account/cards' },
+    '/konto/karten/[card]': { de: '/konto/karten/[card]', en: '/account/cards/[card]' },
+    '/konto/teilen': { de: '/konto/teilen', en: '/account/sharing' },
+    '/c/[token]': '/c/[token]',
   },
 });
 

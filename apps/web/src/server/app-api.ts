@@ -1,6 +1,7 @@
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { deviceByToken, type TokenLookup } from '@pokeshop/core/devices';
+import { accountEntitlements } from '@pokeshop/core/subscriptions';
 import { db } from './config';
 import { clientIp, rateLimited } from './rate-limit';
 
@@ -70,3 +71,22 @@ export async function jsonBody(req: NextRequest): Promise<Record<string, unknown
     return null;
   }
 }
+
+/** Auth plus a subscription that includes the collection and missing cards (402 otherwise). */
+export async function appPortal(
+  req: NextRequest,
+): Promise<Extract<TokenLookup, { ok: true }> | { ok: false; response: NextResponse }> {
+  const a = await appAuth(req);
+  if (!a.ok) return a;
+  const ent = await accountEntitlements(db(), a.account);
+  if (!ent.features.collection) {
+    return {
+      ok: false,
+      response: apiError(402, 'subscription_required', 'The account has no running subscription.'),
+    };
+  }
+  return a;
+}
+
+/** The app's language for names: the account's. */
+export const appLocale = (a: { account: { locale: 'de' | 'en' } }) => a.account.locale;
