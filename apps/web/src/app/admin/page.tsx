@@ -2,7 +2,7 @@ import { formatEuro } from '@pokeshop/core';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from './AdminShell';
-import { requestCardSync } from './actions';
+import { requestCardSync, requestPackImport } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Übersicht' };
@@ -45,7 +45,7 @@ export default async function Dashboard({
              (SELECT count(*) FROM orders
                WHERE paid_at >= date_trunc('month', now() AT TIME ZONE 'Europe/Vienna') AT TIME ZONE 'Europe/Vienna')::int AS month_orders`,
   ]);
-  const [[stats], conflicts, failedImages, api, sync] = await Promise.all([
+  const [[stats], conflicts, failedImages, api, sync, packJob, [pack]] = await Promise.all([
     db()<{ active: number; draft: number; copies: number; value: number; cards: number }[]>`
       SELECT (SELECT count(*) FROM products WHERE status = 'active')::int AS active,
              (SELECT count(*) FROM products WHERE status = 'draft')::int AS draft,
@@ -82,6 +82,13 @@ export default async function Dashboard({
       { status: string; finished_at: Date | null; created_at: Date; last_error: string | null }[]
     >`
       SELECT status, finished_at, created_at, last_error FROM jobs WHERE kind = 'tcgdex.sync' ORDER BY id DESC LIMIT 1`,
+    db()<
+      { status: string; finished_at: Date | null; created_at: Date; last_error: string | null }[]
+    >`
+      SELECT status, finished_at, created_at, last_error FROM jobs WHERE kind = 'pricepack.import'
+       ORDER BY id DESC LIMIT 1`,
+    db()<{ version: string; imported_at: Date; cards: number; prices: number }[]>`
+      SELECT version, imported_at, cards, prices FROM pack_imports ORDER BY imported_at DESC LIMIT 1`,
   ]);
   return (
     <AdminShell
@@ -203,6 +210,24 @@ export default async function Dashboard({
         <form action={requestCardSync} style={{ marginTop: 'var(--s-3)' }}>
           <button className="btn btn--quiet" type="submit">
             Jetzt abgleichen
+          </button>
+        </form>
+      )}
+
+      <h2>Preisdaten (Datenpaket der App)</h2>
+      <p>
+        {pack
+          ? `Stand des Pakets: ${time(new Date(pack.version))}, eingelesen ${time(pack.imported_at)} – ${pack.cards.toLocaleString('de-AT')} Karten, ${pack.prices.toLocaleString('de-AT')} Cardmarket-Preise.`
+          : 'Noch nicht eingelesen.'}{' '}
+        Das Portal zeigt dieselben Preise wie die App; der Worker sieht stündlich nach einem neuen
+        Paket (es erscheint jede Nacht gegen 02:30).
+        {packJob[0]?.status === 'failed' &&
+          ` Letzter Versuch fehlgeschlagen: ${packJob[0].last_error}`}
+      </p>
+      {user.role === 'owner' && (
+        <form action={requestPackImport} style={{ marginTop: 'var(--s-3)' }}>
+          <button className="btn btn--quiet" type="submit">
+            Jetzt neu einlesen
           </button>
         </form>
       )}

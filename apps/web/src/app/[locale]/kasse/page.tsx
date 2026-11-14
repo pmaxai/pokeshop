@@ -8,6 +8,7 @@ import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { currentCartId } from '@/server/cart';
+import { currentAccount } from '@/server/account';
 import { AltNames } from '@/components/AltNames';
 import { CodeLines } from '@/components/CodeLines';
 import { checkoutAction } from '../shop-actions';
@@ -54,7 +55,22 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     redirect(getPathname({ href: '/warenkorb', locale }));
   }
   const errors = unpack((await searchParams).e);
-  const draft = (view.checkoutDraft ?? {}) as Draft;
+  const account = await currentAccount();
+  const saved = (view.checkoutDraft ?? {}) as Draft;
+  // Logged in and nothing typed yet: the account's address and e-mail.
+  const fromAccount: Draft | null =
+    account && !saved.email && !saved.shipping
+      ? {
+          email: account.email,
+          phone: account.phone ?? undefined,
+          shipping: account.shippingAddress
+            ? Object.fromEntries(
+                Object.entries(account.shippingAddress).map(([k, v]) => [k, String(v ?? '')]),
+              )
+            : { name: account.name ?? '' },
+        }
+      : null;
+  const draft = fromAccount ?? saved;
   const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
   // Delivery countries in the select, alphabetical by their name in the page's language.
   const byCountryName = <T extends { code: string }>(list: T[]) =>
@@ -155,6 +171,22 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
       <form action={checkoutAction} className="checkout" noValidate>
         <input type="hidden" name="locale" value={locale} />
         <div className="checkout__fields">
+          {!account && (
+            <p className="checkout__login muted small">
+              {t.rich('loginHint', {
+                login: (c) => (
+                  <Link
+                    href={{
+                      pathname: '/anmelden',
+                      query: { next: getPathname({ href: '/kasse', locale }) },
+                    }}
+                  >
+                    {c}
+                  </Link>
+                ),
+              })}
+            </p>
+          )}
           <fieldset>
             <legend>{t('contact')}</legend>
             {field('email', t('email'), draft.email, {
@@ -188,6 +220,16 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
                 ))}
               </select>
             </label>
+            {account && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  name="save_address"
+                  defaultChecked={!account.shippingAddress}
+                />{' '}
+                {t('saveAddress')}
+              </label>
+            )}
           </fieldset>
           <details className="billing" open={draft.billingDiffers || undefined}>
             <summary>

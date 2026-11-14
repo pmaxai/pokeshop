@@ -14,7 +14,8 @@ export type MailTemplate =
   | 'license_delivery'
   | 'license_resend'
   | 'voucher_purchase'
-  | 'contact_notification';
+  | 'contact_notification'
+  | 'account_login';
 
 export type MailAttachment =
   | { kind: 'document'; id: number }

@@ -1,6 +1,7 @@
 // Background worker: 10-minute holds, e-mail outbox, refunds the shop owes, product images,
 // card-data sync, cart clean-up.
 import { writeFile } from 'node:fs/promises';
+import { deleteExpiredLogins } from '@pokeshop/core/accounts';
 import { deleteStaleCarts } from '@pokeshop/core/cart';
 import { deleteOldContactMessages } from '@pokeshop/core/contact';
 import { createSql } from '@pokeshop/core/db';
@@ -26,6 +27,7 @@ import {
   revokeOrderLicenses,
 } from '@pokeshop/core/licenses';
 import { paymentsFromEnv } from '@pokeshop/core/payments';
+import { importPack } from '@pokeshop/core/pricepack';
 import {
   fillLocalNames,
   httpTcgdexClient,
@@ -102,6 +104,15 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
       String(job.payload.email),
       job.payload.locale === 'de' ? 'de' : 'en',
     );
+  },
+  // The app's nightly data pack: cards and prices for the customer portal.
+  'pricepack.import': async (job) => {
+    const r = await importPack(sql, {
+      force: job.payload.force === true,
+      log: (m) => console.log(m),
+    });
+    if (r.status === 'current') console.log(`[pack] ${r.version} is current`);
+    await beat();
   },
   // Invoice or credit note PDF requested in the admin before its mail went out.
   'document.render': async (job) => {
@@ -201,9 +212,23 @@ async function schedule() {
       dedupeKey: `tcgdex.local-name:${m.card_ref}:${m.lang}`,
     });
   }
+  // The data pack comes out every night at about 02:30 Vienna time (GitHub can be late):
+  // look for a new one every hour.
+  const [pack] = await sql<{ recent: boolean }[]>`
+    SELECT EXISTS (SELECT 1 FROM jobs WHERE kind = 'pricepack.import'
+                    AND created_at > now() - interval '55 minutes') AS recent`;
+  if (!pack?.recent) {
+    await enqueueJob(
+      sql,
+      'pricepack.import',
+      {},
+      { dedupeKey: 'pricepack.import', maxAttempts: 2 },
+    );
+  }
   await requeueStaleJobs(sql);
   const carts = await deleteStaleCarts(sql);
   if (carts) console.log(`[carts] deleted ${carts} stale cart(s)`);
+  await deleteExpiredLogins(sql);
   const messages = await deleteOldContactMessages(sql);
   if (messages) console.log(`[contact] deleted ${messages} handled message(s) older than a year`);
 }

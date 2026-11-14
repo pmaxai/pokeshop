@@ -177,6 +177,20 @@ export async function revokeApiKey(form: FormData) {
   back('/admin/api-keys', 'Schlüssel gesperrt. Anfragen damit werden ab sofort abgelehnt.');
 }
 
+export async function requestPackImport() {
+  const user = await requireAdmin('owner');
+  const queued = await enqueueJob(
+    db(),
+    'pricepack.import',
+    { requested_by: user.email, force: true },
+    { dedupeKey: 'pricepack.import', maxAttempts: 2 },
+  );
+  back(
+    '/admin',
+    queued ? 'Preisdaten werden neu eingelesen (etwa eine Minute).' : 'Das Einlesen läuft bereits.',
+  );
+}
+
 export async function requestCardSync() {
   const user = await requireAdmin('owner');
   const queued = await enqueueJob(

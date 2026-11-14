@@ -26,7 +26,9 @@
     "cartCount": "Cart, {count, plural, =0 {empty} one {# card} other {# cards}}",
     "events": "Events",
     "app": "App",
-    "vouchers": "Gift vouchers"
+    "vouchers": "Gift vouchers",
+    "account": "Account",
+    "login": "Log in"
   },
   "Home": {
     "title": "Single Pokémon cards from every series and language",
@@ -300,7 +302,9 @@
       "too_long": "This is too long.",
       "terms": "Please accept the terms.",
       "invalid": "Please check."
-    }
+    },
+    "saveAddress": "Save as my shipping address in my account",
+    "loginHint": "Have an account? <login>Log in</login> and checkout fills in your address."
   },
   "Order": {
     "title": "Order {number}",
@@ -652,6 +656,108 @@
       "failedTitle": "Not paid",
       "failedText": "The payment did not go through or was cancelled. Nothing was charged.",
       "again": "Try again"
+    }
+  },
+  "Account": {
+    "nav": {
+      "label": "Account",
+      "overview": "Overview",
+      "orders": "Orders",
+      "address": "Shipping address",
+      "settings": "Settings",
+      "logout": "Log out"
+    },
+    "login": {
+      "title": "Log in",
+      "intro": "Log in or create your account with your e-mail address. We send you a link, there is no password.",
+      "email": "E-mail address",
+      "submit": "Send login link",
+      "note": "The link works for 20 minutes. If there is no account for the address yet, opening the link creates one.",
+      "sentTitle": "Check your inbox",
+      "sentText": "We sent a login link to <b>{email}</b>. Open it to log in.",
+      "sentTextNoEmail": "We sent you a login link. Open it to log in.",
+      "sentHint": "Nothing after a few minutes? Look in the spam folder, or request a new link.",
+      "again": "Send a new link",
+      "errors": {
+        "invalid_email": "Please enter a valid e-mail address.",
+        "too_long": "This address is too long.",
+        "too_many": "Too many attempts from here. Please wait a few minutes."
+      }
+    },
+    "link": {
+      "confirm": "Log in as <b>{email}</b>?",
+      "button": "Log in",
+      "invalid": "This login link is not valid.",
+      "expired": "This login link has expired. Links work for 20 minutes.",
+      "used": "This login link was already used. Each link works once.",
+      "newLink": "Request a new link"
+    },
+    "overview": {
+      "title": "Your account",
+      "appTitle": "App subscription",
+      "appText": "With Collector or Creator you get the Overpriced Cardboard Scanner and this portal: your collection with current prices, missing cards and sharing.",
+      "appLink": "See the plans",
+      "ordersTitle": "Latest orders",
+      "allOrders": "All orders",
+      "addressTitle": "Shipping address",
+      "addressChange": "Change",
+      "addressAdd": "Add",
+      "noAddress": "No shipping address saved yet. With one, checkout fills it in for you."
+    },
+    "orders": {
+      "title": "Orders",
+      "intro": "Your shop orders, including those placed with this e-mail address before you had an account.",
+      "empty": "No orders yet.",
+      "cards": "{count, plural, one {# card} other {# cards}}",
+      "voucher": "Gift voucher",
+      "license": "App licence"
+    },
+    "orderStatus": {
+      "awaiting_payment": "Payment pending",
+      "paid": "Paid",
+      "packing": "Being packed",
+      "shipped": "Shipped",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "address": {
+      "title": "Shipping address",
+      "intro": "Checkout fills in this address for your shop orders. You can still change it there for a single order.",
+      "name": "Name",
+      "company": "Company (optional)",
+      "street": "Street and number",
+      "postcode": "Postcode",
+      "city": "City",
+      "country": "Country",
+      "phone": "Phone (optional, for the parcel service)",
+      "save": "Save address",
+      "remove": "Remove address",
+      "saved": "Address saved.",
+      "removed": "Address removed."
+    },
+    "settings": {
+      "title": "Settings",
+      "email": "E-mail address",
+      "emailHint": "You log in with this address. To change it, <mail>write to us</mail>.",
+      "name": "Name",
+      "language": "Language",
+      "languageHint": "Used for e-mails and the portal.",
+      "save": "Save",
+      "saved": "Saved.",
+      "deleteTitle": "Delete account",
+      "deleteText": "This deletes your account and your saved address and logs you out everywhere. Your orders stay with the shop, as the law requires, but are no longer linked to an account.",
+      "deleteConfirm": "Yes, delete my account",
+      "deleteConfirmMissing": "Please tick the box to confirm.",
+      "deleteButton": "Delete account"
+    },
+    "errors": {
+      "title": "Please check the marked fields.",
+      "required": "Please fill in.",
+      "too_long": "This is too long.",
+      "invalid_postcode": "This postcode does not match the country.",
+      "invalid": "Please check.",
+      "country": "We do not ship to this country."
     }
   }
 }

@@ -23,6 +23,8 @@ import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db, getSetting } from '@/server/config';
 import { ensureCartId } from '@/server/cart';
+import { currentAccount } from '@/server/account';
+import { saveShippingAddress } from '@pokeshop/core/accounts';
 import { payments } from '@/server/payments';
 
 const str = (f: FormData, k: string) => {
@@ -149,6 +151,12 @@ export async function checkoutAction(form: FormData) {
   const provider = payments();
   if (!provider) redirect(`${checkoutPath(locale)}?e=${pack({ _: 'payment_unavailable' })}`);
 
+  // Logged in: the order belongs to the account; "save as my address" keeps the address.
+  const account = await currentAccount();
+  if (account && str(form, 'save_address') === 'on') {
+    await saveShippingAddress(db(), account.id, v.data.shipping);
+  }
+
   let url: string;
   try {
     const order = await createCheckoutOrder(db(), {
@@ -158,6 +166,7 @@ export async function checkoutAction(form: FormData) {
       reservationMinutes: await getSetting<number>('reservation_minutes', 10),
       ossEnabled: await getSetting<boolean>('oss_enabled', false),
       smallBusiness: await getSetting<boolean>('small_business', false),
+      accountId: account?.id ?? null,
     });
     const orderPath = getPathname({
       href: { pathname: '/bestellung/[token]', params: { token: order.token } },
