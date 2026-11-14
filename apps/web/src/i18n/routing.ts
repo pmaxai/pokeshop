@@ -48,6 +48,7 @@ export const routing = defineRouting({
     '/konto/karten': { de: '/konto/karten', en: '/account/cards' },
     '/konto/karten/[card]': { de: '/konto/karten/[card]', en: '/account/cards/[card]' },
     '/konto/teilen': { de: '/konto/teilen', en: '/account/sharing' },
+    '/konto/fehlend': { de: '/konto/fehlend', en: '/account/missing' },
     '/c/[token]': '/c/[token]',
   },
 });

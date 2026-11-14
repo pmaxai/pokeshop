@@ -4,6 +4,7 @@ import type { Db } from './db.ts';
 import { localePath } from './locale-paths.ts';
 import { APP_NAME } from './licenses.ts';
 import { formatEuro } from './money.ts';
+import { cardNames, cardNameText, FINISHES } from './catalog.ts';
 import {
   button,
   C,
@@ -67,6 +68,27 @@ const TEXT = {
       `Der Link funktioniert bis ${d}. Ein Konto brauchst du dafür nicht.`,
     sharedOpen: 'Sammlung ansehen',
     someone: 'Jemand',
+    availableSubject: (n: number) =>
+      n === 1 ? 'Eine gesuchte Karte ist jetzt im Shop' : `${n} gesuchte Karten sind jetzt im Shop`,
+    availableIntro: (n: number) =>
+      n === 1
+        ? 'eine Karte von deiner Liste fehlender Karten ist jetzt bei uns im Shop:'
+        : 'Karten von deiner Liste fehlender Karten sind jetzt bei uns im Shop:',
+    availableFirst: 'Wer zuerst kauft, bekommt die Karte.',
+    availableList:
+      'Deine Liste bearbeitest du im Konto unter „Fehlende Karten“. Kaufst du eine Karte im Shop, kommt sie von der Liste in deine Sammlung.',
+    toWanted: 'Fehlende Karten',
+    view: 'Ansehen',
+    offerSubject: 'Ein Angebot für deine gesuchte Karte',
+    offerIntro: 'wir haben eine Karte für dich, die auf deiner Liste fehlender Karten steht:',
+    offerPrice: (price: string) => `Dein Preis: <strong>${price}</strong>`,
+    offerInstead: (price: string) => ` (im Shop ${price})`,
+    offerValid: (d: string) => `Das Angebot gilt bis ${d}.`,
+    offerHeld: 'Bis dahin halten wir die Karte für dich zurück.',
+    offerOpen: 'Bis dahin kann die Karte aber auch jemand anders im Shop kaufen.',
+    offerHow:
+      'Im Konto unter „Fehlende Karten“ legst du sie zu deinem Preis in den Warenkorb oder lehnst das Angebot ab.',
+    offerButton: 'Angebot ansehen',
   },
   en: {
     loginSubject: 'Your login link for Overpriced Cardboard',
@@ -116,6 +138,29 @@ const TEXT = {
     sharedValid: (d: string) => `The link works until ${d}. You don’t need an account for it.`,
     sharedOpen: 'View the collection',
     someone: 'Someone',
+    availableSubject: (n: number) =>
+      n === 1
+        ? 'A card you’re looking for is in the shop'
+        : `${n} cards you’re looking for are in the shop`,
+    availableIntro: (n: number) =>
+      n === 1
+        ? 'a card from your list of missing cards is now in our shop:'
+        : 'cards from your list of missing cards are now in our shop:',
+    availableFirst: 'Whoever buys first gets the card.',
+    availableList:
+      'You edit your list in your account under “Missing cards”. When you buy a card in the shop, it moves from the list to your collection.',
+    toWanted: 'Missing cards',
+    view: 'View',
+    offerSubject: 'An offer for a card you’re looking for',
+    offerIntro: 'we have a card for you that is on your list of missing cards:',
+    offerPrice: (price: string) => `Your price: <strong>${price}</strong>`,
+    offerInstead: (price: string) => ` (in the shop ${price})`,
+    offerValid: (d: string) => `The offer is open until ${d}.`,
+    offerHeld: 'Until then we keep the card for you.',
+    offerOpen: 'Until then, someone else may still buy the card in the shop.',
+    offerHow:
+      'In your account under “Missing cards” you can put it in your cart at your price, or decline the offer.',
+    offerButton: 'View the offer',
   },
 } as const;
 
@@ -127,6 +172,62 @@ const day = (d: Date, locale: 'de' | 'en') =>
     dateStyle: 'long',
     timeZone: 'Europe/Vienna',
   }).format(d);
+
+const dateTime = (d: Date, locale: 'de' | 'en') =>
+  new Intl.DateTimeFormat(locale === 'de' ? 'de-AT' : 'en-GB', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'Europe/Vienna',
+  }).format(d);
+
+type ProductLine = {
+  id: number;
+  slug: string;
+  slug_en: string | null;
+  status: string;
+  name_de: string;
+  name_en: string;
+  name_local: string | null;
+  card_language: string;
+  card_number: string;
+  set_name_de: string | null;
+  set_name_en: string | null;
+  finish: string;
+  condition: string;
+  grading_company: string | null;
+  grading_grade: string | null;
+  price_cents: number | null;
+};
+
+async function productLines(db: Db, ids: number[]): Promise<ProductLine[]> {
+  if (ids.length === 0) return [];
+  return db<ProductLine[]>`
+    SELECT id, slug, slug_en, status, name_de, name_en, name_local, card_language, card_number,
+           set_name_de, set_name_en, finish, condition, grading_company, grading_grade, price_cents
+      FROM products WHERE id = ANY(${ids}::bigint[]) ORDER BY price_cents NULLS LAST, id`;
+}
+
+/** One card in a mail: names, set, number, language, printing, condition, price, a link. */
+function productRow(p: ProductLine, L: 'de' | 'en', link: string): string {
+  const names = cardNames(
+    {
+      cardLanguage: p.card_language,
+      nameDe: p.name_de,
+      nameEn: p.name_en,
+      nameLocal: p.name_local,
+    },
+    L,
+  );
+  const set = L === 'en' ? (p.set_name_en ?? p.set_name_de) : (p.set_name_de ?? p.set_name_en);
+  const finish = FINISHES[p.finish as keyof typeof FINISHES]?.[L] ?? p.finish;
+  const cond = p.grading_company ? `${p.grading_company} ${p.grading_grade}` : p.condition;
+  const meta = [set, p.card_number, p.card_language, finish, cond].filter(Boolean).join(' · ');
+  const price = p.status === 'active' && p.price_cents !== null ? formatEuro(p.price_cents, L) : '';
+  return `<tr><td style="padding:8px 0;border-bottom:1px solid ${C.line};vertical-align:top">
+<strong lang="${names.lang}">${esc(cardNameText(names))}</strong><br>
+<span style="color:${C.muted};font-size:13px">${esc(meta)}</span></td>
+<td style="padding:8px 0 8px 12px;border-bottom:1px solid ${C.line};text-align:right;vertical-align:top;white-space:nowrap">${link ? `${esc(price)}<br>${link}` : ''}</td></tr>`;
+}
 
 export async function renderAccountMail(
   db: Db,
@@ -242,6 +343,74 @@ export async function renderAccountMail(
           : []),
         button(url, t.sharedOpen),
         ...(until ? [p(esc(t.sharedValid(until)))] : []),
+      ].join('\n');
+      return { subject, html: layout(L, ctx, subject, body) };
+    }
+    case 'wanted_available': {
+      const items = Array.isArray(payload.items)
+        ? (payload.items as { product_id: number }[]).map((i) => Number(i.product_id))
+        : [];
+      const products = await productLines(db, [...new Set(items)]);
+      if (products.length === 0) throw new Error('no products to announce');
+      const subject = t.availableSubject(products.length);
+      const rows = products
+        .map((p) => {
+          const url =
+            ctx.baseUrl +
+            localePath(L, { de: `/karten/${p.slug}`, en: `/cards/${p.slug_en ?? p.slug}` });
+          return productRow(
+            p,
+            L,
+            `<a href="${esc(url)}" style="color:${C.ink}">${esc(t.view)}</a>`,
+          );
+        })
+        .join('');
+      const body = [
+        p(esc(t.hello)),
+        p(esc(t.availableIntro(products.length))),
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;margin:0 0 14px">${rows}</table>`,
+        p(esc(t.availableFirst)),
+        button(accountUrl(ctx, L, '/konto/fehlend', '/account/missing'), t.toWanted),
+        `<p style="margin:0;color:${C.muted};font-size:13px">${esc(t.availableList)}</p>`,
+      ].join('\n');
+      return { subject, html: layout(L, ctx, subject, body) };
+    }
+    case 'wanted_offer': {
+      const [o] = await db<
+        {
+          product_id: number;
+          price_cents: number;
+          message: string | null;
+          expires_at: Date;
+          status: string;
+        }[]
+      >`SELECT product_id, price_cents, message, expires_at, status FROM wanted_offers
+         WHERE id = ${Number(payload.offer_id)}`;
+      if (!o || o.status !== 'open') throw new Error('offer not open');
+      const [prod] = await productLines(db, [Number(o.product_id)]);
+      if (!prod) throw new Error('offered product not found');
+      const subject = t.offerSubject;
+      const shopPrice =
+        prod.status === 'active' && prod.price_cents && prod.price_cents > o.price_cents
+          ? t.offerInstead(esc(formatEuro(prod.price_cents, L)))
+          : '';
+      const body = [
+        p(esc(t.hello)),
+        p(esc(t.offerIntro)),
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;margin:0 0 14px">${productRow(prod, L, '')}</table>`,
+        p(t.offerPrice(esc(formatEuro(o.price_cents, L))) + shopPrice),
+        ...(o.message
+          ? [
+              `<p style="margin:0 0 14px;padding:10px 14px;border-left:3px solid ${C.line};white-space:pre-wrap">${esc(o.message)}</p>`,
+            ]
+          : []),
+        p(
+          esc(
+            `${t.offerValid(dateTime(o.expires_at, L))} ${prod.status === 'draft' ? t.offerHeld : t.offerOpen}`,
+          ),
+        ),
+        button(accountUrl(ctx, L, '/konto/fehlend', '/account/missing'), t.offerButton),
+        `<p style="margin:0;color:${C.muted};font-size:13px">${esc(t.offerHow)}</p>`,
       ].join('\n');
       return { subject, html: layout(L, ctx, subject, body) };
     }

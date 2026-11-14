@@ -53,6 +53,15 @@ export async function countryRow(db: Db, code: string): Promise<CountryRow | nul
   return r ?? null;
 }
 
+/**
+ * Join condition for the offer behind a cart line (alias ci, products p, offers o): open, not
+ * expired, for this product and this customer. Shared with orders.ts, so cart and order agree.
+ */
+export const validOffer = (db: Db, accountId: number | null) =>
+  db`ON o.id = ci.offer_id AND o.product_id = ci.product_id AND o.status = 'open'
+        AND o.expires_at > now() AND o.account_id = ${accountId}::bigint
+        AND p.status IN ('active', 'draft')`;
+
 const isUuid = (s: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
@@ -81,11 +90,15 @@ export async function addToCart(
   productId: number,
   quantity: number,
 ): Promise<AddResult> {
-  const [p] = await db<{ available: number; status: string; in_cart: number | null }[]>`
-    SELECT ps.available, p.status,
-           (SELECT quantity FROM cart_items WHERE cart_id = ${cartId} AND product_id = p.id) AS in_cart
+  const [p] = await db<
+    { available: number; status: string; in_cart: number | null; offer_id: number | null }[]
+  >`
+    SELECT ps.available, p.status, ci.quantity AS in_cart, ci.offer_id
       FROM products p JOIN product_stock ps ON ps.product_id = p.id
+      LEFT JOIN cart_items ci ON ci.cart_id = ${cartId} AND ci.product_id = p.id
      WHERE p.id = ${productId}`;
+  // a line from an offer (wanted.ts) stays one copy at the offer's price
+  if (p?.offer_id) return { quantity: p.in_cart ?? 1, limited: true, unavailable: false };
   if (!p || p.status !== 'active' || p.available < 1) {
     return { quantity: p?.in_cart ?? 0, limited: false, unavailable: true };
   }
@@ -109,7 +122,7 @@ export async function setCartQuantity(
   if (q === 0) {
     await db`DELETE FROM cart_items WHERE cart_id = ${cartId} AND product_id = ${productId}`;
   } else {
-    await db`UPDATE cart_items SET quantity = ${q}
+    await db`UPDATE cart_items SET quantity = CASE WHEN offer_id IS NULL THEN ${q}::int ELSE 1 END
               WHERE cart_id = ${cartId} AND product_id = ${productId}`;
   }
   await db`UPDATE carts SET updated_at = now() WHERE id = ${cartId}`;
@@ -142,6 +155,8 @@ export type CartViewLine = CatalogTile & {
   quantity: number;
   active: boolean;
   lineTotal: number;
+  /** The line comes from an offer of the shop (wanted.ts): `priceCents` is the offer's price. */
+  offer: { id: number; expiresAt: Date; listPriceCents: number | null } | null;
 };
 
 export type CartView = {
@@ -153,12 +168,34 @@ export type CartView = {
   checkoutDraft: Record<string, unknown> | null;
 };
 
-/** Everything the cart and checkout pages show, with the checks run against current stock. */
-export async function loadCart(db: Db, cartId: string, locale: Locale): Promise<CartView> {
+/**
+ * Everything the cart and checkout pages show, with the checks run against current stock. A line
+ * from an offer gets the offer's price only while the offer is open and only for the account it
+ * was made for (`accountId`, the logged-in customer).
+ */
+export async function loadCart(
+  db: Db,
+  cartId: string,
+  locale: Locale,
+  opts: { accountId?: number | null } = {},
+): Promise<CartView> {
   const [cart] = await db<{ country: string | null; checkout: Record<string, unknown> | null }[]>`
     SELECT country, checkout FROM carts WHERE id = ${cartId}`;
-  const items = await db<{ product_id: number; quantity: number }[]>`
-    SELECT product_id, quantity FROM cart_items WHERE cart_id = ${cartId} ORDER BY added_at`;
+  const items = await db<
+    {
+      product_id: number;
+      quantity: number;
+      offer_id: number | null;
+      offer_price: number | null;
+      offer_expires: Date | null;
+      status: string;
+    }[]
+  >`
+    SELECT ci.product_id, ci.quantity, o.id AS offer_id, o.price_cents AS offer_price,
+           o.expires_at AS offer_expires, p.status
+      FROM cart_items ci JOIN products p ON p.id = ci.product_id
+      LEFT JOIN wanted_offers o ${validOffer(db, opts.accountId ?? null)}
+     WHERE ci.cart_id = ${cartId} ORDER BY ci.added_at`;
   const tiles = await tilesByIds(
     db,
     items.map((i) => i.product_id),
@@ -174,12 +211,28 @@ export async function loadCart(db: Db, cartId: string, locale: Locale): Promise<
   const lines: CartViewLine[] = [];
   const checkLines: CartLine[] = [];
   for (const i of items) {
-    const t = tiles.get(i.product_id);
-    if (!t) continue;
-    lines.push({ ...t, quantity: i.quantity, lineTotal: t.priceCents * i.quantity });
+    const tile = tiles.get(i.product_id);
+    if (!tile) continue;
+    const offer =
+      i.offer_id !== null && i.offer_price !== null && i.offer_expires !== null
+        ? {
+            id: Number(i.offer_id),
+            expiresAt: i.offer_expires,
+            listPriceCents: tile.active ? tile.priceCents : null,
+          }
+        : null;
+    const t = offer
+      ? {
+          ...tile,
+          priceCents: i.offer_price!,
+          active: i.status === 'active' || i.status === 'draft',
+        }
+      : tile;
+    const quantity = offer ? 1 : i.quantity;
+    lines.push({ ...t, quantity, lineTotal: t.priceCents * quantity, offer });
     checkLines.push({
       productId: t.id,
-      quantity: i.quantity,
+      quantity,
       unitPrice: t.priceCents,
       highValue: t.highValue,
       available: t.available,

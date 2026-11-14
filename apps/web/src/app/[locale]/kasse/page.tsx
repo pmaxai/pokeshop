@@ -50,12 +50,12 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   const t = await getTranslations('Checkout');
   const tCart = await getTranslations('Cart');
   const cartId = await currentCartId();
-  const view = cartId ? await loadCart(db(), cartId, locale) : null;
+  const account = await currentAccount();
+  const view = cartId ? await loadCart(db(), cartId, locale, { accountId: account?.id }) : null;
   if (!view || view.lines.length === 0 || !view.check.ok) {
     redirect(getPathname({ href: '/warenkorb', locale }));
   }
   const errors = unpack((await searchParams).e);
-  const account = await currentAccount();
   const saved = (view.checkoutDraft ?? {}) as Draft;
   // Logged in and nothing typed yet: the account's address and e-mail.
   const fromAccount: Draft | null =

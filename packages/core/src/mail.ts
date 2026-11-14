@@ -789,6 +789,8 @@ export async function renderTemplate(
     case 'subscription_payment_failed':
     case 'subscription_ended':
     case 'collection_shared':
+    case 'wanted_available':
+    case 'wanted_offer':
       return renderAccountMail(db, mail, ctx);
   }
 }

@@ -13,12 +13,22 @@ import { PortalLocked } from '@/components/account/PortalLocked';
 import { ItemFields } from '@/components/account/ItemFields';
 import { PriceChart } from '@/components/account/PriceChart';
 import { addToCollectionAction } from '../../../collection-actions';
+import { addWantedAction, removeWantedAction } from '../../../wanted-actions';
+import { wantedOfCard } from '@pokeshop/core/wanted';
+import { WantedFields, WishTags } from '@/components/account/Wanted';
 
 export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ locale: Locale; card: string }>;
-  searchParams: Promise<{ p?: string; added?: string; e?: string }>;
+  searchParams: Promise<{
+    p?: string;
+    added?: string;
+    e?: string;
+    wanted?: string;
+    removed?: string;
+    we?: string;
+  }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -66,11 +76,13 @@ export default async function CardPage({ params, searchParams }: Props) {
   }
   const card = await packCard(db(), cardId, [locale, 'en']);
   if (!card) notFound();
-  const [history, mine, binders] = await Promise.all([
+  const [history, mine, binders, wanted] = await Promise.all([
     cardHistory(db(), card.id),
     itemsOfCard(db(), account.id, card.id, locale),
     listBinders(db(), account.id),
+    wantedOfCard(db(), account.id, card.id, locale),
   ]);
+  const wantedErrors = unpack(q.we);
   const selected = card.printings.find((p) => p.finish === q.p) ?? card.printings[0];
   const hasNormal = card.printings.some((p) => p.kind === 'normal');
   const line = history && selected ? historyLine(history, selected.kind, hasNormal) : null;
@@ -274,6 +286,56 @@ export default async function CardPage({ params, searchParams }: Props) {
             {t('card.add')}
           </button>
         </form>
+      </section>
+
+      <section className="account-panel wanted-card" id="wanted" aria-labelledby="wanted-title">
+        <h2 id="wanted-title">{t('wanted.cardTitle')}</h2>
+        {q.wanted && (
+          <p className="notice" role="status">
+            {t('wanted.added')} <Link href="/konto/fehlend">{t('wanted.toList')}</Link>
+          </p>
+        )}
+        {q.removed && (
+          <p className="notice" role="status">
+            {t('wanted.removed')}
+          </p>
+        )}
+        {wanted.length > 0 ? (
+          <ul className="mini-lines">
+            {wanted.map((w) => (
+              <li key={w.id}>
+                <span>
+                  <WishTags w={w} locale={locale} />{' '}
+                  <span className={`wanted-state wanted-state--${w.state}`}>
+                    {t(`wanted.state.${w.state}`)}
+                  </span>
+                </span>
+                <form action={removeWantedAction}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="id" value={w.id} />
+                  <input type="hidden" name="back" value={here} />
+                  <button type="submit" className="link-button small">
+                    {t('wanted.remove')}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <form action={addWantedAction} className="stack">
+            <p className="muted small">{t('wanted.cardText')}</p>
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="card_id" value={card.id} />
+            <input type="hidden" name="back" value={here} />
+            <details className="wanted-wishes" open={Object.keys(wantedErrors).length > 0}>
+              <summary>{t('wanted.wishes')}</summary>
+              <WantedFields finishes={card.printings.map((p) => p.finish)} errors={wantedErrors} />
+            </details>
+            <button type="submit" className="btn btn--quiet">
+              ☆ {t('wanted.mark')}
+            </button>
+          </form>
+        )}
       </section>
     </AccountShell>
   );

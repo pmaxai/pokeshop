@@ -2971,7 +2971,7 @@ a.pack-tile:hover .pack-tile__img {
   display: grid;
   gap: var(--s-2);
 }
-.collection-list li {
+.collection-list > li {
   display: grid;
   grid-template-columns: 3.4rem minmax(0, 1fr) auto;
   grid-template-areas: 'img what value' 'img what edit';
@@ -2982,7 +2982,7 @@ a.pack-tile:hover .pack-tile__img {
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
-.collection-list li.is-saved,
+.collection-list > li.is-saved,
 .share-list li.is-saved {
   border-color: var(--ok);
 }
@@ -3155,4 +3155,102 @@ a.pack-tile:hover .pack-tile__img {
 }
 .shared__note {
   margin-top: var(--s-5);
+}
+
+/* Missing cards */
+.collection-actions__title {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: var(--t-lg);
+  align-self: center;
+}
+#wanted .collection-actions {
+  margin-bottom: var(--s-3);
+}
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.wanted-state {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+.wanted-state--searching {
+  color: var(--muted);
+  font-weight: 400;
+}
+.wanted-state--available,
+.wanted-state--offer {
+  color: var(--ok);
+}
+.wanted-matches {
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.1rem;
+  font-size: var(--t-sm);
+}
+.offers .collection-list > li {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.offer__price {
+  font-size: var(--t-lg);
+  font-weight: 800;
+}
+.offer__message {
+  margin: var(--s-1) 0;
+  padding: var(--s-1) var(--s-3);
+  border-left: 3px solid var(--line);
+  white-space: pre-wrap;
+}
+.offers .collection-list > li {
+  grid-template-areas: 'img what value' 'actions actions actions';
+}
+.offer__actions {
+  grid-area: actions;
+  display: flex;
+  gap: var(--s-2);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: var(--s-2);
+}
+@media (max-width: 40rem) {
+  .offers .collection-list > li {
+    grid-template-columns: 3.4rem minmax(0, 1fr);
+    grid-template-areas: 'img what' 'img value' 'actions actions';
+    align-items: start;
+  }
+  .offers .collection-list__value {
+    text-align: left;
+    margin-top: var(--s-2);
+  }
+  .offer__actions {
+    justify-content: stretch;
+  }
+  .offer__actions form,
+  .offer__actions .btn {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+.wanted-card p {
+  margin-top: 0;
+}
+.cart-line__offer {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ok);
+}
+.cart-line__was {
+  display: block;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 400;
 }
