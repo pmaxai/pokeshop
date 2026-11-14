@@ -843,6 +843,14 @@
         "vies_unavailable": "Die EU-Abfrage (VIES) ist gerade nicht erreichbar. Bitte versuch es in ein paar Minuten noch einmal – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
         "invalid_address": "Diese Adresse kann der Zahlungsdienst keinem Steuergebiet zuordnen. Bitte prüf PLZ und Ort."
       }
+    },
+    "usage": {
+      "title": "Nutzung",
+      "since": "Seit {date}, dem Beginn des aktuellen Abrechnungsmonats.",
+      "s3": "S3-Speicher (hochgeladen)",
+      "pipeline": "Automatic Content Processing (Videominuten)",
+      "billed": "Die Beträge sind ungefähr (inkl. USt.); verrechnet wird mit der nächsten Abo-Rechnung.",
+      "notBilled": "Bei deinem Abo wird die Nutzung nicht verrechnet."
     }
   },
   "Devices": {

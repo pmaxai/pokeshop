@@ -11,14 +11,17 @@ import {
   setCancelAtPeriodEnd,
   setWebshopHost,
 } from '@pokeshop/core/subscriptions';
-import { db } from '@/server/config';
+import { saveS3Config, setService, type UsageService } from '@pokeshop/core/usage';
+import { apiMasterKey, db } from '@/server/config';
 import { audit, requireAdmin } from '@/server/admin-auth';
 import { billing } from '@/server/billing';
 
-const back = (path: string, notice: string, err = false): never =>
-  redirect(
-    `${path}${path.includes('?') ? '&' : '?'}${err ? 'err' : 'ok'}=${encodeURIComponent(notice)}`,
+const back = (target: string, notice: string, err = false): never => {
+  const [path, hash] = target.split('#');
+  return redirect(
+    `${path}${path!.includes('?') ? '&' : '?'}${err ? 'err' : 'ok'}=${encodeURIComponent(notice)}${hash ? `#${hash}` : ''}`,
   );
+};
 
 const str = (f: FormData, k: string) => {
   const v = f.get(k);
@@ -139,4 +142,45 @@ export async function savePricesAction(form: FormData) {
     back('/admin/kunden/preise', 'Bitte gültige Preise eintragen (mindestens 0,50 €).', true);
   }
   back('/admin/kunden/preise', 'Preise gespeichert. Sie gelten für neue Abos und Änderungen.');
+}
+
+/** S3 storage / video pipeline on or off for the customer. */
+export async function serviceAction(form: FormData) {
+  const user = await requireAdmin('owner');
+  const id = idOf(form);
+  const service: UsageService = str(form, 'service') === 'pipeline' ? 'pipeline' : 's3';
+  const on = str(form, 'on') === '1';
+  await setService(db(), id, service, on, user.email);
+  await audit(user, on ? 'service.enable' : 'service.disable', 'account', id, null, { service });
+  const name = service === 's3' ? 'S3-Speicher' : 'Video-Pipeline';
+  back(`${page(id)}#dienste`, on ? `${name} eingeschaltet.` : `${name} ausgeschaltet.`);
+}
+
+const S3_FIELDS: Record<string, string> = {
+  provider: 'Anbieter',
+  endpoint: 'Endpoint (https://…)',
+  region: 'Region',
+  bucket: 'Bucket',
+  prefix: 'Präfix',
+  access_key_id: 'Access Key ID',
+  secret_access_key: 'Secret Access Key',
+};
+
+export async function s3ConfigAction(form: FormData) {
+  const user = await requireAdmin('owner');
+  const id = idOf(form);
+  const input = Object.fromEntries(Object.keys(S3_FIELDS).map((k) => [k, str(form, k)]));
+  const r = await saveS3Config(db(), id, input, apiMasterKey());
+  if (!r.ok) {
+    const bad = Object.keys(r.errors)
+      .map((k) => (k === '_' ? 'Erst S3-Speicher einschalten' : (S3_FIELDS[k] ?? k)))
+      .join(', ');
+    back(`${page(id)}#dienste`, `S3-Einstellungen nicht gespeichert: ${bad} prüfen.`, true);
+  }
+  const { secret_access_key: _secret, ...logged } = input;
+  await audit(user, 's3.config', 'account', id, null, logged);
+  back(
+    `${page(id)}#dienste`,
+    'S3-Einstellungen gespeichert. Die App holt sie beim nächsten Start.',
+  );
 }

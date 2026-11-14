@@ -5,7 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { parse, ProductPatch, StockChange } from '@pokeshop/core/api-schemas';
 import { ApiError } from '@pokeshop/core/errors';
 import { changeStock, getProduct, patchProduct } from '@pokeshop/core/products';
-import { createApiClient, revokeApiClient } from '@pokeshop/core/api-clients';
+import {
+  createApiClient,
+  PIPELINE_SCOPES,
+  revokeApiClient,
+  SCANNER_SCOPES,
+} from '@pokeshop/core/api-clients';
 import { enqueueJob } from '@pokeshop/core/jobs';
 import { apiMasterKey, config, db } from '@/server/config';
 import {
@@ -147,15 +152,17 @@ export async function createApiKey(_prev: CreateKeyState, form: FormData): Promi
   const ips = str(form, 'ips')
     .split(/[\s,]+/)
     .filter(Boolean);
+  const scopes = str(form, 'purpose') === 'pipeline' ? PIPELINE_SCOPES : SCANNER_SCOPES;
   try {
     const { client, secret } = await createApiClient(
       db(),
-      { name, ipAllowlist: ips, createdBy: user.email },
+      { name, scopes, ipAllowlist: ips, createdBy: user.email },
       apiMasterKey(),
     );
     await audit(user, 'api_client.create', 'api_client', client.id, null, {
       name,
       key_id: client.key_id,
+      scopes,
       ips,
     });
     revalidatePath('/admin/api-keys');

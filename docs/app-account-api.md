@@ -512,7 +512,8 @@ The app speaks English; the portal says "Account", "Collection", "Missing cards"
 
 The pipeline reports what it used per customer; the shop adds it to the customer's next invoice
 (Stripe metered billing). It uses the signed product API (`/api/v1`, [api-signing.md](api-signing.md))
-with an API key that has the scope **`usage:write`** (Admin › API-Schlüssel).
+with an API key that has the scope **`usage:write`** (Admin › API-Schlüssel › "Für:
+Video-Pipeline"; that key can only report usage).
 
 ### `POST /api/v1/usage`
 
@@ -539,10 +540,14 @@ Idempotency-Key: 4f7b0d2e-…
 | `occurred_at` | when it happened; at most 35 days ago, not in the future                                                      |
 | `reference`   | optional, ≤ 200 characters: recording id or file                                                              |
 
-`201 Created`: `{ "id": 912, "account_id": "acc_…", "service": "s3", "quantity": 1843, "unit": "mb", "billed": "queued" }`.
+`201 Created`: `{ "id": 912, "account_id": "acc_…", "service": "s3", "quantity": 1843, "unit": "mb", "occurred_at": "…", "reference": "…", "billed": "queued" }`.
+`billed` is `queued` on arrival; the shop then sends it to Stripe (`sent`), or keeps it without
+billing for a free subscription (`not_billed`).
 The same `Idempotency-Key` within 24 h returns the first answer. Errors:
 `404 unknown_account`, `409 service_not_enabled` (the shop has not switched the service on for
-this customer), `400 invalid_request`.
+this customer), `400 invalid_request` (with `fields`, e.g. `{"unit": "invalid"}` or
+`{"occurred_at": "out_of_range"}`), and the signed API's own errors (`401`, `403 scope_missing`,
+`409 idempotency_conflict`, …).
 
 Prices per GB and per minute are set in Admin › Abos; Stripe bills the month's total with the
 customer's next invoice. The customer sees the month's usage in the portal.

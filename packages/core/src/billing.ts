@@ -17,6 +17,47 @@ export type TaxBehavior = 'incl' | 'excl';
 /** Stripe product tax code: software as a service. */
 export const SUBSCRIPTION_TAX_CODE = 'txcd_10103000';
 
+/** Usage services billed by Stripe meters: S3 per MB uploaded, the pipeline per video second. */
+export type UsageService = 's3' | 'pipeline';
+export const USAGE_SERVICES: readonly UsageService[] = ['s3', 'pipeline'];
+/** Meter event names in Stripe (one meter each, sum of the values). */
+export const METER_EVENTS: Record<UsageService, string> = {
+  s3: 'oc_s3_mb',
+  pipeline: 'oc_pipeline_seconds',
+};
+/** The admin's price is per GB / per minute; the meter counts MB / seconds. */
+export const UNITS_PER_PRICE: Record<UsageService, number> = { s3: 1024, pipeline: 60 };
+
+/** Lookup key of a metered price, by the price per GB / minute: oc_s3_gb_10_incl. */
+export const meteredLookupKey = (service: UsageService, cents: number, behavior: TaxBehavior) =>
+  `oc_${service === 's3' ? 's3_gb' : 'pipeline_minute'}_${cents}_${behavior}`;
+
+export function parseMeteredKey(
+  key: string | null | undefined,
+): { service: UsageService; cents: number; behavior: TaxBehavior } | null {
+  const m = /^oc_(s3_gb|pipeline_minute)_(\d+)_(incl|excl)$/.exec(key ?? '');
+  if (!m) return null;
+  return {
+    service: m[1] === 's3_gb' ? 's3' : 'pipeline',
+    cents: Number(m[2]),
+    behavior: m[3] as TaxBehavior,
+  };
+}
+
+/** Cents per MB / second as Stripe's unit_amount_decimal (at most 12 decimals). */
+export const unitAmountDecimal = (service: UsageService, cents: number) =>
+  (cents / UNITS_PER_PRICE[service]).toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
+
+export type MeterEventInput = {
+  service: UsageService;
+  customerId: string;
+  value: number;
+  /** when it happened (Stripe takes up to 35 days back) */
+  timestamp: Date;
+  /** unique per event, makes a retry safe */
+  identifier: string;
+};
+
 export type BillingCustomerInput = {
   accountId: number;
   publicId: string;
@@ -46,6 +87,8 @@ export type BillingSubscription = {
   cancelAt: Date | null;
   endedAt: Date | null;
   items: { base?: string; devices?: string };
+  /** Metered items (usage services) on the subscription. */
+  metered: Partial<Record<UsageService, string>>;
 };
 
 export type BillingEvent =
@@ -112,6 +155,18 @@ export interface BillingProvider {
   cancelNow(id: string): Promise<void>;
   /** Stripe's customer portal: payment method, invoices. */
   portalUrl(customerId: string, returnUrl: string, locale: 'de' | 'en'): Promise<string>;
+  /**
+   * Adds the metered price of a usage service to the subscription (no charge now; Stripe bills
+   * the period's usage with the next invoice). Returns the subscription item.
+   */
+  addMeteredItem(
+    subscriptionId: string,
+    service: UsageService,
+    cents: number,
+    behavior: TaxBehavior,
+  ): Promise<string>;
+  /** Reports usage to the service's meter. */
+  meterEvent(input: MeterEventInput): Promise<void>;
   /** The PDF link of an invoice, for the mail. */
   invoice(id: string): Promise<{
     number: string | null;
@@ -153,7 +208,13 @@ function toBilling(s: Stripe.Subscription): BillingSubscription {
   let behavior: TaxBehavior | null = null;
   let periodEnd: number | null = null;
   const items: BillingSubscription['items'] = {};
+  const metered: BillingSubscription['metered'] = {};
   for (const it of s.items.data) {
+    const mk = parseMeteredKey(it.price.lookup_key);
+    if (mk) {
+      metered[mk.service] = it.id;
+      continue;
+    }
     const k = parseLookupKey(it.price.lookup_key);
     if (!k) continue;
     if (k.item === 'collector' || k.item === 'creator') {
@@ -180,6 +241,7 @@ function toBilling(s: Stripe.Subscription): BillingSubscription {
     cancelAt: s.cancel_at ? new Date(s.cancel_at * 1000) : null,
     endedAt: s.ended_at ? new Date(s.ended_at * 1000) : null,
     items,
+    metered,
   };
 }
 
@@ -271,6 +333,85 @@ export function stripeBilling(opts: { secretKey: string; client?: Stripe }): Bil
           tax_behavior: behavior === 'incl' ? 'inclusive' : 'exclusive',
           lookup_key: key,
           metadata: { item },
+        },
+        { idempotencyKey: `price-${key}` },
+      );
+      id = p.id;
+    }
+    priceCache.set(key, id);
+    return id;
+  }
+
+  const meterCache = new Map<UsageService, string>();
+  /** The service's meter, created on first use. */
+  async function meter(service: UsageService): Promise<string> {
+    const cached = meterCache.get(service);
+    if (cached) return cached;
+    const event = METER_EVENTS[service];
+    let id: string | undefined;
+    for await (const m of stripe.billing.meters.list({ status: 'active', limit: 100 })) {
+      if (m.event_name === event) {
+        id = m.id;
+        break;
+      }
+    }
+    if (!id) {
+      const m = await stripe.billing.meters.create(
+        {
+          display_name: service === 's3' ? 'S3 upload (MB)' : 'Video pipeline (seconds)',
+          event_name: event,
+          default_aggregation: { formula: 'sum' },
+          customer_mapping: { type: 'by_id', event_payload_key: 'stripe_customer_id' },
+          value_settings: { event_payload_key: 'value' },
+        },
+        { idempotencyKey: `meter-${event}` },
+      );
+      id = m.id;
+    }
+    meterCache.set(service, id);
+    return id;
+  }
+
+  /** The metered price of a service for a price per GB / minute, created on first use. */
+  async function meteredPrice(
+    service: UsageService,
+    cents: number,
+    behavior: TaxBehavior,
+  ): Promise<string> {
+    const key = meteredLookupKey(service, cents, behavior);
+    const cached = priceCache.get(key);
+    if (cached) return cached;
+    const found = await stripe.prices.list({ lookup_keys: [key], active: true, limit: 1 });
+    let id = found.data[0]?.id;
+    if (!id) {
+      const product = `oc_${service}`;
+      try {
+        await stripe.products.create({
+          id: product,
+          name:
+            service === 's3'
+              ? 'S3-Speicher (pro GB hochgeladen) / S3 storage (per GB uploaded)'
+              : 'Automatic Content Processing (pro Videominute) / (per video minute)',
+          tax_code: SUBSCRIPTION_TAX_CODE,
+          unit_label: service === 's3' ? 'MB' : 's',
+          metadata: { item: service },
+        });
+      } catch (e) {
+        if ((e as { code?: string }).code !== 'resource_already_exists') throw e;
+      }
+      const p = await stripe.prices.create(
+        {
+          product,
+          currency: 'eur',
+          unit_amount_decimal: Stripe.Decimal.from(unitAmountDecimal(service, cents)),
+          recurring: { interval: 'month', usage_type: 'metered', meter: await meter(service) },
+          tax_behavior: behavior === 'incl' ? 'inclusive' : 'exclusive',
+          lookup_key: key,
+          metadata: {
+            item: service,
+            per: service === 's3' ? 'gb' : 'minute',
+            cents: String(cents),
+          },
         },
         { idempotencyKey: `price-${key}` },
       );
@@ -406,6 +547,25 @@ export function stripeBilling(opts: { secretKey: string; client?: Stripe }): Bil
       });
       return s.url;
     },
+    async addMeteredItem(subscriptionId, service, cents, behavior) {
+      const it = await stripe.subscriptionItems.create(
+        {
+          subscription: subscriptionId,
+          price: await meteredPrice(service, cents, behavior),
+          proration_behavior: 'none',
+        },
+        { idempotencyKey: `metered-${subscriptionId}-${service}-${cents}-${behavior}` },
+      );
+      return it.id;
+    },
+    async meterEvent(input) {
+      await stripe.billing.meterEvents.create({
+        event_name: METER_EVENTS[input.service],
+        identifier: input.identifier,
+        timestamp: Math.floor(input.timestamp.getTime() / 1000),
+        payload: { stripe_customer_id: input.customerId, value: String(input.value) },
+      });
+    },
     async invoice(id) {
       const i = await stripe.invoices.retrieve(id);
       return {
@@ -429,6 +589,7 @@ type FakeSession = {
   subscriptionId: string | null;
 };
 type FakeStore = {
+  meterEvents?: MeterEventInput[];
   sessions: Map<string, FakeSession>;
   subs: Map<string, BillingSubscription>;
   customers: Map<string, BillingCustomerInput>;
@@ -445,7 +606,7 @@ export type FakeBilling = BillingProvider & {
 
 export function fakeBilling(baseUrl: string): FakeBilling {
   const g = globalThis as unknown as { __pokeshopFakeBilling?: FakeStore };
-  const store = (g.__pokeshopFakeBilling ??= {
+  const store: FakeStore = (g.__pokeshopFakeBilling ??= {
     sessions: new Map(),
     subs: new Map(),
     customers: new Map(),
@@ -481,7 +642,18 @@ export function fakeBilling(baseUrl: string): FakeBilling {
     },
     async getSubscription(id) {
       const s = store.subs.get(id);
-      return s ? { ...s, items: { ...s.items } } : null;
+      return s ? { ...s, items: { ...s.items }, metered: { ...s.metered } } : null;
+    },
+    async addMeteredItem(subscriptionId, service) {
+      const s = store.subs.get(subscriptionId);
+      if (!s) throw new Error(`unknown subscription ${subscriptionId}`);
+      s.metered[service] ??= rid('si');
+      return s.metered[service];
+    },
+    async meterEvent(input) {
+      store.meterEvents ??= [];
+      if (store.meterEvents.some((e) => e.identifier === input.identifier)) return;
+      store.meterEvents.push(input);
     },
     async changeSubscription(id, input) {
       const s = store.subs.get(id);
@@ -493,7 +665,7 @@ export function fakeBilling(baseUrl: string): FakeBilling {
         base: s.items.base,
         ...(input.extraDevices > 0 ? { devices: s.items.devices ?? rid('si') } : {}),
       };
-      return { ...s };
+      return { ...s, metered: { ...s.metered } };
     },
     async setCancelAtPeriodEnd(id, cancel) {
       const s = store.subs.get(id);
@@ -536,6 +708,7 @@ export function fakeBilling(baseUrl: string): FakeBilling {
         cancelAt: null,
         endedAt: null,
         items: { base: rid('si'), ...(s.input.extraDevices > 0 ? { devices: rid('si') } : {}) },
+        metered: {},
       };
       store.subs.set(sub.id, sub);
       s.status = 'complete';

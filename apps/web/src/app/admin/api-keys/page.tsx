@@ -39,6 +39,7 @@ export default async function ApiKeys({
             <tr>
               <th>Name</th>
               <th>Schlüssel-ID</th>
+              <th>Darf</th>
               <th>Erlaubte IPs</th>
               <th>Zuletzt benutzt</th>
               <th>Status</th>
@@ -50,6 +51,13 @@ export default async function ApiKeys({
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.key_id}</td>
+                <td>
+                  {c.scopes.includes('usage:write') && !c.scopes.includes('products:write')
+                    ? 'Nutzung melden (Pipeline)'
+                    : c.scopes.includes('usage:write')
+                      ? 'Produkte, Bestand, Nutzung'
+                      : 'Produkte, Bestand'}
+                </td>
                 <td>{c.ip_allowlist.length ? c.ip_allowlist.join(', ') : 'alle'}</td>
                 <td>{time(c.last_used_at)}</td>
                 <td>

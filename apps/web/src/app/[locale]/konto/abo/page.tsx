@@ -17,6 +17,7 @@ import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
 import { requireAccount } from '@/server/account';
 import { billing } from '@/server/billing';
+import { billingPeriodStart, usageSince } from '@pokeshop/core/usage';
 import { AccountShell } from '@/components/account/AccountShell';
 import { SubscribeForm, type PlanPrices } from '@/components/account/SubscribeForm';
 import {
@@ -90,6 +91,14 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
       timeZone: 'Europe/Vienna',
     }).format(d);
 
+  // usage services the shop switched on (S3 storage, video pipeline): what was used so far
+  const usage =
+    ent.active && (services.s3 || services.pipeline)
+      ? await usageSince(db(), account.id, await billingPeriodStart(db(), account.id))
+      : null;
+  const num = (v: number, digits: number) =>
+    v.toLocaleString(locale === 'de' ? 'de-AT' : 'en-GB', { maximumFractionDigits: digits });
+
   if (ent.active && sub) {
     const behavior = sub.taxBehavior ?? 'incl';
     const monthly = monthlyCents(prices, sub.plan, sub.extraDevices, behavior);
@@ -148,6 +157,36 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
           </dl>
           {sub.source === 'complimentary' && <p className="muted">{t('complimentary')}</p>}
         </section>
+
+        {usage && (
+          <section className="account-panel" id="usage" aria-labelledby="sub-usage">
+            <h2 id="sub-usage">{t('usage.title')}</h2>
+            <p className="muted small">{t('usage.since', { date: date(usage.since) })}</p>
+            <dl className="sub-facts">
+              {services.s3 && (
+                <div>
+                  <dt>{t('usage.s3')}</dt>
+                  <dd>
+                    {num(usage.s3.mb / 1024, 2)} GB
+                    {usage.s3.cents !== null && stripe && <> · ≈ {eur(usage.s3.cents)}</>}
+                  </dd>
+                </div>
+              )}
+              {services.pipeline && (
+                <div>
+                  <dt>{t('usage.pipeline')}</dt>
+                  <dd>
+                    {num(usage.pipeline.seconds / 60, 1)} min
+                    {usage.pipeline.cents !== null && stripe && (
+                      <> · ≈ {eur(usage.pipeline.cents)}</>
+                    )}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <p className="muted small">{stripe ? t('usage.billed') : t('usage.notBilled')}</p>
+          </section>
+        )}
 
         {stripe && (
           <section className="account-panel" id="change" aria-labelledby="sub-change">

@@ -7,6 +7,8 @@ import { deleteStaleCarts } from '@pokeshop/core/cart';
 import { deleteOldTombstones, syncShopPurchases } from '@pokeshop/core/collection';
 import { deleteOldContactMessages } from '@pokeshop/core/contact';
 import { sendWantedAlerts, syncWantedPurchases } from '@pokeshop/core/wanted';
+import { billingFromEnv } from '@pokeshop/core/billing';
+import { reportUsage } from '@pokeshop/core/usage';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -50,6 +52,9 @@ const tcgdex = httpTcgdexClient();
 // Two Stripe accounts: the shop's (cards) and Antalyse GmbH's (app licences).
 const payments = paymentsFromEnv(process.env, 'shop');
 const gmbhPayments = paymentsFromEnv(process.env, 'gmbh');
+// Stripe Billing of the GmbH: usage of S3 and the pipeline goes to its meters. The local
+// stand-in lives in the web process, so locally the usage stays queued.
+const billing = billingFromEnv(process.env);
 const mailer = mailTransportFromEnv();
 const licenses = licenseClientFromEnv();
 let stopping = false;
@@ -247,6 +252,19 @@ async function schedule() {
   }
   const alerts = await sendWantedAlerts(sql);
   if (alerts) console.log(`[wanted] ${alerts} "now in the shop" mail(s) queued`);
+  if (billing?.name === 'stripe') {
+    try {
+      const u = await reportUsage(sql, billing);
+      if (u.sent || u.notBilled || u.failed || u.waiting) {
+        console.log(
+          `[usage] ${u.sent} sent to Stripe, ${u.notBilled} not billed, ${u.failed} failed, ${u.waiting} waiting`,
+        );
+      }
+    } catch (e) {
+      // Stripe unreachable: the reports stay queued for the next run
+      console.error('[usage] reporting to Stripe failed:', (e as Error).message);
+    }
+  }
   await deleteOldDevices(sql);
   const messages = await deleteOldContactMessages(sql);
   if (messages) console.log(`[contact] deleted ${messages} handled message(s) older than a year`);
