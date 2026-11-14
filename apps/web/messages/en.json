@@ -843,6 +843,14 @@
         "vies_unavailable": "The EU check (VIES) can’t be reached right now. Please try again in a few minutes, or leave the field empty and pay your country’s VAT.",
         "invalid_address": "The payment service can’t match this address to a tax region. Please check postcode and city."
       }
+    },
+    "usage": {
+      "title": "Usage",
+      "since": "Since {date}, the start of the current billing month.",
+      "s3": "S3 storage (uploaded)",
+      "pipeline": "Automatic Content Processing (video minutes)",
+      "billed": "Amounts are approximate (incl. VAT); they are billed with the next subscription invoice.",
+      "notBilled": "Usage is not billed with your subscription."
     }
   },
   "Devices": {

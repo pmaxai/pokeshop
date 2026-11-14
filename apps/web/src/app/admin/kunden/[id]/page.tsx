@@ -18,8 +18,18 @@ import {
   adminRemoveDeviceAction,
   endComplimentaryAction,
   grantComplimentaryAction,
+  s3ConfigAction,
+  serviceAction,
   webshopHostAction,
 } from '../../customer-actions';
+import {
+  billingPeriodStart,
+  recentUsage,
+  s3Config,
+  serviceStates,
+  usageSince,
+} from '@pokeshop/core/usage';
+import { apiMasterKey } from '@/server/config';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Kunde' };
@@ -60,6 +70,13 @@ export default async function Customer({
     >`
       SELECT admin_note, stripe_customer_id, billing FROM accounts WHERE id = ${id}`,
   ]);
+  const [services, s3, period, events] = await Promise.all([
+    serviceStates(db(), id),
+    s3Config(db(), id, apiMasterKey()).catch(() => null),
+    billingPeriodStart(db(), id),
+    recentUsage(db(), id, 10),
+  ]);
+  const usage = await usageSince(db(), id, period);
   const owner = user.role === 'owner';
   const test = (process.env.STRIPE_LICENSE_SECRET_KEY ?? '').startsWith('sk_test');
   const dash = (kind: string, sid: string) =>
@@ -275,6 +292,159 @@ export default async function Customer({
                         Entfernen
                       </button>
                     </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 id="dienste">Dienste nach Nutzung (Creator)</h2>
+      <p className="muted">
+        S3-Speicher für Aufnahmen und die Video-Pipeline. Die Pipeline meldet die Nutzung über{' '}
+        <code>POST /api/v1/usage</code> (API-Schlüssel „Video-Pipeline“); Stripe verrechnet sie mit
+        der nächsten Abo-Rechnung zu den Preisen unter <a href="/admin/kunden/preise">Abo-Preise</a>
+        . In der App gibt es die Dienste nur mit Creator.
+      </p>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Dienst</th>
+              <th>Status</th>
+              <th className="r">Seit {dateTime(usage.since)}</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {(['s3', 'pipeline'] as const).map((k) => {
+              const st = services[k];
+              const amount =
+                k === 's3'
+                  ? `${(usage.s3.mb / 1024).toLocaleString('de-AT', { maximumFractionDigits: 2 })} GB`
+                  : `${(usage.pipeline.seconds / 60).toLocaleString('de-AT', { maximumFractionDigits: 1 })} min`;
+              const cents = k === 's3' ? usage.s3.cents : usage.pipeline.cents;
+              return (
+                <tr key={k}>
+                  <td>{k === 's3' ? 'S3-Speicher' : 'Video-Pipeline'}</td>
+                  <td>
+                    {st.enabled
+                      ? `an seit ${dateTime(st.enabledAt)}${st.enabledBy ? ` (${st.enabledBy})` : ''}`
+                      : st.disabledAt
+                        ? `aus seit ${dateTime(st.disabledAt)}`
+                        : 'aus'}
+                    {k === 'pipeline' && st.enabled && !services.s3.enabled && (
+                      <div className="muted">Braucht auch S3-Speicher.</div>
+                    )}
+                  </td>
+                  <td className="r">
+                    {amount}
+                    {cents !== null && <div className="muted">≈ {formatEuro(cents)}</div>}
+                  </td>
+                  <td>
+                    {owner && (
+                      <form action={serviceAction}>
+                        <input type="hidden" name="id" value={id} />
+                        <input type="hidden" name="service" value={k} />
+                        <input type="hidden" name="on" value={st.enabled ? '0' : '1'} />
+                        <button type="submit" className="btn btn--small btn--quiet">
+                          {st.enabled ? 'Ausschalten' : 'Einschalten'}
+                        </button>
+                      </form>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {owner && services.s3.enabled && (
+        <form action={s3ConfigAction} className="form-grid">
+          <input type="hidden" name="id" value={id} />
+          <label className="field">
+            <span>Anbieter</span>
+            <select name="provider" defaultValue={s3?.provider ?? 'exoscale'}>
+              <option value="exoscale">Exoscale</option>
+              <option value="aws">AWS</option>
+              <option value="other">Andere</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Endpoint</span>
+            <input
+              name="endpoint"
+              defaultValue={s3?.endpoint ?? 'https://sos-at-vie-1.exo.io'}
+              required
+            />
+          </label>
+          <label className="field">
+            <span>Region</span>
+            <input name="region" defaultValue={s3?.region ?? 'at-vie-1'} required />
+          </label>
+          <label className="field">
+            <span>Bucket</span>
+            <input name="bucket" defaultValue={s3?.bucket ?? ''} required />
+          </label>
+          <label className="field">
+            <span>Präfix</span>
+            <input name="prefix" defaultValue={s3?.prefix ?? `${account.publicId}/`} />
+          </label>
+          <label className="field">
+            <span>Access Key ID</span>
+            <input name="access_key_id" defaultValue={s3?.access_key_id ?? ''} required />
+          </label>
+          <label className="field">
+            <span>Secret Access Key</span>
+            <input
+              name="secret_access_key"
+              type="password"
+              autoComplete="off"
+              placeholder={s3 ? 'gespeichert – leer lassen zum Behalten' : ''}
+              required={!s3}
+            />
+          </label>
+          <button type="submit" className="btn">
+            S3-Einstellungen speichern
+          </button>
+          {services.s3.configUpdatedAt && (
+            <p className="muted">Zuletzt geändert {dateTime(services.s3.configUpdatedAt)}.</p>
+          )}
+        </form>
+      )}
+      {events.length > 0 && (
+        <div className="table-wrap">
+          <table className="table">
+            <caption className="muted">Letzte Meldungen der Pipeline</caption>
+            <thead>
+              <tr>
+                <th>Wann</th>
+                <th>Dienst</th>
+                <th className="r">Menge</th>
+                <th>Referenz</th>
+                <th>Stripe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((e) => (
+                <tr key={e.id}>
+                  <td>{dateTime(e.occurredAt)}</td>
+                  <td>{e.service === 's3' ? 'S3' : 'Pipeline'}</td>
+                  <td className="r">
+                    {e.quantity.toLocaleString('de-AT')} {e.unit === 'mb' ? 'MB' : 's'}
+                  </td>
+                  <td>{e.reference ?? '–'}</td>
+                  <td>
+                    {
+                      {
+                        queued: 'wartet',
+                        sent: 'gemeldet',
+                        not_billed: 'nicht verrechnet (Gratis-Abo)',
+                        failed: 'abgelehnt',
+                      }[e.billing]
+                    }
+                    {e.billingError && <div className="muted">{e.billingError}</div>}
                   </td>
                 </tr>
               ))}

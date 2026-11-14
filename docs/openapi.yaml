@@ -3,8 +3,8 @@ info:
   title: Overpriced Cardboard product API
   version: 1.0.0
   description: |
-    Used by the scanning app to create and update products and stock.
-    Every request is signed (see docs/api-signing.md). Writes need an `Idempotency-Key`;
+    Used by the scanning app to create and update products and stock, and by the video pipeline
+    to report usage (`/usage`, key scope `usage:write`). Every request is signed (see docs/api-signing.md). Writes need an `Idempotency-Key`;
     a repeated key within 24 h returns the first response and changes nothing.
 
     Money is always integer cents in EUR. Storage boxes (`storage_location`) are digit strings
@@ -25,6 +25,7 @@ tags:
   - name: Stock
   - name: Products
   - name: Master data
+  - name: Usage
   - name: System
 
 paths:
@@ -359,6 +360,75 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/Category' }
+
+  /usage:
+    post:
+      tags: [Usage]
+      operationId: reportUsage
+      summary: The video pipeline reports what a customer used (S3 megabytes or video seconds)
+      description: |
+        Needs a key with the scope `usage:write` (Admin › API-Schlüssel › Für: Video-Pipeline).
+        The shop passes the usage on to Stripe, which bills it with the customer's next
+        subscription invoice. See docs/app-account-api.md, part 3.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account_id, service, quantity, unit, occurred_at]
+              properties:
+                account_id: { type: string, pattern: '^acc_[0-9a-z]{10}$' }
+                service: { type: string, enum: [s3, pipeline] }
+                quantity: { type: integer, minimum: 1, maximum: 10000000 }
+                unit:
+                  type: string
+                  enum: [mb, second]
+                  description: '`mb` for s3 (1 GB = 1024 MB), `second` for pipeline'
+                occurred_at:
+                  type: string
+                  format: date-time
+                  description: at most 35 days ago, not in the future
+                reference: { type: [string, 'null'], maxLength: 200 }
+            example:
+              account_id: acc_7h2k9q0x3m
+              service: s3
+              quantity: 1843
+              unit: mb
+              occurred_at: '2026-11-15T09:30:00.000Z'
+              reference: recordings/20261115T092201Z-7f3a
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  account_id: { type: string }
+                  service: { type: string, enum: [s3, pipeline] }
+                  quantity: { type: integer }
+                  unit: { type: string, enum: [mb, second] }
+                  occurred_at: { type: string, format: date-time }
+                  reference: { type: [string, 'null'] }
+                  billed: { type: string, enum: [queued, sent, not_billed, failed] }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404':
+          description: '`unknown_account`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: '`service_not_enabled` or `idempotency_conflict`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/Error' }
 
   /health:
     get:

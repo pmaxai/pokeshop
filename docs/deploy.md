@@ -220,8 +220,9 @@ account with Stripe Billing. In that account (test mode for staging):
    methods" and "Invoice history" on. Subscription changes and cancellation happen in the shop's
    account pages, so they can stay off in the portal.
 6. **API key** into `STRIPE_LICENSE_SECRET_KEY` (a restricted key needs write access to Checkout
-   Sessions, Customers, Products, Prices, Subscriptions, Invoices, Credit Notes, Refunds and
-   Billing Portal Sessions).
+   Sessions, Customers, Products, Prices, Subscriptions, Subscription Items, Invoices, Credit
+   Notes, Refunds, Billing Portal Sessions, **Meters and Meter Events**). The worker needs the same
+   variable (one env file for all containers).
 7. **Webhook** `https://<host>/api/stripe/webhook-licenses` with these events; its signing secret
    into `STRIPE_LICENSE_WEBHOOK_SECRET`:
 
@@ -242,6 +243,15 @@ a private person in Austria (€ 7,00 incl. 20 % VAT), check the welcome mail wi
 connect a phone under Konto › Geräte, change to Creator (charged pro rata right away), cancel
 (ends at the end of the month). A German business with a VAT id pays € 5,83 net (reverse charge).
 Stripe's test clock (Billing → Test clocks) shows renewals and failed payments without waiting.
+
+**Usage services** (S3 storage per GB uploaded, video pipeline per minute; Creator only): set the
+prices in Admin › Kunden & Abos › Abo-Preise, switch the service on for the customer in Admin ›
+Kunden › (customer) › Dienste and enter the S3 settings there. Create an API key "Für:
+Video-Pipeline" in Admin › API-Schlüssel for the pipeline (scope `usage:write`; it cannot touch
+products). The pipeline reports usage with `POST /api/v1/usage`; the worker passes it on to two
+Stripe meters (`oc_s3_mb`, `oc_pipeline_seconds`, created by the shop on first use) and adds the
+metered price to the customer's subscription the first time, so Stripe bills the month's usage
+with the next invoice. Usage of a free (complimentary) subscription is recorded but not billed.
 
 The app checks the subscription at `https://<host>/api/app/v1/…` (docs/app-account-api.md). The
 old licence service (`license.<host>`) keeps answering app builds with licence keys until the app

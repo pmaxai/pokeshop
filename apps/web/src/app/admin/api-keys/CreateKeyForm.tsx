@@ -10,8 +10,8 @@ export function CreateKeyForm() {
       {state.secret && (
         <div className="notice notice--ok" role="status">
           <strong>
-            Schlüssel angelegt. Trag beides jetzt in der Scanner-App ein – das Geheimnis wird nicht
-            noch einmal angezeigt.
+            Schlüssel angelegt. Trag beides jetzt in der Scanner-App bzw. der Pipeline ein – das
+            Geheimnis wird nicht noch einmal angezeigt.
           </strong>
           <span className="secret">Schlüssel-ID: {state.keyId}</span>
           <span className="secret">Geheimnis: {state.secret}</span>
@@ -26,6 +26,13 @@ export function CreateKeyForm() {
         <label className="field">
           <span>Name</span>
           <input name="name" placeholder="z. B. Scanner Lager" required />
+        </label>
+        <label className="field">
+          <span>Für</span>
+          <select name="purpose" defaultValue="scanner">
+            <option value="scanner">Scanner-App (Produkte, Bestand)</option>
+            <option value="pipeline">Video-Pipeline (Nutzung melden)</option>
+          </select>
         </label>
         <label className="field">
           <span>Nur von diesen IPs (optional)</span>

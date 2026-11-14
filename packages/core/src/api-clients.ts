@@ -4,8 +4,17 @@ import { isPgError, SQLSTATE } from './db.ts';
 import { decryptSecret, encryptSecret } from './secrets.ts';
 import { generateApiCredentials } from './signing.ts';
 
-export const API_SCOPES = ['products:read', 'products:write', 'stock:write'] as const;
+export const API_SCOPES = [
+  'products:read',
+  'products:write',
+  'stock:write',
+  'usage:write',
+] as const;
 export type ApiScope = (typeof API_SCOPES)[number];
+/** The scanning app's key: products and stock. */
+export const SCANNER_SCOPES: ApiScope[] = ['products:read', 'products:write', 'stock:write'];
+/** The video pipeline's key: usage reports only. */
+export const PIPELINE_SCOPES: ApiScope[] = ['usage:write'];
 
 export type ApiClient = {
   id: number;
@@ -29,7 +38,7 @@ export async function createApiClient(
   const [client] = await db<ApiClient[]>`
     INSERT INTO api_clients (name, key_id, secret_enc, scopes, ip_allowlist, created_by)
     VALUES (${input.name}, ${keyId}, ${encryptSecret(secret, masterKey)},
-            ${input.scopes ?? [...API_SCOPES]}::text[], ${input.ipAllowlist ?? []}::cidr[], ${input.createdBy})
+            ${input.scopes ?? SCANNER_SCOPES}::text[], ${input.ipAllowlist ?? []}::cidr[], ${input.createdBy})
     RETURNING id, name, key_id, scopes, ip_allowlist::text[] AS ip_allowlist, rate_limit_per_minute,
               created_at, last_used_at, revoked_at`;
   return { client: client!, secret };
