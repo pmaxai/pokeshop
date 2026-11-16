@@ -2,7 +2,10 @@ import 'server-only';
 import { deleteAccount, type Account } from '@pokeshop/core/accounts';
 import { cancelRequestedRenewals, storeManageUrl, type Store } from '@pokeshop/core/store';
 import {
+  deviceSubscriptionOf,
+  deviceSubscriptionRunning,
   entitlements,
+  storeDeviceSubscription,
   storeStripeSubscription,
   websiteSubscription,
 } from '@pokeshop/core/subscriptions';
@@ -36,6 +39,21 @@ export async function deleteAccountEverywhere(account: Account): Promise<DeleteR
       );
     } catch (e) {
       console.error('[account] cancelling the Stripe subscription failed:', (e as Error).message);
+      return { ok: false, reason: 'subscription' };
+    }
+  }
+  // extra devices bought in the portal for a store subscription: no renewal either
+  const devices = await deviceSubscriptionOf(db(), account.id);
+  if (devices && deviceSubscriptionRunning(devices) && !devices.cancelAtPeriodEnd) {
+    const bill = billing();
+    if (!bill) return { ok: false, reason: 'subscription' };
+    try {
+      await storeDeviceSubscription(
+        db(),
+        await bill.setCancelAtPeriodEnd(devices.stripeSubscriptionId, true),
+      );
+    } catch (e) {
+      console.error('[account] cancelling the device subscription failed:', (e as Error).message);
       return { ok: false, reason: 'subscription' };
     }
   }

@@ -55,11 +55,12 @@ Last updated: November 2026
 
 1. In the app from Google Play you can also take out Collector or Creator through Google Play, monthly or yearly, in every country where we offer the app there. Point 2 does not apply to this. The subscription belongs to the account you are signed in with in the app.
 2. The contract is concluded once Google confirms the purchase and we have accepted it. These subscription terms apply; the purchase itself is also governed by Google Play's terms.
-3. **Price, payment and receipt:** the price shown by Google Play at the purchase applies, including taxes. Google collects the amount and issues the receipt; points 6 and 7 do not apply to this. Extra devices and the services on request (point 4.5) are only available with a subscription on the website.
+3. **Price, payment and receipt:** the price shown by Google Play at the purchase applies, including taxes. Google collects the amount and issues the receipt; points 6 and 7 do not apply to this. The services on request (point 4.5) are only available with a subscription on the website.
 4. **Term, changes and cancellation:** the subscription renews for the chosen period each time until you cancel it. You cancel in Google Play under "Subscriptions", to the end of the current period; until then everything keeps working. You change between Collector and Creator in the app; Google bills the change. Points 5.1 to 5.3 do not apply to this. After the end, point 5.2 applies: your collection stays saved.
 5. **Refunds** are requested from Google; Google Play's rules apply. Your statutory rights are not affected.
-6. **One paid subscription per account:** if the account already has a paid subscription on the website, we do not accept a purchase in Google Play; Google then refunds it by itself after three days. While a subscription from Google Play is running, you cannot subscribe on the website.
-7. **Deleting the account:** if you delete your account, we stop the renewal in Google Play. The subscription then ends with the paid period; there is no refund for that period.
+6. **One paid subscription per account:** if the account already has a paid subscription on the website, we do not accept a purchase in Google Play; Google then refunds it by itself after three days. While a subscription from Google Play is running, you cannot subscribe on the website, but you can add extra devices there (point 8.7).
+7. **Extra devices:** you add up to four more devices in the app through Google Play; they are billed with the subscription and end with it. You can also add devices in your account on the website: we bill these monthly through Stripe (points 6 and 7 apply to them), you can end them at the end of a month, and they end at once when your subscription from Google Play stops running; we then refund the unused part of the last payment.
+8. **Deleting the account:** if you delete your account, we stop the renewal in Google Play and that of the devices added in your account. Both then end with the paid period; there is no refund for that period.
 
 ## 9. Blocking
 

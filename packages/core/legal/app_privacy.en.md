@@ -44,7 +44,7 @@ What you enter in your collection or your list of missing cards in the app or th
 ## 7. Subscription and purchases
 
 - **Subscription in Google Play:** payment is handled by Google (Google Commerce Limited or Google Ireland Limited, Dublin, Ireland), which is responsible for it itself. We do not receive payment details. Google tells us about the subscription: the purchase token, the order number, the product, the status, the end of the term, whether it renews, the country of purchase and the random ID of your account that the app passes on with the purchase. We use this to activate the subscription and keep it up to date; Google tells us about every change.
-- **Subscription on the website:** what we process for it is set out in point 13 of the subscription terms ({{license_terms_url}}).
+- **Subscription and extra devices on the website:** what we process for it is set out in point 13 of the subscription terms ({{license_terms_url}}).
 
 ## 8. Processors and recipients
 

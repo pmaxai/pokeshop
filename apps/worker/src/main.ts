@@ -18,6 +18,7 @@ import {
   recheckGooglePurchases,
 } from '@pokeshop/core/store';
 import { purgeDeletedAccounts } from '@pokeshop/core/accounts';
+import { settleDeviceSubscriptions } from '@pokeshop/core/device-subscriptions';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -293,6 +294,19 @@ async function schedule() {
         console.log(`[store] ${g.checked} Google subscription(s) re-read, ${g.failed} failed`);
     } catch (e) {
       console.error('[store] re-reading Google subscriptions failed:', (e as Error).message);
+    }
+  }
+  // extra devices bought in the portal for a store subscription: end them (rest refunded) once
+  // it no longer runs, follow its plan's device price
+  if (billing) {
+    try {
+      const d = await settleDeviceSubscriptions(sql, billing);
+      if (d.ended || d.repriced || d.failed)
+        console.log(
+          `[devices] ${d.ended} device subscription(s) ended, ${d.repriced} repriced, ${d.failed} failed`,
+        );
+    } catch (e) {
+      console.error('[devices] settling device subscriptions failed:', (e as Error).message);
     }
   }
   // deleted accounts: stop their store renewals, remove the scrubbed rows after 30 days

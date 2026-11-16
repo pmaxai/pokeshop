@@ -37,7 +37,7 @@ class FakePlay implements GooglePlay {
     return parseGoogleSubscription(raw);
   }
   async acknowledge() {}
-  async cancel(_p: string, token: string) {
+  async cancel(token: string) {
     if (this.down) throw new Error('Google is down');
     this.cancels.push(token);
   }

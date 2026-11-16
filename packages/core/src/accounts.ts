@@ -497,6 +497,10 @@ export async function purgeDeletedAccounts(db: Db, now = new Date()): Promise<nu
                         WHERE p.account_id = a.id AND p.cancel_requested_at IS NOT NULL
                           AND p.cancelled_at_store IS NULL
                           AND p.state NOT IN ('expired', 'revoked'))
+       AND NOT EXISTS (SELECT 1 FROM device_subscriptions d
+                        WHERE d.account_id = a.id AND d.ended_at IS NULL
+                          AND d.status IN ('active', 'trialing', 'past_due')
+                          AND d.current_period_end > ${now})
        AND NOT EXISTS (SELECT 1 FROM usage_events u
                         WHERE u.account_id = a.id AND u.billing = 'queued')`;
   await db`

@@ -44,7 +44,7 @@ Was Sie in der App oder im Portal in Ihre Sammlung oder Ihre Liste fehlender Kar
 ## 7. Abo und Käufe
 
 - **Abo in Google Play:** Die Zahlung wickelt Google ab (Google Commerce Limited bzw. Google Ireland Limited, Dublin, Irland), die dafür selbst verantwortlich ist. Zahlungsdaten erhalten wir nicht. Google teilt uns zum Abo mit: das Kauf-Token, die Bestellnummer, das Produkt, den Status, das Laufzeitende, ob es sich verlängert, das Land des Kaufs und die zufällige Kennung Ihres Kontos, die die App beim Kauf mitgibt. Damit schalten wir das Abo frei und halten es aktuell; Google meldet uns jede Änderung.
-- **Abo auf der Website:** Was wir dafür verarbeiten, steht in Punkt 13 der Abo-Bedingungen ({{license_terms_url}}).
+- **Abo und zusätzliche Geräte auf der Website:** Was wir dafür verarbeiten, steht in Punkt 13 der Abo-Bedingungen ({{license_terms_url}}).
 
 ## 8. Auftragsverarbeiter und Empfänger
 

@@ -368,7 +368,8 @@ export type AppStatus = {
     manage_url: string | null;
     renews_at: string | null;
     ends_at: string | null;
-    devices: { included: number; extra: number; in_use: number };
+    /** extra = in_store (add-ons bought in the app) + on_web (bought in the portal) */
+    devices: { included: number; extra: number; in_store: number; on_web: number; in_use: number };
   };
   features: Entitlements['features'];
   webshop: { host: string } | null;
@@ -415,7 +416,17 @@ export async function appStatus(
       manage_url: manage.url,
       renews_at: iso(ent.renewsAt),
       ends_at: iso(ent.endsAt),
-      devices: { included: ent.active ? 1 : 0, extra: ent.extraDevices, in_use: inUse[0]?.n ?? 0 },
+      devices: {
+        included: ent.active ? 1 : 0,
+        extra: ent.extraDevices,
+        in_store: ent.active ? (sub?.devicesInStore ?? 0) : 0,
+        on_web: ent.active
+          ? sub?.source === 'google_play' || sub?.source === 'app_store'
+            ? (sub.devicesOnWeb ?? 0)
+            : ent.extraDevices
+          : 0,
+        in_use: inUse[0]?.n ?? 0,
+      },
     },
     features: ent.features,
     webshop: ent.features.webshop && ent.webshopHost ? { host: ent.webshopHost } : null,

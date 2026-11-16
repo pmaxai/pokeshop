@@ -35,7 +35,7 @@ import {
   usageSince,
 } from '@pokeshop/core/usage';
 import { apiMasterKey } from '@/server/config';
-import { storeManageUrl, storePurchasesOf } from '@pokeshop/core/store';
+import { activeDeviceAddOns, storeManageUrl, storePurchasesOf } from '@pokeshop/core/store';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Kunde' };
@@ -84,6 +84,22 @@ export default async function Customer({
   ]);
   const usage = await usageSince(db(), id, period);
   const purchases = await storePurchasesOf(db(), id);
+  const deviceSubs = await db()<
+    {
+      stripe_subscription_id: string;
+      plan: 'collector' | 'creator';
+      devices: number;
+      status: string;
+      current_period_end: Date | null;
+      cancel_at_period_end: boolean;
+      ended_at: Date | null;
+      ended_reason: string | null;
+      refunded_cents: number | null;
+      created_at: Date;
+    }[]
+  >`SELECT stripe_subscription_id, plan, devices, status, current_period_end, cancel_at_period_end,
+           ended_at, ended_reason, refunded_cents, created_at
+      FROM device_subscriptions WHERE account_id = ${id} ORDER BY created_at DESC LIMIT 10`;
   const owner = user.role === 'owner';
   const test = (process.env.STRIPE_LICENSE_SECRET_KEY ?? '').startsWith('sk_test');
   const dash = (kind: string, sid: string) =>
@@ -374,6 +390,13 @@ export default async function Customer({
                       {!p.acknowledged && !p.refused && p.state !== 'pending' && (
                         <div className="muted">nicht bestätigt</div>
                       )}
+                      {p.deviceAddOns.length > 0 && (
+                        <div className="muted">
+                          {`+${activeDeviceAddOns(p.deviceAddOns)} Gerät(e) als Add-on`}
+                          {activeDeviceAddOns(p.deviceAddOns) < p.deviceAddOns.length &&
+                            ` (${p.deviceAddOns.length - activeDeviceAddOns(p.deviceAddOns)} abgelaufen)`}
+                        </div>
+                      )}
                     </td>
                     <td>
                       {dateTime(p.expiresAt)}
@@ -385,6 +408,63 @@ export default async function Customer({
                       <code>{p.latestOrderId ?? '–'}</code>
                     </td>
                     <td>{dateTime(p.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {deviceSubs.length > 0 && (
+        <>
+          <h2>Zusätzliche Geräte im Konto (zum Store-Abo)</h2>
+          <p className="muted">
+            Eigenes Stripe-Abo nur für Geräte. Endet sofort, wenn das Store-Abo nicht mehr läuft;
+            der nicht genutzte Teil der letzten Zahlung wird erstattet (Gutschrift).
+          </p>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Stripe</th>
+                  <th className="r">Geräte</th>
+                  <th>Status</th>
+                  <th>Zeitraum bis</th>
+                  <th>Seit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deviceSubs.map((d) => (
+                  <tr key={d.stripe_subscription_id}>
+                    <td>
+                      {owner ? (
+                        <a
+                          href={dash('subscriptions', d.stripe_subscription_id)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <code>{d.stripe_subscription_id}</code>
+                        </a>
+                      ) : (
+                        <code>{d.stripe_subscription_id}</code>
+                      )}
+                      <div className="muted">{PLAN[d.plan]}-Preis</div>
+                    </td>
+                    <td className="r">{d.devices}</td>
+                    <td>
+                      {d.ended_at ? 'beendet' : d.status}
+                      {d.cancel_at_period_end && !d.ended_at && (
+                        <div className="muted">endet zum Monatsende</div>
+                      )}
+                      {d.ended_reason === 'store_ended' && (
+                        <div className="muted">
+                          {`Store-Abo beendet, erstattet: ${formatEuro(d.refunded_cents ?? 0, 'de')}`}
+                        </div>
+                      )}
+                    </td>
+                    <td>{dateTime(d.current_period_end)}</td>
+                    <td>{dateTime(d.created_at)}</td>
                   </tr>
                 ))}
               </tbody>

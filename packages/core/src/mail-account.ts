@@ -82,6 +82,14 @@ const TEXT = {
       'dein Abo für den Overpriced Cardboard Scanner ist beendet. Die App ist gesperrt, deine Sammlung bleibt gespeichert.',
     endedAgain: 'Du kannst jederzeit wieder ein Abo abschließen; deine Geräte bleiben verbunden.',
     toSubscription: 'Abo abschließen',
+    devicesEndedSubject: 'Deine zusätzlichen Geräte sind beendet',
+    devicesEndedIntro: (store: string, devices: string) =>
+      `dein Abo aus ${store} läuft nicht mehr. Deshalb haben wir auch die zusätzlichen Geräte beendet, die du im Konto dazu gebucht hattest (${devices}).`,
+    devicesEndedRefund: (amount: string) =>
+      `Den nicht genutzten Teil erstatten wir dir: ${amount}. Die Gutschrift hängt an dieser E-Mail; das Geld geht auf dem Weg zurück, auf dem du bezahlt hast.`,
+    devicesEndedNoRefund: 'Vom letzten Zeitraum war nichts mehr zu erstatten.',
+    devicesEndedAgain: (store: string) =>
+      `Läuft dein Abo in ${store} wieder, kannst du die Geräte jederzeit neu dazubuchen.`,
     sharedSubject: (who: string) => `${who} zeigt dir eine Kartensammlung`,
     sharedIntro: (who: string) => `${who} hat eine Kartensammlung mit dir geteilt.`,
     sharedTitled: (who: string, title: string) =>
@@ -174,6 +182,14 @@ const TEXT = {
       'your Overpriced Cardboard Scanner subscription has ended. The app is locked; your collection stays saved.',
     endedAgain: 'You can subscribe again any time; your devices stay connected.',
     toSubscription: 'Subscribe',
+    devicesEndedSubject: 'Your extra devices have ended',
+    devicesEndedIntro: (store: string, devices: string) =>
+      `your subscription from ${store} is no longer running, so we have also ended the extra devices you had added in your account (${devices}).`,
+    devicesEndedRefund: (amount: string) =>
+      `We refund the unused part: ${amount}. The credit note is attached to this e-mail; the money goes back the way you paid.`,
+    devicesEndedNoRefund: 'Nothing was left to refund from the last period.',
+    devicesEndedAgain: (store: string) =>
+      `Once your subscription in ${store} runs again, you can add the devices again at any time.`,
     sharedSubject: (who: string) => `${who} is showing you a card collection`,
     sharedIntro: (who: string) => `${who} shared a card collection with you.`,
     sharedTitled: (who: string, title: string) =>
@@ -326,7 +342,8 @@ export async function renderAccountMail(
     case 'subscription_welcome':
     case 'subscription_invoice':
     case 'subscription_payment_failed':
-    case 'subscription_ended': {
+    case 'subscription_ended':
+    case 'devices_ended': {
       const g = gmbhContext(ctx);
       const [sub] = await db<{ plan: string; extra_devices: number }[]>`
         SELECT plan, extra_devices FROM subscriptions WHERE account_id = ${Number(payload.account_id)}`;
@@ -363,6 +380,17 @@ export async function renderAccountMail(
           p(esc(t.failedIntro)),
           p(esc(next ? t.failedRetry(day(next, L)) : t.failedLast)),
           p(esc(t.failedHow)),
+          button(accountUrl(ctx, L, '/konto/abo', '/account/subscription'), t.toAccount),
+        ];
+      } else if (mail.template === 'devices_ended') {
+        const store = payload.store === 'app_store' ? 'App Store' : 'Google Play';
+        const refund = Number(payload.refunded_cents ?? 0);
+        subject = t.devicesEndedSubject;
+        body = [
+          p(esc(t.hello)),
+          p(esc(t.devicesEndedIntro(store, t.devices(Number(payload.devices ?? 0))))),
+          p(esc(refund > 0 ? t.devicesEndedRefund(formatEuro(refund, L)) : t.devicesEndedNoRefund)),
+          p(esc(t.devicesEndedAgain(store))),
           button(accountUrl(ctx, L, '/konto/abo', '/account/subscription'), t.toAccount),
         ];
       } else {

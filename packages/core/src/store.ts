@@ -31,11 +31,14 @@ export type Period = 'monthly' | 'yearly';
 // What is on sale (Admin › App-Stores)
 // ---------------------------------------------------------------------------
 
-const googleId = z
+/** Extra devices sold in the app: one Play product per device and plan (add-ons). */
+export const MAX_STORE_DEVICES = 4;
+
+const googleIdText = z
   .string()
   .trim()
-  .regex(/^[a-z0-9][a-z0-9._]{0,149}$/, 'invalid')
-  .nullable();
+  .regex(/^[a-z0-9][a-z0-9._]{0,149}$/, 'invalid');
+const googleId = googleIdText.nullable();
 const basePlanId = z
   .string()
   .trim()
@@ -54,6 +57,13 @@ const GooglePlan = z.object({
     monthly: z.preprocess(empty, basePlanId),
     yearly: z.preprocess(empty, basePlanId),
   }),
+  // add-on products, one per extra device; same base plan ids as the plan's product
+  device_product_ids: z
+    .preprocess(
+      (v) => (Array.isArray(v) ? v.map(empty).filter((x) => x !== null && x !== undefined) : v),
+      z.array(googleIdText).max(MAX_STORE_DEVICES),
+    )
+    .default([]),
 });
 const ApplePlan = z.object({
   monthly: z.preprocess(empty, appleId),
@@ -67,8 +77,16 @@ export type StoreProducts = z.infer<typeof StoreProducts>;
 
 const EMPTY_PRODUCTS: StoreProducts = {
   google: {
-    collector: { product_id: null, base_plans: { monthly: null, yearly: null } },
-    creator: { product_id: null, base_plans: { monthly: null, yearly: null } },
+    collector: {
+      product_id: null,
+      base_plans: { monthly: null, yearly: null },
+      device_product_ids: [],
+    },
+    creator: {
+      product_id: null,
+      base_plans: { monthly: null, yearly: null },
+      device_product_ids: [],
+    },
   },
   apple: {
     collector: { monthly: null, yearly: null },
@@ -91,8 +109,23 @@ export async function saveStoreProducts(
   const p = StoreProducts.safeParse(input);
   if (!p.success) return { ok: false, errors: p.error.issues.map((i) => i.path.join('.')) };
   const v = p.data;
-  const g = [v.google.collector.product_id, v.google.creator.product_id].filter(Boolean);
-  if (new Set(g).size !== g.length) return { ok: false, errors: ['google.creator.product_id'] };
+  // every Google product id once: a plan's product, or one extra device
+  const seen = new Set<string>();
+  for (const plan of ['collector', 'creator'] as const) {
+    const g = v.google[plan];
+    const ids: [string, string | null][] = [
+      [`google.${plan}.product_id`, g.product_id],
+      ...g.device_product_ids.map((id, i): [string, string] => [
+        `google.${plan}.device_product_ids.${i}`,
+        id,
+      ]),
+    ];
+    for (const [path, id] of ids) {
+      if (!id) continue;
+      if (seen.has(id)) return { ok: false, errors: [path] };
+      seen.add(id);
+    }
+  }
   await db`
     INSERT INTO settings (key, value) VALUES ('store_products', ${db.json(v)})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
@@ -120,6 +153,14 @@ export function googlePlanOf(
   return null;
 }
 
+/** The plan an extra-device product belongs to, or null. */
+export function googleDevicePlanOf(products: StoreProducts, productId: string): Plan | null {
+  for (const plan of ['collector', 'creator'] as const) {
+    if (products.google[plan].device_product_ids.includes(productId)) return plan;
+  }
+  return null;
+}
+
 /** GET /store/offers: the plans on sale, with the stores' product ids. */
 export function storeOffers(products: StoreProducts) {
   const features = {
@@ -134,6 +175,8 @@ export function storeOffers(products: StoreProducts) {
       ? {
           product_id: products.google[plan].product_id,
           base_plans: products.google[plan].base_plans,
+          // add-ons, one per extra device, bought with the subscription
+          device_product_ids: products.google[plan].device_product_ids,
         }
       : null,
     apple:
@@ -152,9 +195,19 @@ export class StoreUnavailable extends Error {}
 /** Google doesn't know the token, or it belongs to another app. */
 export class PurchaseInvalid extends Error {}
 
+/** One item of a purchase: the subscription itself or an add-on (an extra device). */
+export type GoogleLine = {
+  productId: string;
+  basePlanId: string | null;
+  expiresAt: Date | null;
+  autoRenew: boolean;
+};
+
 /** A subscription as Google reports it, reduced to what the shop uses. */
 export type GoogleSubscription = {
   state: StoreState;
+  /** every item of the purchase; the fields below are those of the one that runs longest */
+  lines: GoogleLine[];
   productId: string;
   basePlanId: string | null;
   expiresAt: Date | null;
@@ -171,8 +224,11 @@ export type GoogleSubscription = {
 export interface GooglePlay {
   getSubscription(token: string): Promise<GoogleSubscription>;
   acknowledge(productId: string, token: string): Promise<void>;
-  /** Stops the renewal; the subscription runs to the end of the paid period. */
-  cancel(productId: string, token: string): Promise<void>;
+  /**
+   * Stops the renewal of the whole purchase (add-ons too); it runs to the end of the paid
+   * period. purchases.subscriptionsv2.cancel, as the developer (the account was deleted).
+   */
+  cancel(token: string): Promise<void>;
 }
 
 const STATES: Record<string, StoreState> = {
@@ -196,21 +252,33 @@ export function parseGoogleSubscription(raw: Record<string, unknown>): GoogleSub
     autoRenewingPlan?: { autoRenewEnabled?: boolean };
     offerDetails?: { basePlanId?: string };
   };
-  const lines = (Array.isArray(raw.lineItems) ? raw.lineItems : []) as Line[];
-  // the line that runs longest is the one that counts
+  const date = (s: string | undefined) => {
+    const d = s ? new Date(s) : null;
+    return d && !Number.isNaN(d.getTime()) ? d : null;
+  };
+  const lines: GoogleLine[] = ((Array.isArray(raw.lineItems) ? raw.lineItems : []) as Line[])
+    .filter((l) => typeof l.productId === 'string' && l.productId)
+    .map((l) => ({
+      productId: l.productId!,
+      basePlanId: l.offerDetails?.basePlanId ?? null,
+      expiresAt: date(l.expiryTime),
+      autoRenew: Boolean(l.autoRenewingPlan?.autoRenewEnabled),
+    }));
+  // which item is the subscription (and which are add-ons) is decided with the product list
+  // (applyGooglePurchase); until then, the one that runs longest
   const line = [...lines].sort(
-    (a, b) => Date.parse(b.expiryTime ?? '') - Date.parse(a.expiryTime ?? ''),
+    (a, b) => (b.expiresAt?.getTime() ?? 0) - (a.expiresAt?.getTime() ?? 0),
   )[0];
-  if (!line?.productId) throw new PurchaseInvalid('no line item');
+  if (!line) throw new PurchaseInvalid('no line item');
   const ext = (raw.externalAccountIdentifiers ?? {}) as { obfuscatedExternalAccountId?: string };
   const ref = ext.obfuscatedExternalAccountId ?? '';
-  const expires = line.expiryTime ? new Date(line.expiryTime) : null;
   return {
     state: STATES[String(raw.subscriptionState)] ?? 'expired',
+    lines,
     productId: line.productId,
-    basePlanId: line.offerDetails?.basePlanId ?? null,
-    expiresAt: expires && !Number.isNaN(expires.getTime()) ? expires : null,
-    autoRenew: Boolean(line.autoRenewingPlan?.autoRenewEnabled),
+    basePlanId: line.basePlanId,
+    expiresAt: line.expiresAt,
+    autoRenew: line.autoRenew,
     acknowledged: raw.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
     linkedToken: typeof raw.linkedPurchaseToken === 'string' ? raw.linkedPurchaseToken : null,
     storeRef: UUID.test(ref) ? ref.toLowerCase() : null,
@@ -318,8 +386,10 @@ export function googlePlayClient(opts: {
         {},
       );
     },
-    async cancel(productId, t) {
-      await call('POST', `/purchases/subscriptions/${tok(productId)}/tokens/${tok(t)}:cancel`);
+    async cancel(t) {
+      await call('POST', `/purchases/subscriptionsv2/tokens/${tok(t)}:cancel`, {
+        cancellationContext: { cancellationType: 'DEVELOPER_REQUESTED_STOP_PAYMENTS' },
+      });
     },
   };
 }
@@ -327,7 +397,8 @@ export function googlePlayClient(opts: {
 /**
  * Staging: purchase tokens test_active, test_canceled, test_grace, test_on_hold, test_expired,
  * test_refunded (optionally with a suffix, e.g. test_active-42) stand for a purchase in that
- * state, bought for the reporting account.
+ * state, bought for the reporting account. A suffix part d1 … d4 (test_active-d2) adds that many
+ * extra-device add-ons.
  */
 export function testGoogleSubscription(
   token: string,
@@ -342,16 +413,32 @@ export function testGoogleSubscription(
   if (!m) return null;
   const state = (m[1] === 'refunded' ? 'revoked' : m[1]) as StoreState;
   const day = 86400_000;
-  const expiresAt = new Date(
-    now.getTime() +
-      (state === 'expired' || state === 'revoked' || state === 'on_hold' ? -day : 30 * day),
-  );
+  const end =
+    state === 'grace'
+      ? new Date(now.getTime() + 3 * day)
+      : new Date(
+          now.getTime() +
+            (state === 'expired' || state === 'revoked' || state === 'on_hold' ? -day : 30 * day),
+        );
+  const basePlanId = /year/i.test(token) ? 'yearly' : 'monthly';
+  const autoRenew = state === 'active' || state === 'grace';
+  const devices = Number(/[-_.]d([1-4])(?:[-_.]|$)/.exec(token)?.[1] ?? 0);
+  const lines: GoogleLine[] = [
+    { productId, basePlanId, expiresAt: end, autoRenew },
+    ...Array.from({ length: devices }, (_, i) => ({
+      productId: `${productId}_device_${i + 1}`,
+      basePlanId,
+      expiresAt: end,
+      autoRenew,
+    })),
+  ];
   return {
     state,
+    lines,
     productId,
-    basePlanId: /year/i.test(token) ? 'yearly' : 'monthly',
-    expiresAt: state === 'grace' ? new Date(now.getTime() + 3 * day) : expiresAt,
-    autoRenew: state === 'active' || state === 'grace',
+    basePlanId,
+    expiresAt: end,
+    autoRenew,
     acknowledged: false,
     linkedToken: null,
     storeRef,
@@ -383,9 +470,17 @@ export type StorePurchase = {
   replacedBy: number | null;
   latestOrderId: string | null;
   cancelRequestedAt: Date | null;
+  /** add-ons that are extra devices (of this purchase's plan) */
+  deviceAddOns: DeviceAddOn[];
   createdAt: Date;
   checkedAt: Date;
 };
+
+export type DeviceAddOn = { product_id: string; expires_at: string | null; auto_renew: boolean };
+
+/** Extra devices of a purchase that are paid for at `now`. */
+export const activeDeviceAddOns = (addOns: DeviceAddOn[] | null | undefined, now = new Date()) =>
+  (addOns ?? []).filter((a) => a.expires_at && Date.parse(a.expires_at) > now.getTime()).length;
 
 type PurchaseRow = {
   id: number;
@@ -405,6 +500,7 @@ type PurchaseRow = {
   replaced_by: number | null;
   latest_order_id: string | null;
   cancel_requested_at: Date | null;
+  device_add_ons: DeviceAddOn[];
   created_at: Date;
   checked_at: Date;
 };
@@ -427,6 +523,7 @@ const toPurchase = (r: PurchaseRow): StorePurchase => ({
   replacedBy: r.replaced_by === null ? null : Number(r.replaced_by),
   latestOrderId: r.latest_order_id,
   cancelRequestedAt: r.cancel_requested_at,
+  deviceAddOns: r.device_add_ons ?? [],
   createdAt: r.created_at,
   checkedAt: r.checked_at,
 });
@@ -460,16 +557,50 @@ export type ApplyResult =
 export async function applyGooglePurchase(
   sql: Sql,
   token: string,
-  g: GoogleSubscription,
+  reported: GoogleSubscription,
   opts: { accountId: number | null; now?: Date },
 ): Promise<ApplyResult> {
+  let g = reported;
   const now = opts.now ?? new Date();
   const products = await storeProducts(sql);
-  const plan =
-    g.test && !googlePlanOf(products, g.productId, g.basePlanId)
-      ? { plan: (/creator/i.test(g.productId) ? 'creator' : 'collector') as Plan, period: null }
-      : googlePlanOf(products, g.productId, g.basePlanId);
-  if (!plan) return { ok: false, problem: 'invalid_purchase' };
+  // the item that is a plan is the subscription; add-ons of that plan's devices are extra
+  // devices (another plan's device products don't count: the app swaps them on a plan change)
+  let base: GoogleLine | undefined;
+  let plan: { plan: Plan; period: Period | null } | null = null;
+  for (const l of g.lines) {
+    plan = googlePlanOf(products, l.productId, l.basePlanId);
+    if (plan) {
+      base = l;
+      break;
+    }
+  }
+  if (!base && g.test) {
+    // test purchases (licence testers before the products are entered, the staging hooks)
+    base = g.lines.find((l) => !/_device_\d+$/.test(l.productId)) ?? g.lines[0];
+    if (base) {
+      plan = { plan: /creator/i.test(base.productId) ? 'creator' : 'collector', period: null };
+    }
+  }
+  if (!base || !plan) return { ok: false, problem: 'invalid_purchase' };
+  const devicesOf = products.google[plan.plan].device_product_ids;
+  const addOns: DeviceAddOn[] = g.lines
+    .filter(
+      (l) =>
+        l !== base &&
+        (devicesOf.includes(l.productId) || (g.test && /_device_\d+$/.test(l.productId))),
+    )
+    .map((l) => ({
+      product_id: l.productId,
+      expires_at: l.expiresAt?.toISOString() ?? null,
+      auto_renew: l.autoRenew,
+    }));
+  g = {
+    ...g,
+    productId: base.productId,
+    basePlanId: base.basePlanId,
+    expiresAt: base.expiresAt,
+    autoRenew: base.autoRenew,
+  };
   return sql.begin(async (tx): Promise<ApplyResult> => {
     await tx`SELECT pg_advisory_xact_lock(hashtext(${`store:google_play:${token}`}))`;
     const [existing] = await tx<PurchaseRow[]>`
@@ -517,10 +648,11 @@ export async function applyGooglePurchase(
     const [row] = await tx<PurchaseRow[]>`
       INSERT INTO store_purchases (store, account_id, store_ref, purchase_token, product_id, base_plan_id,
                                    plan, period, state, expires_at, auto_renew, acknowledged, test,
-                                   latest_order_id, refused, raw, checked_at)
+                                   latest_order_id, refused, device_add_ons, raw, checked_at)
       VALUES ('google_play', ${accountId}, ${g.storeRef}::uuid, ${token}, ${g.productId}, ${g.basePlanId},
               ${plan.plan}, ${plan.period}, ${g.state}, ${g.expiresAt}, ${g.autoRenew}, ${g.acknowledged},
-              ${g.test}, ${g.latestOrderId}, ${refused}, ${tx.json(g.raw as never)}, ${now})
+              ${g.test}, ${g.latestOrderId}, ${refused}, ${tx.json(addOns as never)},
+              ${tx.json(g.raw as never)}, ${now})
       ON CONFLICT (store, purchase_token) DO UPDATE SET
         account_id = coalesce(store_purchases.account_id, EXCLUDED.account_id),
         store_ref = coalesce(EXCLUDED.store_ref, store_purchases.store_ref),
@@ -531,7 +663,8 @@ export async function applyGooglePurchase(
         expires_at = EXCLUDED.expires_at, auto_renew = EXCLUDED.auto_renew,
         acknowledged = store_purchases.acknowledged OR EXCLUDED.acknowledged,
         test = EXCLUDED.test, latest_order_id = EXCLUDED.latest_order_id,
-        refused = EXCLUDED.refused, raw = EXCLUDED.raw, checked_at = EXCLUDED.checked_at
+        refused = EXCLUDED.refused, device_add_ons = EXCLUDED.device_add_ons,
+        raw = EXCLUDED.raw, checked_at = EXCLUDED.checked_at
       RETURNING *`;
     if (g.linkedToken) {
       await tx`
@@ -591,7 +724,7 @@ export async function processGooglePurchase(
   }
   if (!test && !play) throw new StoreUnavailable('Google Play is not set up on this server');
   const g = test ?? (await play!.getSubscription(input.token));
-  if (input.productId && g.productId !== input.productId && !test) {
+  if (input.productId && !test && !g.lines.some((l) => l.productId === input.productId)) {
     throw new PurchaseInvalid('product does not match');
   }
   const r = await applyGooglePurchase(sql, input.token, g, {
@@ -599,7 +732,8 @@ export async function processGooglePurchase(
     now: input.now,
   });
   if (r.ok && r.acknowledge) {
-    if (!test) await play!.acknowledge(g.productId, input.token);
+    // one acknowledgement for the whole purchase, with the subscription's product id
+    if (!test) await play!.acknowledge(r.purchase.productId, input.token);
     await markAcknowledged(sql, r.purchase.id);
     r.purchase.acknowledged = true;
   }
@@ -654,6 +788,8 @@ export async function setTestStoreState(
   storeRef: string,
   state: StoreState | 'refunded' | 'renewed',
   now = new Date(),
+  /** extra-device add-ons the purchase then has (0–4); unchanged when left out */
+  devices?: number,
 ): Promise<StorePurchase | null> {
   if (!UUID.test(storeRef)) return null;
   const day = 86400_000;
@@ -664,9 +800,23 @@ export async function setTestStoreState(
       : state === 'grace'
         ? new Date(now.getTime() + 3 * day)
         : new Date(now.getTime() - 60_000);
+  const renew = s === 'active' || s === 'grace';
+  const addOns =
+    devices === undefined
+      ? null
+      : Array.from({ length: Math.max(0, Math.min(MAX_STORE_DEVICES, devices)) }, (_, i) => ({
+          product_id: `test_device_${i + 1}`,
+          expires_at: expires.toISOString(),
+          auto_renew: renew,
+        }));
   const [r] = await db<PurchaseRow[]>`
     UPDATE store_purchases SET state = ${s}, expires_at = ${expires},
-           auto_renew = ${s === 'active' || s === 'grace'}, checked_at = ${now}
+           auto_renew = ${renew}, checked_at = ${now},
+           device_add_ons = CASE WHEN ${addOns === null}
+             THEN (SELECT coalesce(jsonb_agg(a || jsonb_build_object('expires_at', ${expires.toISOString()}::text,
+                                                                   'auto_renew', ${renew}::boolean)), '[]')
+                     FROM jsonb_array_elements(device_add_ons) a)
+             ELSE ${db.json((addOns ?? []) as never)}::jsonb END
      WHERE id = (SELECT p.id FROM store_purchases p JOIN accounts a ON a.id = p.account_id
                   WHERE a.store_ref = ${storeRef}::uuid AND p.test AND p.replaced_by IS NULL
                     AND p.refused IS NULL
@@ -737,7 +887,7 @@ export async function cancelRequestedRenewals(
           failed++;
           continue;
         }
-        await play.cancel(d.product_id, d.purchase_token);
+        await play.cancel(d.purchase_token);
       }
       await sql`
         UPDATE store_purchases SET cancelled_at_store = ${now}, auto_renew = false,

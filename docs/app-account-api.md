@@ -25,7 +25,8 @@ times are ISO 8601 in UTC (`2026-11-15T09:30:00.000Z`), money is integer cents i
 | **Collector** | € 7 / month     | € 4 / month  | Scanner, Trading mode, web portal (collection, prices, missing cards, sharing) |
 | **Creator**   | € 12 / month    | € 7 / month  | Everything in Collector + YouTube mode with recording                          |
 
-Each subscription includes **one device**; extra devices are added in the portal. On request
+Each subscription includes **one device**; extra devices are added in the portal (for a Play
+subscription also in the app, see _Extra devices_). On request
 (switched on by the shop per customer, billed by usage):
 
 - **S3 storage** for recordings (per GB uploaded) – Creator only
@@ -301,6 +302,25 @@ once it has accepted them).
 4. **Restore purchases** / app start: report every purchase `queryPurchasesAsync` returns.
 5. Manage / cancel: open `status.subscription.manage_url` (the Play subscriptions page).
 
+### Extra devices
+
+A Play subscription covers 1 device. More can be added in two places, and they add up
+(`status.subscription.devices`: `in_store` + `on_web` = `extra`, at most 20):
+
+- **In the app, up to 4, as Play add-ons.** Each extra device is its own subscription product
+  (`offers[].google.device_product_ids`, one per device and plan, with the same base plan ids as
+  the plan). Add one with `launchBillingFlow` on the current purchase: `setOldPurchaseToken` with
+  its token, and in the product list every item it keeps (the plan and the add-ons it has) plus the
+  new device; `KEEP_EXISTING` for the items that stay. Removing one works the same way without it;
+  a removed add-on runs to the end of its period. Report the purchase as usual (`POST
+/store/google` with the plan's product id; a new token replaces the old one). Only add-ons of the
+  subscription's own plan count: on a plan change, swap the device products too.
+- **In the portal, any number up to the 20, billed monthly by Stripe** (Antalyse GmbH). They end at
+  once when the Play subscription stops running, and the rest of the month is refunded. The app
+  shows `on_web` but does not link to the portal for buying (store rules).
+
+`409 device_limit` at sign-in or pairing counts both.
+
 ### `GET /api/app/v1/store/offers`
 
 ```json
@@ -312,7 +332,13 @@ once it has accepted them).
       "features": ["scanner", "trading", "collection", "wanted"],
       "google": {
         "product_id": "oc_collector",
-        "base_plans": { "monthly": "monthly", "yearly": "yearly" }
+        "base_plans": { "monthly": "monthly", "yearly": "yearly" },
+        "device_product_ids": [
+          "oc_collector_device_1",
+          "oc_collector_device_2",
+          "oc_collector_device_3",
+          "oc_collector_device_4"
+        ]
       },
       "apple": null
     },
@@ -322,7 +348,8 @@ once it has accepted them).
       "features": ["scanner", "trading", "youtube", "recording", "collection", "wanted"],
       "google": {
         "product_id": "oc_creator",
-        "base_plans": { "monthly": "monthly", "yearly": "yearly" }
+        "base_plans": { "monthly": "monthly", "yearly": "yearly" },
+        "device_product_ids": ["oc_creator_device_1", "oc_creator_device_2"]
       },
       "apple": null
     }
@@ -331,7 +358,8 @@ once it has accepted them).
 ```
 
 `google` is `null` while the shop has not entered the product ids (Admin › App-Stores). The line-up
-can change without an app update.
+can change without an app update. `device_product_ids` may hold fewer than 4 (or none): sell only
+as many extra devices in the app as it lists.
 
 ### `POST /api/app/v1/store/google`
 
@@ -396,7 +424,7 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
     "manage_url": "https://overpricedcardboard.com/account/subscription",
     "renews_at": "2026-12-15T09:30:00.000Z",
     "ends_at": null,
-    "devices": { "included": 1, "extra": 1, "in_use": 2 }
+    "devices": { "included": 1, "extra": 1, "in_store": 0, "on_web": 1, "in_use": 2 }
   },
   "features": {
     "scanner": true,
@@ -686,13 +714,13 @@ Staging (`https://staging.overpricedcardboard.com`) is password-protected. The a
 it with the header `X-Staging-Access: <secret>` (GitHub secret `ACCOUNT_STAGING_ACCESS`; the shop
 sets the same value as `STAGING_ACCESS` on the server). Staging only, never in production:
 
-| Hook                | How                                                                                                                                                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                                                                                                                                            |
-| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                                                                                                                                      |
-| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production)                                                                                                               |
-| Test purchases      | `purchase_token` `test_active`, `test_canceled`, `test_grace`, `test_on_hold`, `test_expired`, `test_refunded` (a suffix such as `test_active-42` is allowed) is accepted without asking Google, for the reporting account |
-| Test events         | `POST /api/app/v1/test/store-event` `{ "store_ref": "…", "state": "renewed" }` moves the account's latest test purchase: `active`, `renewed`, `canceled`, `grace`, `on_hold`, `paused`, `expired`, `refunded`              |
+| Hook                | How                                                                                                                                                                                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                                                                                                                                                                           |
+| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                                                                                                                                                                     |
+| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production)                                                                                                                                              |
+| Test purchases      | `purchase_token` `test_active`, `test_canceled`, `test_grace`, `test_on_hold`, `test_expired`, `test_refunded` (a suffix such as `test_active-42` is allowed; `-d2` adds 2 device add-ons) is accepted without asking Google, for the reporting account   |
+| Test events         | `POST /api/app/v1/test/store-event` `{ "store_ref": "…", "state": "renewed" }` moves the account's latest test purchase: `active`, `renewed`, `canceled`, `grace`, `on_hold`, `paused`, `expired`, `refunded`; optional `"devices": 0–4` sets its add-ons |
 
 The review account has a free Creator subscription without end, up to 10 devices, and is cleared
 every Monday (collection, missing cards, devices).

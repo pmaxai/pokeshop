@@ -4,6 +4,8 @@ import { formatEuro } from '@pokeshop/core';
 import { licenseSeller } from '@pokeshop/core/licenses';
 import {
   accountServices,
+  deviceSubscriptionOf,
+  deviceSubscriptionRunning,
   entitlements,
   MAX_EXTRA_DEVICES,
   monthlyCents,
@@ -18,14 +20,17 @@ import { db } from '@/server/config';
 import { requireAccount } from '@/server/account';
 import { billing } from '@/server/billing';
 import { billingPeriodStart, usageSince } from '@pokeshop/core/usage';
-import { storeManageUrl } from '@pokeshop/core/store';
+import { MAX_STORE_DEVICES, storeManageUrl } from '@pokeshop/core/store';
+import { maxWebDevices } from '@pokeshop/core/device-subscriptions';
 import { AccountShell } from '@/components/account/AccountShell';
 import { SubscribeForm, type PlanPrices } from '@/components/account/SubscribeForm';
 import {
   billingPortalAction,
   cancelSubscriptionAction,
+  changeDevicesAction,
   changeSubscriptionAction,
   subscribeAction,
+  subscribeDevicesAction,
 } from '../../account-actions';
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +57,21 @@ function unpack(s: string | undefined): {
     return {};
   }
 }
+
+const DEVICES_MESSAGES = [
+  'added',
+  'cancelled',
+  'done',
+  'ending',
+  'devices_in_use',
+  'unchanged',
+  'payment_failed',
+  'failed',
+  'invalid',
+  'not_active',
+  'already_active',
+  'no_store_subscription',
+] as const;
 
 const CHANGE_MESSAGES = [
   'done',
@@ -100,11 +120,70 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
   const num = (v: number, digits: number) =>
     v.toLocaleString(locale === 'de' ? 'de-AT' : 'en-GB', { maximumFractionDigits: digits });
 
+  // the billing form (website subscription, or extra devices for a store subscription)
+  const { errors = {}, values } = unpack(q.e);
+  const tf = await getTranslations('Subscription.form');
+  const errorTexts = Object.fromEntries(
+    Object.entries(errors)
+      .filter(([k]) => k !== '_')
+      .map(([k, code]) => [k, tf(`errors.${code}` as never)]),
+  );
+  const formDefaults = async (plan: string, devices: string) => {
+    const billingInfo = (
+      await db()<{ billing: Record<string, string> | null }[]>`
+      SELECT billing FROM accounts WHERE id = ${account.id}`
+    )[0]?.billing;
+    const a = account.shippingAddress;
+    return (
+      values ?? {
+        plan,
+        extraDevices: devices,
+        buyer: billingInfo?.buyer ?? 'consumer',
+        name: billingInfo?.name ?? a?.name ?? account.name ?? '',
+        company: billingInfo?.company ?? a?.company ?? '',
+        vatId: billingInfo?.vat_id ?? '',
+        street: billingInfo?.street ?? a?.street ?? '',
+        postcode: billingInfo?.postcode ?? a?.postcode ?? '',
+        city: billingInfo?.city ?? a?.city ?? '',
+        country: billingInfo?.country ?? a?.country ?? '',
+      }
+    );
+  };
+  const euCountries = async () => {
+    const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
+    return (await db()<{ code: string }[]>`SELECT code FROM countries WHERE is_eu`)
+      .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
+      .sort((x, y) => x.name.localeCompare(y.name, locale));
+  };
+  const both = (c: number) => ({ gross: c, net: netPrice(c) });
+  const planPrices: PlanPrices = {
+    collector: both(prices.collector),
+    creator: both(prices.creator),
+    collector_device: both(prices.collector_device),
+    creator_device: both(prices.creator_device),
+  };
+
   if (ent.active && sub) {
     const behavior = sub.taxBehavior ?? 'incl';
     const monthly = monthlyCents(prices, sub.plan, sub.extraDevices, behavior);
     const change = CHANGE_MESSAGES.find((c) => c === q.change);
     const stripe = sub.source === 'stripe';
+    const inStore = sub.source === 'google_play' || sub.source === 'app_store';
+    const storeName = inStore ? t(`store.${sub.source as 'google_play' | 'app_store'}`) : '';
+    // extra devices in the portal for a store subscription
+    const web = inStore ? await deviceSubscriptionOf(db(), account.id) : null;
+    const webRuns = web ? deviceSubscriptionRunning(web) : false;
+    const webBehavior = web?.taxBehavior ?? 'incl';
+    const deviceCents = (b: 'incl' | 'excl') =>
+      b === 'incl' ? prices[`${sub.plan}_device`] : netPrice(prices[`${sub.plan}_device`]);
+    const devicesMsg = DEVICES_MESSAGES.find((c) => c === q.devices);
+    const deviceForm =
+      inStore && !webRuns && b
+        ? {
+            values: await formDefaults(sub.plan, '1'),
+            countries: await euCountries(),
+          }
+        : null;
     return (
       <AccountShell account={account} active="subscription" title={t('title')} locale={locale}>
         {q.welcome && (
@@ -136,7 +215,19 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
           <dl className="sub-facts">
             <div>
               <dt>{t('devices')}</dt>
-              <dd>{t('devicesValue', { total: ent.seats, extra: sub.extraDevices })}</dd>
+              <dd>
+                {t('devicesValue', { total: ent.seats, extra: sub.extraDevices })}
+                {inStore && sub.extraDevices > 0 && (
+                  <span className="muted small">
+                    {' '}
+                    {t('devicesShop.breakdown', {
+                      store: storeName,
+                      inStore: sub.devicesInStore ?? 0,
+                      web: sub.devicesOnWeb ?? 0,
+                    })}
+                  </span>
+                )}
+              </dd>
             </div>
             {stripe && (
               <div>
@@ -170,6 +261,112 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
             </p>
           )}
         </section>
+
+        {inStore && (
+          <section className="account-panel" id="devices" aria-labelledby="sub-extra-devices">
+            <h2 id="sub-extra-devices">{t('devicesShop.title')}</h2>
+            {devicesMsg && (
+              <p
+                className={
+                  ['added', 'done', 'ending'].includes(devicesMsg)
+                    ? 'notice'
+                    : 'notice notice--warn'
+                }
+                role="status"
+              >
+                {t(`devicesShop.notice.${devicesMsg}`, {
+                  inUse: Number(q.in_use ?? 0),
+                  store: storeName,
+                })}
+              </p>
+            )}
+            <p>
+              {t('devicesShop.intro', {
+                store: storeName,
+                max: MAX_STORE_DEVICES,
+                price: eur(prices[`${sub.plan}_device`]),
+                plan: t(`plans.${sub.plan}.name`),
+              })}
+            </p>
+            {web && webRuns ? (
+              <>
+                <dl className="sub-facts">
+                  <div>
+                    <dt>{t('devicesShop.here')}</dt>
+                    <dd>{web.devices}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('price')}</dt>
+                    <dd>
+                      <span className="num">{eur(web.devices * deviceCents(webBehavior))}</span>{' '}
+                      {t('perMonth')}{' '}
+                      <span className="muted small">
+                        {webBehavior === 'incl' ? t('inclVat') : t('net')}
+                      </span>
+                    </dd>
+                  </div>
+                  {web.currentPeriodEnd && (
+                    <div>
+                      <dt>{web.cancelAtPeriodEnd ? t('endsOn') : t('renewsOn')}</dt>
+                      <dd>{date(web.currentPeriodEnd)}</dd>
+                    </div>
+                  )}
+                </dl>
+                <form action={changeDevicesAction} className="sub-change">
+                  <input type="hidden" name="locale" value={locale} />
+                  <label className="field" htmlFor="dev-count">
+                    <span>{t('devicesShop.here')}</span>
+                    <input
+                      id="dev-count"
+                      name="devices"
+                      type="number"
+                      min={0}
+                      max={maxWebDevices(sub)}
+                      defaultValue={web.cancelAtPeriodEnd ? 0 : web.devices}
+                      inputMode="numeric"
+                      className="subscribe__devices"
+                    />
+                    <small className="muted">{t('devicesShop.zeroHint')}</small>
+                  </label>
+                  <p className="small muted">{t('changeNote')}</p>
+                  <button type="submit" className="btn">
+                    {t('devicesShop.change')}
+                  </button>
+                </form>
+                <form action={billingPortalAction}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <button type="submit" className="btn btn--quiet">
+                    {t('portal')}
+                  </button>
+                </form>
+              </>
+            ) : deviceForm ? (
+              <>
+                {errors._ && (
+                  <p className="notice notice--warn" role="alert">
+                    {errors._ === 'payment_unavailable'
+                      ? tf('paymentUnavailable')
+                      : tf('errorsTitle')}
+                  </p>
+                )}
+                <SubscribeForm
+                  action={subscribeDevicesAction}
+                  locale={locale}
+                  values={deviceForm.values}
+                  errors={errorTexts}
+                  euCountries={deviceForm.countries}
+                  prices={planPrices}
+                  sellerName={seller.name}
+                  sellerAddress={`${seller.street}, ${seller.postcode} ${seller.city}`}
+                  devicesOnly={{ plan: sub.plan, max: maxWebDevices(sub) }}
+                />
+              </>
+            ) : (
+              <p className="notice notice--warn">{tf('closed')}</p>
+            )}
+            <p className="small muted">{t('devicesShop.endNote', { store: storeName })}</p>
+          </section>
+        )}
 
         {usage && (
           <section className="account-panel" id="usage" aria-labelledby="sub-usage">
@@ -300,41 +497,11 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
   }
 
   // No running subscription: the plans and the form.
-  const { errors = {}, values } = unpack(q.e);
-  const tf = await getTranslations('Subscription.form');
-  const errorTexts = Object.fromEntries(
-    Object.entries(errors)
-      .filter(([k]) => k !== '_')
-      .map(([k, code]) => [k, tf(`errors.${code}` as never)]),
+  const defaults: Record<string, string> = await formDefaults(
+    q.plan === 'creator' ? 'creator' : 'collector',
+    '0',
   );
-  const billingInfo = (
-    await db()<{ billing: Record<string, string> | null }[]>`
-    SELECT billing FROM accounts WHERE id = ${account.id}`
-  )[0]?.billing;
-  const a = account.shippingAddress;
-  const defaults: Record<string, string> = values ?? {
-    plan: q.plan === 'creator' ? 'creator' : 'collector',
-    extraDevices: '0',
-    buyer: billingInfo?.buyer ?? 'consumer',
-    name: billingInfo?.name ?? a?.name ?? account.name ?? '',
-    company: billingInfo?.company ?? a?.company ?? '',
-    vatId: billingInfo?.vat_id ?? '',
-    street: billingInfo?.street ?? a?.street ?? '',
-    postcode: billingInfo?.postcode ?? a?.postcode ?? '',
-    city: billingInfo?.city ?? a?.city ?? '',
-    country: billingInfo?.country ?? a?.country ?? '',
-  };
-  const names = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
-  const eu = (await db()<{ code: string }[]>`SELECT code FROM countries WHERE is_eu`)
-    .map((c) => ({ code: c.code, name: names.of(c.code) ?? c.code }))
-    .sort((x, y) => x.name.localeCompare(y.name, locale));
-  const both = (c: number) => ({ gross: c, net: netPrice(c) });
-  const planPrices: PlanPrices = {
-    collector: both(prices.collector),
-    creator: both(prices.creator),
-    collector_device: both(prices.collector_device),
-    creator_device: both(prices.creator_device),
-  };
+  const eu = await euCountries();
   return (
     <AccountShell account={account} active="subscription" title={t('title')} locale={locale}>
       {q.welcome && (

@@ -843,8 +843,13 @@
         "invalid_tax_id": "Diese UID-Nummer passt nicht zum Format des gewählten Landes.",
         "vat_id_invalid": "Laut EU-Abfrage (VIES) ist diese UID-Nummer nicht gültig. Bitte prüf sie – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
         "vies_unavailable": "Die EU-Abfrage (VIES) ist gerade nicht erreichbar. Bitte versuch es in ein paar Minuten noch einmal – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
-        "invalid_address": "Diese Adresse kann der Zahlungsdienst keinem Steuergebiet zuordnen. Bitte prüf PLZ und Ort."
-      }
+        "invalid_address": "Diese Adresse kann der Zahlungsdienst keinem Steuergebiet zuordnen. Bitte prüf PLZ und Ort.",
+        "at_least_one": "Mindestens 1 Gerät."
+      },
+      "devicesOnlyCount": "Anzahl Geräte",
+      "devicesOnlySubmit": "Weiter zur Zahlung",
+      "devicesOnlySubmitNote": "Als Nächstes zahlst du über Stripe. Die Geräte verlängern sich jeden Monat, bis du sie beendest oder dein Abo aus dem App-Store endet.",
+      "devicesOnlyHint": "{price} pro Gerät und Monat."
     },
     "usage": {
       "title": "Nutzung",
@@ -859,6 +864,29 @@
       "app_store": "App Store",
       "text": "Du hast dieses Abo in {store} abgeschlossen. Ändern, kündigen und bezahlen erfolgt dort.",
       "manage": "In {store} verwalten"
+    },
+    "devicesShop": {
+      "title": "Zusätzliche Geräte",
+      "intro": "Dein {plan}-Abo aus {store} gilt für 1 Gerät. In der App buchst du über {store} bis zu {max} weitere dazu. Hier im Konto kannst du ebenfalls Geräte dazubuchen, für {price} pro Gerät und Monat.",
+      "breakdown": "({inStore} über {store}, {web} im Konto)",
+      "here": "Geräte im Konto",
+      "zeroHint": "0 beendet die Geräte im Konto zum Ende des bezahlten Monats.",
+      "change": "Anzahl ändern",
+      "endNote": "Die Geräte im Konto rechnen wir monatlich ab. Läuft dein Abo in {store} nicht mehr, enden sie sofort, und wir erstatten dir den nicht genutzten Teil des Monats.",
+      "notice": {
+        "added": "Danke, deine Geräte sind gebucht. Du kannst sie gleich unter „Geräte“ verbinden.",
+        "cancelled": "Die Zahlung wurde abgebrochen, es sind keine Geräte gebucht.",
+        "done": "Erledigt, die Anzahl ist geändert.",
+        "ending": "Die Geräte im Konto enden zum Ende des bezahlten Monats.",
+        "devices_in_use": "{inUse} Geräte sind verbunden. Entferne zuerst eines unter „Geräte“.",
+        "unchanged": "Das ist schon die aktuelle Anzahl.",
+        "payment_failed": "Die Zahlung hat nicht geklappt, deshalb ist nichts geändert.",
+        "failed": "Das hat nicht geklappt. Bitte versuch es später noch einmal.",
+        "invalid": "Bitte prüfe die Anzahl.",
+        "not_active": "Im Konto sind keine Geräte gebucht.",
+        "already_active": "Du hast hier schon Geräte gebucht. Ändere die Anzahl unten.",
+        "no_store_subscription": "Dafür brauchst du ein laufendes Abo aus {store}."
+      }
     }
   },
   "Devices": {
