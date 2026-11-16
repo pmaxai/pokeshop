@@ -132,6 +132,8 @@ export type Subscription = {
   startedAt: Date;
   /** store subscriptions: the store's product id */
   storeProductId?: string | null;
+  /** how it is billed: monthly (always on the website) or yearly; null when unknown or free */
+  period?: 'monthly' | 'yearly' | null;
   /** store subscriptions: extra devices bought in the app (add-ons) and in the portal */
   devicesInStore?: number;
   devicesOnWeb?: number;
@@ -161,6 +163,8 @@ const toSub = (r: SubRow): Subscription => ({
   accountId: Number(r.account_id),
   source: r.source,
   plan: r.plan,
+  // the website sells monthly only
+  period: r.source === 'stripe' ? 'monthly' : null,
   extraDevices: r.extra_devices,
   status: r.status,
   stripeSubscriptionId: r.stripe_subscription_id,
@@ -193,6 +197,7 @@ type StoreRow = {
   state: string;
   expires_at: Date | null;
   auto_renew: boolean;
+  period: 'monthly' | 'yearly' | null;
   device_add_ons: { expires_at: string | null }[] | null;
   created_at: Date;
 };
@@ -202,6 +207,7 @@ const storeSub = (r: StoreRow, devices = { inStore: 0, onWeb: 0 }): Subscription
   accountId: Number(r.account_id),
   source: r.store,
   plan: r.plan ?? 'collector',
+  period: r.period,
   extraDevices: devices.inStore + devices.onWeb,
   devicesInStore: devices.inStore,
   devicesOnWeb: devices.onWeb,
@@ -231,7 +237,7 @@ export async function subscriptionOf(
   const [[row], [store]] = await Promise.all([
     db<SubRow[]>`SELECT * FROM subscriptions WHERE account_id = ${accountId}`,
     db<StoreRow[]>`
-      SELECT id, account_id, store, product_id, plan, state, expires_at, auto_renew,
+      SELECT id, account_id, store, product_id, plan, period, state, expires_at, auto_renew,
              device_add_ons, created_at
         FROM store_purchases
        WHERE account_id = ${accountId} AND replaced_by IS NULL AND refused IS NULL

@@ -362,6 +362,8 @@ export type AppStatus = {
   device: { id: string; name: string | null; paired_at: string };
   subscription: {
     plan: string | null;
+    /** monthly or yearly (null: unknown or free); extra devices in the app follow it */
+    base_plan: 'monthly' | 'yearly' | null;
     state: Entitlements['state'];
     /** where it is managed: web (the portal), google_play, app_store; null without one */
     source: 'web' | 'google_play' | 'app_store' | null;
@@ -411,6 +413,7 @@ export async function appStatus(
     device: { id: device.publicId, name: device.name, paired_at: device.pairedAt.toISOString() },
     subscription: {
       plan: ent.plan,
+      base_plan: ent.active ? (sub?.period ?? null) : null,
       state: ent.state,
       source: manage.source,
       manage_url: manage.url,

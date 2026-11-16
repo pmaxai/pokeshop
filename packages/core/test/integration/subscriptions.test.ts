@@ -205,6 +205,7 @@ test('pairing: QR code, device limit, same phone again, transfer, removal', asyn
     on_web: 0,
     in_use: 1,
   });
+  assert.equal(st.subscription.base_plan, 'monthly', 'the website sells monthly');
   assert.equal(st.portal_url, `${BASE}/de/konto`);
   assert.ok(new Date(st.valid_until) > new Date());
 

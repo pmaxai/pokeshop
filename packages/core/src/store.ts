@@ -589,7 +589,11 @@ export async function applyGooglePurchase(
     // test purchases (licence testers before the products are entered, the staging hooks)
     base = g.lines.find((l) => !/_device_\d+$/.test(l.productId)) ?? g.lines[0];
     if (base) {
-      plan = { plan: /creator/i.test(base.productId) ? 'creator' : 'collector', period: null };
+      plan = {
+        plan: /creator/i.test(base.productId) ? 'creator' : 'collector',
+        period:
+          base.basePlanId === 'yearly' || base.basePlanId === 'monthly' ? base.basePlanId : null,
+      };
     }
   }
   if (!base || !plan) return { ok: false, problem: 'invalid_purchase' };
