@@ -7,6 +7,7 @@ import { routing } from '@/i18n/routing';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { config } from '@/server/config';
+import { THEME_SCRIPT } from '@/components/theme-script';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -54,7 +55,11 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
   return (
-    <html lang={locale === 'de' ? 'de-AT' : 'en'}>
+    // the theme script may set data-theme before React takes over
+    <html lang={locale === 'de' ? 'de-AT' : 'en'} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <NextIntlClientProvider>
           <SiteHeader />

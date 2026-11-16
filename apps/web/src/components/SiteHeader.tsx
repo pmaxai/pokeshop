@@ -1,15 +1,18 @@
 import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { cartCount } from '@pokeshop/core/cart';
-import { Link } from '@/i18n/navigation';
+import { getLocale } from 'next-intl/server';
+import { getPathname, Link } from '@/i18n/navigation';
 import { db } from '@/server/config';
 import { currentCartId } from '@/server/cart';
 import { currentAccount } from '@/server/account';
 import { LanguageSwitch } from './LanguageSwitch';
-import { SearchForm } from './SearchForm';
+import { SearchPopup } from './SearchPopup';
+import { ThemeToggle } from './ThemeToggle';
 
-export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets'; query?: string }) {
+export async function SiteHeader({ active }: { active?: 'cards' | 'sets' | 'app' }) {
   const t = await getTranslations('Nav');
+  const locale = (await getLocale()) as 'de' | 'en';
   // Reading the cookie makes every page dynamic, which the shop pages are anyway.
   const cartId = await currentCartId();
   const count = cartId ? await cartCount(db(), cartId) : 0;
@@ -30,15 +33,21 @@ export async function SiteHeader({ active, query }: { active?: 'cards' | 'sets';
           <Link href="/sets" aria-current={active === 'sets' ? 'page' : undefined}>
             {t('sets')}
           </Link>
-          {/* App and events are only in the footer for now. */}
+          <Link href="/app" aria-current={active === 'app' ? 'page' : undefined}>
+            {t('app')}
+          </Link>
+          {/* events are only in the footer for now */}
           <Link href="/gutscheine">{t('vouchers')}</Link>
         </nav>
-        <SearchForm
-          query={query}
+        <SearchPopup
+          action={getPathname({ href: '/karten', locale })}
           label={t('searchLabel')}
           placeholder={t('searchPlaceholder')}
           button={t('searchButton')}
+          open={t('searchOpen')}
+          close={t('searchClose')}
         />
+        <ThemeToggle label={t('theme')} />
         <Suspense fallback={<span className="lang-switch">{t('switchLanguage')}</span>}>
           <LanguageSwitch label={t('switchLanguage')} title={t('switchLanguageLabel')} />
         </Suspense>
