@@ -3,7 +3,6 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
-  deleteAccount,
   LoginRequest,
   requestLoginLink,
   safeNextPath,
@@ -15,18 +14,17 @@ import {
   changeSubscription,
   ChangeRejected,
   checkSubscriber,
-  entitlements,
   MAX_EXTRA_DEVICES,
   setCancelAtPeriodEnd,
   startSubscription,
   SubscribeRejected,
-  subscriptionOf,
   validateSubscribe,
 } from '@pokeshop/core/subscriptions';
 import { createPairingCode, endDevice, PAIRING_MINUTES } from '@pokeshop/core/devices';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db } from '@/server/config';
+import { deleteAccountEverywhere } from '@/server/account-delete';
 import {
   currentAccount,
   endCurrentSession,
@@ -166,18 +164,19 @@ export async function saveSettingsAction(form: FormData) {
 
 export async function deleteAccountAction(form: FormData) {
   const locale = localeOf(form);
-  const here = getPathname({ href: '/konto/einstellungen', locale });
+  // sent from the settings page or from the public delete page; errors go back there
+  const here = getPathname({
+    href: str(form, 'back') === 'delete' ? '/konto-loeschen' : '/konto/einstellungen',
+    locale,
+  });
   const account = await signedIn(locale, here);
   if (str(form, 'confirm') !== 'on')
     redirect(`${here}?e=${pack({ errors: { confirm: 'confirm' } })}#delete`);
-  // A paid subscription is cancelled first; it ends with its month.
-  const sub = await subscriptionOf(db(), account.id);
-  if (sub?.source === 'stripe' && entitlements(sub, account).active) {
-    redirect(`${here}?e=${pack({ errors: { confirm: 'subscription' } })}#delete`);
-  }
-  await deleteAccount(db(), account.id);
+  // a running subscription stops renewing and ends with its paid period
+  const r = await deleteAccountEverywhere(account);
+  if (!r.ok) redirect(`${here}?e=${pack({ errors: { confirm: 'subscription' } })}#delete`);
   await endCurrentSession();
-  redirect(`${getPathname({ href: '/', locale })}?account_deleted=1`);
+  redirect(`${getPathname({ href: '/konto-loeschen', locale })}?done=1`);
 }
 
 // ---------------------------------------------------------------------------

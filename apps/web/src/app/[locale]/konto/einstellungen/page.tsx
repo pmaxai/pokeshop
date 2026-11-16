@@ -5,7 +5,8 @@ import type { Locale } from '@/i18n/routing';
 import { requireAccount } from '@/server/account';
 import { getCompany } from '@/server/shop';
 import { AccountShell } from '@/components/account/AccountShell';
-import { deleteAccountAction, saveSettingsAction } from '../../account-actions';
+import { DeleteAccountForm } from '@/components/account/DeleteAccountForm';
+import { saveSettingsAction } from '../../account-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,22 +95,7 @@ export default async function AccountSettingsPage({ params, searchParams }: Prop
       >
         <h2 id="del-title">{t('settings.deleteTitle')}</h2>
         <p>{t('settings.deleteText')}</p>
-        <form action={deleteAccountAction} className="stack">
-          <input type="hidden" name="locale" value={locale} />
-          <label className={errors.confirm ? 'check check--error' : 'check'}>
-            <input type="checkbox" name="confirm" /> {t('settings.deleteConfirm')}
-          </label>
-          {errors.confirm && (
-            <small className="field__error">
-              {errors.confirm === 'subscription'
-                ? t('settings.deleteSubscription')
-                : t('settings.deleteConfirmMissing')}
-            </small>
-          )}
-          <button type="submit" className="btn btn--danger-outline">
-            {t('settings.deleteButton')}
-          </button>
-        </form>
+        <DeleteAccountForm locale={locale} error={errors.confirm} back="settings" />
       </section>
     </AccountShell>
   );

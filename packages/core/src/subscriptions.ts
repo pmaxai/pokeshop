@@ -1003,7 +1003,8 @@ export async function listCustomers(
          WHERE p.account_id = a.id AND p.replaced_by IS NULL AND p.refused IS NULL
            AND p.state IN ('active', 'canceled', 'grace') AND p.expires_at > now()
          ORDER BY p.expires_at DESC LIMIT 1) sp ON true
-     WHERE (${like}::text IS NULL OR a.email LIKE ${like} OR lower(coalesce(a.name, '')) LIKE ${like}
+     WHERE a.deleted_at IS NULL
+       AND (${like}::text IS NULL OR a.email LIKE ${like} OR lower(coalesce(a.name, '')) LIKE ${like}
             OR a.public_id = ${q ?? ''})
        AND (${opts.filter ?? 'all'} = 'all'
             OR (${opts.filter ?? 'all'} = 'subscribed' AND (sp.store IS NOT NULL OR (
@@ -1052,7 +1053,9 @@ export async function subscriptionCounts(
         SELECT account_id, plan, 2 FROM subscriptions
          WHERE (source = 'stripe' AND status IN ('active', 'trialing', 'past_due'))
             OR (source = 'complimentary' AND ended_at IS NULL AND (ends_at IS NULL OR ends_at > now()))
-      ) x ORDER BY account_id, rank)
+      ) x
+      WHERE NOT EXISTS (SELECT 1 FROM accounts a WHERE a.id = x.account_id AND a.deleted_at IS NOT NULL)
+      ORDER BY account_id, rank)
     SELECT count(*) FILTER (WHERE plan = 'collector')::int AS collector,
            count(*) FILTER (WHERE plan = 'creator')::int AS creator
       FROM running`;

@@ -316,7 +316,10 @@ export async function deleteExpiredLogins(db: Db, now = new Date()): Promise<num
   const a = await db`
     DELETE FROM account_login_links WHERE created_at < ${now}::timestamptz - interval '7 days'`;
   const b = await db`DELETE FROM account_sessions WHERE expires_at < ${now}`;
-  return a.count + b.count;
+  // the app's e-mail codes are valid 10 minutes; kept a day for the hourly limit
+  const c = await db`
+    DELETE FROM app_login_codes WHERE created_at < ${now}::timestamptz - interval '1 day'`;
+  return a.count + b.count + c.count;
 }
 
 // ---------------------------------------------------------------------------
@@ -426,15 +429,78 @@ export async function accountOrders(
   }));
 }
 
+/** Days a deleted account's scrubbed row stays (devices learn why; store renewals stop). */
+export const DELETED_KEEP_DAYS = 30;
+
 /**
- * Deletes the account with its sessions. Orders stay (they are the shop's records) without the
- * link to the account.
+ * Deletes the account: its sign-ins end at once (devices answer unpaired / account_deleted),
+ * collection, missing cards, shares, sign-in identities and the S3 settings go, the address and
+ * name are removed. A running app-store subscription is marked to stop renewing (the worker
+ * tells the store). Orders and invoices stay: they are the shop's records. The scrubbed row is
+ * removed after DELETED_KEEP_DAYS. Returns the store subscriptions that must be cancelled by
+ * the customer themselves (App Store), if any.
  */
-export async function deleteAccount(sql: Sql, accountId: number): Promise<void> {
-  await sql.begin(async (tx) => {
-    const [a] = await tx<{ email: string }[]>`SELECT email FROM accounts WHERE id = ${accountId}`;
-    if (!a) return;
+export async function deleteAccount(
+  sql: Sql,
+  accountId: number,
+  now = new Date(),
+): Promise<{ deleted: boolean; cancelInStore: { store: string; productId: string }[] }> {
+  return sql.begin(async (tx) => {
+    const [a] = await tx<{ email: string; public_id: string; deleted_at: Date | null }[]>`
+      SELECT email, public_id, deleted_at FROM accounts WHERE id = ${accountId} FOR UPDATE`;
+    if (!a || a.deleted_at) return { deleted: false, cancelInStore: [] };
+    await tx`
+      UPDATE devices SET ended_at = ${now}, end_reason = 'account_deleted'
+       WHERE account_id = ${accountId} AND ended_at IS NULL`;
+    await tx`DELETE FROM account_sessions WHERE account_id = ${accountId}`;
     await tx`DELETE FROM account_login_links WHERE email = ${a.email}`;
-    await tx`DELETE FROM accounts WHERE id = ${accountId}`;
+    await tx`DELETE FROM app_login_codes WHERE email = ${a.email}`;
+    await tx`DELETE FROM account_identities WHERE account_id = ${accountId}`;
+    await tx`DELETE FROM pairing_codes WHERE account_id = ${accountId}`;
+    await tx`DELETE FROM collection_shares WHERE account_id = ${accountId}`;
+    await tx`DELETE FROM collection_items WHERE account_id = ${accountId}`;
+    await tx`DELETE FROM collection_binders WHERE account_id = ${accountId}`;
+    await tx`DELETE FROM wanted_cards WHERE account_id = ${accountId}`;
+    await tx`DELETE FROM account_services WHERE account_id = ${accountId}`;
+    const running = await tx<{ store: string; product_id: string }[]>`
+      UPDATE store_purchases SET cancel_requested_at = ${now}
+       WHERE account_id = ${accountId} AND replaced_by IS NULL AND auto_renew
+         AND state IN ('active', 'canceled', 'grace', 'on_hold', 'paused')
+       RETURNING store, product_id`;
+    await tx`
+      UPDATE accounts SET deleted_at = ${now}, email = ${`deleted-${a.public_id}@deleted.invalid`},
+             name = NULL, phone = NULL, shipping_address = NULL, webshop_host = NULL,
+             admin_note = NULL, email_verified_at = NULL, billing = NULL
+       WHERE id = ${accountId}`;
+    return {
+      deleted: true,
+      cancelInStore: running
+        .filter((r) => r.store === 'app_store')
+        .map((r) => ({ store: r.store, productId: r.product_id })),
+    };
   });
+}
+
+/**
+ * Removes deleted accounts after DELETED_KEEP_DAYS (worker) – later only while a cancelled
+ * website subscription still runs, a store renewal is not stopped yet or usage is still to be
+ * billed. Store purchases outlive the account without it, for seven years.
+ */
+export async function purgeDeletedAccounts(db: Db, now = new Date()): Promise<number> {
+  const r = await db`
+    DELETE FROM accounts a
+     WHERE a.deleted_at < ${now}::timestamptz - make_interval(days => ${DELETED_KEEP_DAYS})
+       AND NOT EXISTS (SELECT 1 FROM subscriptions s
+                        WHERE s.account_id = a.id AND s.source = 'stripe' AND s.ended_at IS NULL
+                          AND s.current_period_end > ${now})
+       AND NOT EXISTS (SELECT 1 FROM store_purchases p
+                        WHERE p.account_id = a.id AND p.cancel_requested_at IS NOT NULL
+                          AND p.cancelled_at_store IS NULL
+                          AND p.state NOT IN ('expired', 'revoked'))
+       AND NOT EXISTS (SELECT 1 FROM usage_events u
+                        WHERE u.account_id = a.id AND u.billing = 'queued')`;
+  await db`
+    DELETE FROM store_purchases
+     WHERE account_id IS NULL AND updated_at < ${now}::timestamptz - interval '7 years'`;
+  return r.count;
 }

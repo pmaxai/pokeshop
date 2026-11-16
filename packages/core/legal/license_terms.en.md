@@ -13,12 +13,12 @@ Last updated: November 2026
 
 1. Consumers living in the European Union.
 2. Businesses established in the European Union. Businesses outside Austria give their VAT identification number if they want to pay the net price (point 6.3); we check it with the EU's VAT Information Exchange System (VIES) when they subscribe.
-3. Subscribing with a residence or seat outside the European Union is not possible.
+3. Subscribing on the website with a residence or seat outside the European Union is not possible. For a subscription through Google Play, point 8 applies.
 
 ## 3. Customer account and conclusion of the contract
 
-1. You subscribe in your customer account. You create the account with your e-mail address; you log in with a link we send you by e-mail, there is no password.
-2. You choose Collector or Creator and the number of extra devices, say whether you subscribe as a private person or a business, and give your billing details. You accept these subscription terms, ask for the subscription to start right away (point 9) and click "Continue to payment". Until the payment is completed you can check and correct everything you entered.
+1. You subscribe in your customer account. You create the account with your e-mail address; you log in with a link we send you by e-mail, there is no password. In the app you can also create the account and sign in with Google or with a code sent by e-mail.
+2. You choose Collector or Creator and the number of extra devices, say whether you subscribe as a private person or a business, and give your billing details. You accept these subscription terms, ask for the subscription to start right away (point 10) and click "Continue to payment". Until the payment is completed you can check and correct everything you entered.
 3. You complete the payment with our payment service provider Stripe. The contract is concluded when the first payment is received. You receive a confirmation with the invoice and these subscription terms by e-mail right after. We store the contract text.
 
 ## 4. Services
@@ -51,11 +51,21 @@ Last updated: November 2026
 2. We issue the invoices through Stripe and send them to you as a PDF by e-mail; you can download them in the account at any time.
 3. If a payment fails, Stripe tries again over the following days and we let you know by e-mail. Until then everything keeps working. If the payment still fails, the subscription ends.
 
-## 8. Blocking
+## 8. Subscribing through Google Play
+
+1. In the app from Google Play you can also take out Collector or Creator through Google Play, monthly or yearly, in every country where we offer the app there. Point 2 does not apply to this. The subscription belongs to the account you are signed in with in the app.
+2. The contract is concluded once Google confirms the purchase and we have accepted it. These subscription terms apply; the purchase itself is also governed by Google Play's terms.
+3. **Price, payment and receipt:** the price shown by Google Play at the purchase applies, including taxes. Google collects the amount and issues the receipt; points 6 and 7 do not apply to this. Extra devices and the services on request (point 4.5) are only available with a subscription on the website.
+4. **Term, changes and cancellation:** the subscription renews for the chosen period each time until you cancel it. You cancel in Google Play under "Subscriptions", to the end of the current period; until then everything keeps working. You change between Collector and Creator in the app; Google bills the change. Points 5.1 to 5.3 do not apply to this. After the end, point 5.2 applies: your collection stays saved.
+5. **Refunds** are requested from Google; Google Play's rules apply. Your statutory rights are not affected.
+6. **One paid subscription per account:** if the account already has a paid subscription on the website, we do not accept a purchase in Google Play; Google then refunds it by itself after three days. While a subscription from Google Play is running, you cannot subscribe on the website.
+7. **Deleting the account:** if you delete your account, we stop the renewal in Google Play. The subscription then ends with the paid period; there is no refund for that period.
+
+## 9. Blocking
 
 We may block a subscription if a payment was charged back or the app or the portal are misused, for example by sharing access or by retrieving price data in bulk.
 
-## 9. Withdrawal information (for consumers)
+## 10. Withdrawal information (for consumers)
 
 ### Right of withdrawal
 
@@ -88,33 +98,34 @@ I/We (\*) hereby give notice that I/we (\*) withdraw from my/our (\*) contract f
 
 (\*) Delete as appropriate.
 
-## 10. Warranty
+## 11. Warranty
 
 1. The statutory warranty for digital services applies (for consumers the Austrian Consumer Warranty Act, VGG) for the duration of the subscription.
 2. Please report faults to {{seller.email}}. Your statutory rights do not depend on it.
 
-## 11. Liability
+## 12. Liability
 
 1. We are liable without limitation for intent and gross negligence and for personal injury.
 2. We are not liable for slight negligence, except for personal injury and where mandatory statutory provisions say otherwise. Towards businesses we are not liable for lost profit and consequential damage, for example from decisions based on the prices shown.
 
-## 12. Data protection
+## 13. Data protection
 
 1. {{seller.name}} is the controller for the data of the subscription (contact: {{seller.email}}). We have not appointed a data protection officer because we are not required to.
 2. **Subscribing and billing:** name, where applicable company and VAT identification number, e-mail address, billing address, plan, number of devices, payment status and invoices. We check a VAT identification number with VIES, the European Commission's service, when you subscribe; we only send the number.
 3. **Devices:** For each connected device we store a random device ID that the app creates, the device name (such as the phone model), the app version, the times of connecting and of the last check, and a hashed token with which the app signs in. The app asks for the subscription at start and at most about once an hour; it only sends its device token and the app version. We use IP addresses only briefly in memory to fend off too many requests; they are not stored.
 4. **Portal:** your collection (cards, quantities, condition, language, printing, voluntarily purchase prices and notes), your missing cards and your shares. If you share your collection with a specific person, we store their e-mail address and send them the link. Your list of missing cards is also seen by the operator of {{company.public_name}}, so it can make you offers and tell you as soon as a matching card is in the shop; this is part of the service. Cards you buy in the shop are added to your collection by the shop.
 5. **Services on request:** the amounts used (megabytes uploaded, video minutes) with the time and the name of the recording.
-6. Processors: Stripe (payment, VAT calculation and invoice; Stripe Payments Europe, Ltd., Dublin, Ireland; also as an independent controller for fraud prevention), Microsoft (sending the e-mails through Microsoft 365; Microsoft Ireland Operations Limited, Dublin, Ireland) and the operator of {{company.public_name}}, which runs the website, the customer account and the server (data centre in Europe, see the shop's privacy policy: {{privacy_url}}). Stripe and Microsoft may also process data in the USA; they are certified under the EU-US Data Privacy Framework and also use standard contractual clauses.
-7. The legal bases are the performance of the contract (Art. 6 (1) (b) GDPR), our legal obligations to issue invoices and check VAT identification numbers (Art. 6 (1) (c) GDPR) and our legitimate interest in protection against misuse (Art. 6 (1) (f) GDPR).
-8. We keep subscription, device and portal data for as long as your account exists; removed devices are deleted after one year. Invoice data is kept for seven years (§ 132 BAO).
-9. You have the right of access, rectification, erasure, restriction of processing, data portability and objection. Contact {{seller.email}} for this. You can also lodge a complaint with the Austrian Data Protection Authority (www.dsb.gv.at).
+6. **Signing in to the app and Google Play:** when you sign in with Google, the ID of your Google account and your e-mail address; for a subscription through Google Play, what Google tells us about it (purchase token, order number, product, status, end of term, country of purchase), but no payment details. More on this is in the app's privacy policy: {{app_privacy_url}}.
+7. Processors: Stripe (payment, VAT calculation and invoice; Stripe Payments Europe, Ltd., Dublin, Ireland; also as an independent controller for fraud prevention), Microsoft (sending the e-mails through Microsoft 365; Microsoft Ireland Operations Limited, Dublin, Ireland) and the operator of {{company.public_name}}, which runs the website, the customer account and the server (data centre in Europe, see the shop's privacy policy: {{privacy_url}}). Stripe and Microsoft may also process data in the USA; they are certified under the EU-US Data Privacy Framework and also use standard contractual clauses.
+8. The legal bases are the performance of the contract (Art. 6 (1) (b) GDPR), our legal obligations to issue invoices and check VAT identification numbers (Art. 6 (1) (c) GDPR) and our legitimate interest in protection against misuse (Art. 6 (1) (f) GDPR).
+9. We keep subscription, device and portal data for as long as your account exists; removed devices are deleted after one year. How to delete your account and what stays is explained at {{delete_account_url}}. Invoice data is kept for seven years (§ 132 BAO).
+10. You have the right of access, rectification, erasure, restriction of processing, data portability and objection. Contact {{seller.email}} for this. You can also lodge a complaint with the Austrian Data Protection Authority (www.dsb.gv.at).
 
-## 13. Complaints and dispute resolution
+## 14. Complaints and dispute resolution
 
 Please send complaints to {{seller.email}}; we will answer as soon as possible. We are not obliged to take part in dispute resolution proceedings before a consumer arbitration body.
 
-## 14. Applicable law and place of jurisdiction
+## 15. Applicable law and place of jurisdiction
 
 1. Austrian law applies, excluding the UN Convention on Contracts for the International Sale of Goods and the conflict-of-law rules of private international law. For consumers this choice of law applies only insofar as it does not deprive them of the protection afforded by the mandatory provisions of the law of the state in which they have their habitual residence.
 2. Actions against consumers resident or habitually resident in Austria are heard by the court in whose district the consumer lives or habitually resides (§ 14 KSchG). For businesses, the place of jurisdiction is the court with subject-matter jurisdiction for 2440 Moosbrunn.

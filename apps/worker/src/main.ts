@@ -11,11 +11,13 @@ import { billingFromEnv } from '@pokeshop/core/billing';
 import { reportUsage } from '@pokeshop/core/usage';
 import { deleteUnconfirmedAppAccounts, resetReviewAccount } from '@pokeshop/core/app-signin';
 import {
+  cancelRequestedRenewals,
   googlePlayClient,
   googlePlayPackage,
   parseServiceAccount,
   recheckGooglePurchases,
 } from '@pokeshop/core/store';
+import { purgeDeletedAccounts } from '@pokeshop/core/accounts';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -286,6 +288,18 @@ async function schedule() {
       console.error('[store] re-reading Google subscriptions failed:', (e as Error).message);
     }
   }
+  // deleted accounts: stop their store renewals, remove the scrubbed rows after 30 days
+  try {
+    const c = await cancelRequestedRenewals(sql, play);
+    if (c.cancelled || c.failed)
+      console.log(
+        `[store] ${c.cancelled} renewal(s) of deleted accounts stopped, ${c.failed} failed`,
+      );
+  } catch (e) {
+    console.error('[store] stopping renewals failed:', (e as Error).message);
+  }
+  const purged = await purgeDeletedAccounts(sql);
+  if (purged) console.log(`[accounts] ${purged} deleted account(s) removed`);
   // accounts made in the app (Google) that were never confirmed and never bought: after 30 days
   const unconfirmed = await deleteUnconfirmedAppAccounts(sql);
   if (unconfirmed) console.log(`[accounts] ${unconfirmed} unconfirmed app account(s) deleted`);

@@ -58,6 +58,8 @@ export async function enqueueMail(
     dedupeKey?: string;
   },
 ): Promise<number | null> {
+  // a deleted account's address is a placeholder; nothing goes there
+  if (mail.to.endsWith('@deleted.invalid')) return null;
   const [r] = await db<{ id: number }[]>`
     INSERT INTO outbox (template, dedupe_key, to_address, reply_to, locale, payload, attachments)
     VALUES (${mail.template}, ${mail.dedupeKey ?? null}, ${mail.to}, ${mail.replyTo ?? null},

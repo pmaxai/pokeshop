@@ -54,11 +54,11 @@ Wenn Sie den Vertrag über „Bestellung retournieren (Vertrag widerrufen)“ wi
 
 Ein Kundenkonto legen Sie mit Ihrer E-Mail-Adresse an: Wir schicken Ihnen einen Anmeldelink, der 20 Minuten und einmal gilt; beim ersten Öffnen entsteht das Konto. Wir speichern Ihre E-Mail-Adresse, Ihre Sprache, den Zeitpunkt der letzten Anmeldung und, wenn Sie sie angeben, Name, Telefonnummer und eine Lieferadresse, mit der die Kasse Ihre Bestellungen ausfüllt. Ihre Bestellungen ordnen wir dem Konto zu, auch frühere Bestellungen mit derselben E-Mail-Adresse. Für die Anmeldung speichern wir zum Cookie „oc_account“ nur einen gehashten Wert, keine IP-Adresse und keine Angaben zu Ihrem Browser. Anmeldelinks löschen wir nach sieben Tagen. Gegen Missbrauch zählen wir Anmeldeversuche je IP-Adresse 15 Minuten lang im Arbeitsspeicher, ohne sie zu speichern.
 
-Rechtsgrundlage ist die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), für den Schutz vor Missbrauch unser berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO). Sie können Ihr Konto jederzeit unter „Einstellungen“ löschen; Bestellungen bewahren wir weiter auf (Punkt 3), aber ohne Konto.
+Rechtsgrundlage ist die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), für den Schutz vor Missbrauch unser berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO). Sie können Ihr Konto jederzeit unter „Einstellungen“ löschen ({{delete_account_url}}); Bestellungen bewahren wir weiter auf (Punkt 3), aber ohne Konto.
 
 ## 10. App-Abo und Portal (Overpriced Cardboard Scanner)
 
-Das Abo für die App Overpriced Cardboard Scanner mit dem Web-Portal (Sammlung, Preise, fehlende Karten, Teilen, Geräte) verkauft und erbringt die {{seller.name}}. Für die Daten des Abos ist sie verantwortlich; was sie verarbeitet, steht in den Datenschutzhinweisen ihrer Abo-Bedingungen ({{license_terms_url}}). Wir betreiben dafür Website, Kundenkonto und Server und verarbeiten die Daten in ihrem Auftrag (Art. 28 DSGVO).
+Das Abo für die App Overpriced Cardboard Scanner mit dem Web-Portal (Sammlung, Preise, fehlende Karten, Teilen, Geräte) verkauft und erbringt die {{seller.name}}. Für die Daten des Abos und der App ist sie verantwortlich; was sie verarbeitet, steht in der Datenschutzerklärung der App ({{app_privacy_url}}) und in den Datenschutzhinweisen ihrer Abo-Bedingungen ({{license_terms_url}}). Wir betreiben dafür Website, Kundenkonto und Server und verarbeiten die Daten in ihrem Auftrag (Art. 28 DSGVO).
 
 Zusätzlich sehen wir als Shop Ihre Liste fehlender Karten, um Ihnen Angebote zu machen und Sie zu benachrichtigen, sobald eine passende Karte im Shop ist, und wir tragen Karten, die Sie im Shop kaufen, in Ihre Sammlung ein. Das ist Teil der Leistung, die Sie mit dem Abo nutzen (Art. 6 Abs. 1 lit. b DSGVO).
 

@@ -710,3 +710,47 @@ export function parseDeveloperNotification(body: unknown): DeveloperNotification
   if (n.testNotification) return { kind: 'test', packageName };
   return { kind: 'other', packageName };
 }
+
+/**
+ * Deleted accounts: stop the renewal of their Google Play subscriptions (they run to the end of
+ * the paid period). Test purchases are only marked. Worker; also right after the deletion.
+ */
+export async function cancelRequestedRenewals(
+  sql: Sql,
+  play: GooglePlay | null,
+  now = new Date(),
+): Promise<{ cancelled: number; failed: number }> {
+  const due = await sql<
+    { id: number; product_id: string; purchase_token: string; test: boolean }[]
+  >`
+    SELECT id, product_id, purchase_token, test FROM store_purchases
+     WHERE store = 'google_play' AND cancel_requested_at IS NOT NULL AND cancelled_at_store IS NULL
+       AND state NOT IN ('expired', 'revoked')
+     ORDER BY cancel_requested_at LIMIT 100`;
+  let cancelled = 0;
+  let failed = 0;
+  for (const d of due) {
+    try {
+      // purchases made with the test hooks (test_… tokens) do not exist at Google
+      if (!(d.test && d.purchase_token.startsWith('test_'))) {
+        if (!play) {
+          failed++;
+          continue;
+        }
+        await play.cancel(d.product_id, d.purchase_token);
+      }
+      await sql`
+        UPDATE store_purchases SET cancelled_at_store = ${now}, auto_renew = false,
+               state = CASE WHEN state = 'active' THEN 'canceled' ELSE state END
+         WHERE id = ${d.id}`;
+      cancelled++;
+    } catch (e) {
+      if (e instanceof PurchaseInvalid) {
+        await sql`UPDATE store_purchases SET cancelled_at_store = ${now} WHERE id = ${d.id}`;
+      } else {
+        failed++;
+      }
+    }
+  }
+  return { cancelled, failed };
+}

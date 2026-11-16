@@ -135,7 +135,9 @@
     "events": "Events",
     "app": "Overpriced Cardboard Scanner",
     "vouchers": "Gift vouchers",
-    "contact": "Contact"
+    "contact": "Contact",
+    "appPrivacy": "App privacy",
+    "deleteAccount": "Delete account"
   },
   "Conditions": {
     "M": "Mint",
@@ -701,11 +703,11 @@
       "save": "Save",
       "saved": "Saved.",
       "deleteTitle": "Delete account",
-      "deleteText": "This deletes your account and your saved address and logs you out everywhere. Your orders stay with the shop, as the law requires, but are no longer linked to an account.",
+      "deleteText": "This deletes your account with your collection, missing cards, shares and saved address, and signs the app out on all devices. A running subscription – from the website or from Google Play – then stops renewing and ends with the paid period. Your orders and invoices stay with the shop, as the law requires, but are no longer linked to an account.",
       "deleteConfirm": "Yes, delete my account",
       "deleteConfirmMissing": "Please tick the box to confirm.",
       "deleteButton": "Delete account",
-      "deleteSubscription": "You still have a running subscription. Cancel it under “Subscription” first; once it has ended you can delete the account."
+      "deleteSubscription": "Your subscription could not be cancelled just now, so the account has not been deleted yet. Please try again in a few minutes."
     },
     "errors": {
       "title": "Please check the marked fields.",
@@ -1108,5 +1110,25 @@
     "expired": "This link has expired. Ask the person to send a new one.",
     "unknown": "This link doesn’t work (any more).",
     "note": "Values from the Overpriced Cardboard Scanner’s data (Cardmarket and TCGplayer), guide values only."
+  },
+  "DeleteAccount": {
+    "title": "Delete your account",
+    "done": "Your account has been deleted. The app is signed out on all devices.",
+    "intro": "This page explains how to delete your Overpriced Cardboard account – the account you sign in with in the scanner app and the customer portal.",
+    "howTitle": "How to delete your account",
+    "inApp": "In the app: with the “Delete account” button in the account section.",
+    "online": "Here on the website: <link>log in</link> and delete the account on this page.",
+    "byMail": "By e-mail: write from your account's address to <mail></mail>. We then delete the account within a few days and confirm it to you.",
+    "mailSubject": "Delete my account",
+    "signedInTitle": "Delete your account",
+    "signedInText": "You are logged in as {email}.",
+    "whatTitle": "What is deleted and what stays",
+    "whatGone": "Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google), your S3 credentials, your name and your saved address. The e-mail address is removed from the account.",
+    "whatDevices": "The app is signed out on all devices at once.",
+    "whatKept": "Orders and invoices stay as long as the law requires (7 years in Austria) but are no longer linked to an account. Google Play purchases stay on record without your e-mail address.",
+    "whatWhen": "What is left of the account is removed for good after 30 days.",
+    "subTitle": "Running subscription",
+    "subText": "After deleting, a subscription no longer renews and ends with the paid period: we cancel a website subscription ourselves, and a Google Play one too. Deleting does not refund the current period.",
+    "privacy": "More on what data the app and the account keep is in the <link>app's privacy policy</link>."
   }
 }
