@@ -10,6 +10,12 @@ import { sendWantedAlerts, syncWantedPurchases } from '@pokeshop/core/wanted';
 import { billingFromEnv } from '@pokeshop/core/billing';
 import { reportUsage } from '@pokeshop/core/usage';
 import { deleteUnconfirmedAppAccounts, resetReviewAccount } from '@pokeshop/core/app-signin';
+import {
+  googlePlayClient,
+  googlePlayPackage,
+  parseServiceAccount,
+  recheckGooglePurchases,
+} from '@pokeshop/core/store';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -56,6 +62,11 @@ const gmbhPayments = paymentsFromEnv(process.env, 'gmbh');
 // Stripe Billing of the GmbH: usage of S3 and the pipeline goes to its meters. The local
 // stand-in lives in the web process, so locally the usage stays queued.
 const billing = billingFromEnv(process.env);
+// Google Play: re-read subscriptions about to run out (missed notifications)
+const playAccount = parseServiceAccount(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT);
+const play = playAccount
+  ? googlePlayClient({ packageName: googlePlayPackage(), account: playAccount })
+  : null;
 const mailer = mailTransportFromEnv();
 const licenses = licenseClientFromEnv();
 let stopping = false;
@@ -264,6 +275,15 @@ async function schedule() {
     } catch (e) {
       // Stripe unreachable: the reports stay queued for the next run
       console.error('[usage] reporting to Stripe failed:', (e as Error).message);
+    }
+  }
+  if (play) {
+    try {
+      const g = await recheckGooglePurchases(sql, play);
+      if (g.checked || g.failed)
+        console.log(`[store] ${g.checked} Google subscription(s) re-read, ${g.failed} failed`);
+    } catch (e) {
+      console.error('[store] re-reading Google subscriptions failed:', (e as Error).message);
     }
   }
   // accounts made in the app (Google) that were never confirmed and never bought: after 30 days

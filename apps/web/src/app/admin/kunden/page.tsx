@@ -42,7 +42,8 @@ export default async function Customers({
       </dl>
       {user.role === 'owner' && (
         <p>
-          <a href="/admin/kunden/preise">Abo-Preise</a>
+          <a href="/admin/kunden/preise">Abo-Preise</a> ·{' '}
+          <a href="/admin/kunden/stores">App-Stores</a>
         </p>
       )}
       <form className="inline-form" method="get">

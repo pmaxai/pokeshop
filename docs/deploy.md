@@ -261,7 +261,51 @@ The app checks the subscription at `https://<host>/api/app/v1/…` (docs/app-acc
 old licence service (`license.<host>`) keeps answering app builds with licence keys until the app
 is switched to account pairing; licences are no longer sold.
 
-## 10. Backups and restore test
+## 10. App stores (Google Play)
+
+The store editions of the scanner app sell Collector and Creator in Google Play
+(docs/app-account-api.md › Sign-in, Buying in Google Play). Set up once, in the company's
+Google Cloud project and the Play Console of the app `com.overpricedcardboard.app`:
+
+1. **Sign in with Google** – Google Cloud › APIs & Services › Credentials: an OAuth client of type
+   _Web application_ (the app passes its id as server client id) plus an _Android_ client with the
+   app's package name and signing certificates (SHA-1 of the upload and the Play app signing key).
+   Put the web client's id into `GOOGLE_OAUTH_CLIENT_IDS` (comma-separated if there are more) and
+   give it to the app team. The OAuth consent screen needs the privacy policy URL.
+2. **Products** – Play Console › Monetize › Subscriptions: one subscription per plan, each with
+   two auto-renewing base plans (monthly, yearly; yearly = 12 × monthly − 10 %, set per country by
+   hand). Turn on the grace period. Enter the product and base plan ids in Admin › Kunden & Abos ›
+   App-Stores. An id can never be reused once created.
+3. **Service account for the Play Developer API** – Google Cloud › IAM: a service account with a
+   JSON key; enable the _Google Play Android Developer API_ in the project. In the Play Console ›
+   Users and permissions, invite the service account's e-mail with _View financial data_ and
+   _Manage orders and subscriptions_ for the app. Put the key file into
+   `GOOGLE_PLAY_SERVICE_ACCOUNT` (the JSON, or base64 of it, in single quotes). Web and worker
+   read it.
+4. **Notifications** – Google Cloud › Pub/Sub: a topic (e.g. `play-billing`) and grant
+   `google-play-developer-notifications@system.gserviceaccount.com` the role _Pub/Sub Publisher_
+   on it. Add a **push** subscription to `https://overpricedcardboard.com/api/store/google/notifications`
+   (staging: `https://staging…/api/store/google/notifications`) with _Enable authentication_ and a
+   service account of the project; leave the audience empty (= the push URL). Put that service
+   account's e-mail into `GOOGLE_PUBSUB_SERVICE_ACCOUNT`. Play Console › Monetization setup: the
+   topic's full name, then _Send test notification_ (the worker log shows
+   `[store] Google notification: test`).
+5. **Testing** – Play Console › License testing: testers buy for free and their subscriptions
+   renew every few minutes. Staging with `STORE_TEST_HOOKS=1` also accepts `test_…` purchase
+   tokens and test sign-ins without Google.
+6. **Review account** – set `REVIEW_LOGIN_CODE` (and `REVIEW_EMAIL` if it isn't
+   `review@overpricedcardboard.com`) and write e-mail and code into the review notes of the Play
+   Console (App content › App access). If recordings are to be uploaded in review, give that
+   account S3 settings of a separate test bucket.
+
+What the server does: every report from the app and every notification reads the subscription
+from Google again and stores it (Admin › Kunden › customer › Käufe in den App-Stores); the
+worker re-reads every subscription that runs out within 2 days twice a day. A purchase on an
+account that already has a paid subscription is not acknowledged, so Google refunds it after 3
+days. Usage services (S3, pipeline) are billed through Stripe and are not billed for store
+subscribers.
+
+## 11. Backups and restore test
 
 The vServer (including the `media` volume with product images) and the PostgreSQL server are
 covered by the existing backups. Once a quarter, restore the latest `pokeshop` dump into a

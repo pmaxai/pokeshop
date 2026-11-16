@@ -11,7 +11,12 @@ import {
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
-import { dateTime, STATUS_LABELS, subscriptionStatusLabel as statusLabel } from '../../labels';
+import {
+  STORE_STATE,
+  dateTime,
+  STATUS_LABELS,
+  subscriptionStatusLabel as statusLabel,
+} from '../../labels';
 import {
   adminCancelAction,
   adminNoteAction,
@@ -30,6 +35,7 @@ import {
   usageSince,
 } from '@pokeshop/core/usage';
 import { apiMasterKey } from '@/server/config';
+import { storeManageUrl, storePurchasesOf } from '@pokeshop/core/store';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Kunde' };
@@ -77,6 +83,7 @@ export default async function Customer({
     recentUsage(db(), id, 10),
   ]);
   const usage = await usageSince(db(), id, period);
+  const purchases = await storePurchasesOf(db(), id);
   const owner = user.role === 'owner';
   const test = (process.env.STRIPE_LICENSE_SECRET_KEY ?? '').startsWith('sk_test');
   const dash = (kind: string, sid: string) =>
@@ -92,6 +99,18 @@ export default async function Customer({
         {account.name ?? 'ohne Namen'} · {account.publicId} · Sprache{' '}
         {account.locale === 'de' ? 'Deutsch' : 'Englisch'} · angelegt {dateTime(account.createdAt)}{' '}
         · zuletzt angemeldet {dateTime(account.lastLoginAt)}
+        {account.signupVia !== 'portal' && (
+          <>
+            {' '}
+            · angelegt in der App (
+            {
+              { google: 'Google', apple: 'Apple', email: 'E-Mail-Code', review: 'Review' }[
+                account.signupVia
+              ]
+            }
+            ){account.emailVerified ? '' : ', E-Mail-Adresse noch nicht bestätigt'}
+          </>
+        )}
       </p>
 
       <section className="panel">
@@ -140,6 +159,17 @@ export default async function Customer({
                     </>
                   )}
                 </dd>
+              </>
+            )}
+            {(sub.source === 'google_play' || sub.source === 'app_store') && (
+              <>
+                <dt>Gekauft in</dt>
+                <dd>
+                  {sub.source === 'google_play' ? 'Google Play' : 'App Store'} · Produkt{' '}
+                  <code>{sub.storeProductId}</code> · verwaltet und gekündigt im Store, nicht hier
+                </dd>
+                <dt>{sub.cancelAtPeriodEnd ? 'Läuft bis' : 'Verlängert sich am'}</dt>
+                <dd>{dateTime(sub.currentPeriodEnd)}</dd>
               </>
             )}
             {sub.source === 'complimentary' && (
@@ -298,6 +328,69 @@ export default async function Customer({
             </tbody>
           </table>
         </div>
+      )}
+
+      {purchases.length > 0 && (
+        <>
+          <h2>Käufe in den App-Stores</h2>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Store</th>
+                  <th>Produkt</th>
+                  <th>Status</th>
+                  <th>Läuft bis</th>
+                  <th>Bestellung</th>
+                  <th>Gekauft</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchases.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <a
+                        href={storeManageUrl(p.store, p.productId)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {p.store === 'google_play' ? 'Google Play' : 'App Store'}
+                      </a>
+                      {p.test && <div className="muted">Testkauf</div>}
+                    </td>
+                    <td>
+                      <code>{p.productId}</code>
+                      {p.plan && (
+                        <div className="muted">
+                          {PLAN[p.plan]}
+                          {p.period ? `, ${p.period === 'yearly' ? 'jährlich' : 'monatlich'}` : ''}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {STORE_STATE[p.state] ?? p.state}
+                      {p.refused && <div className="muted">abgelehnt: hatte schon ein Abo</div>}
+                      {p.replacedBy && <div className="muted">ersetzt (Wechsel)</div>}
+                      {!p.acknowledged && !p.refused && p.state !== 'pending' && (
+                        <div className="muted">nicht bestätigt</div>
+                      )}
+                    </td>
+                    <td>
+                      {dateTime(p.expiresAt)}
+                      <div className="muted">
+                        {p.autoRenew ? 'verlängert sich' : 'verlängert sich nicht'}
+                      </div>
+                    </td>
+                    <td>
+                      <code>{p.latestOrderId ?? '–'}</code>
+                    </td>
+                    <td>{dateTime(p.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <h2 id="dienste">Dienste nach Nutzung (Creator)</h2>

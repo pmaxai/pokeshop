@@ -851,6 +851,12 @@
       "pipeline": "Automatic Content Processing (video minutes)",
       "billed": "Amounts are approximate (incl. VAT); they are billed with the next subscription invoice.",
       "notBilled": "Usage is not billed with your subscription."
+    },
+    "store": {
+      "google_play": "Google Play",
+      "app_store": "the App Store",
+      "text": "You subscribed in {store}. Changes, cancelling and payment happen there.",
+      "manage": "Manage in {store}"
     }
   },
   "Devices": {

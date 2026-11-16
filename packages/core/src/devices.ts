@@ -6,6 +6,7 @@ import { randomInt } from 'node:crypto';
 import QRCode from 'qrcode';
 import { accountById, newPublicId, newToken, tokenHash, type Account } from './accounts.ts';
 import type { Db, Sql } from './db.ts';
+import { storeManageUrl } from './store.ts';
 import {
   accountEntitlements,
   entitlements,
@@ -429,5 +430,8 @@ export function subscriptionManagement(
   opts: { portalUrl: string },
 ): { source: AppStatus['subscription']['source']; url: string | null } {
   if (!sub) return { source: null, url: null };
+  if (sub.source === 'google_play' || sub.source === 'app_store') {
+    return { source: sub.source, url: storeManageUrl(sub.source, sub.storeProductId) };
+  }
   return { source: 'web', url: opts.portalUrl };
 }
