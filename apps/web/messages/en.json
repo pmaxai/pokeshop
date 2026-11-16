@@ -26,9 +26,12 @@
     "cartCount": "Cart, {count, plural, =0 {empty} one {# card} other {# cards}}",
     "events": "Events",
     "app": "App",
-    "vouchers": "Gift vouchers",
+    "vouchers": "Vouchers",
     "account": "Account",
-    "login": "Log in"
+    "login": "Log in",
+    "searchOpen": "Open search (key /)",
+    "searchClose": "Close search",
+    "theme": "Switch between light and dark"
   },
   "Home": {
     "title": "Single Pokémon cards from every series and language",
@@ -133,8 +136,8 @@
     "withdrawalInfo": "Right of withdrawal",
     "withdraw": "Return an order (withdraw from contract)",
     "events": "Events",
-    "app": "Overpriced Cardboard Scanner",
-    "vouchers": "Gift vouchers",
+    "app": "Mobile Phone App",
+    "vouchers": "Vouchers",
     "contact": "Contact",
     "appPrivacy": "App privacy",
     "deleteAccount": "Delete account"
@@ -402,7 +405,7 @@
     "metaDescription": "The Android app by Overpriced Cardboard: scan a card and see the Cardmarket price of the right printing, even without signal. Subscription from €7 a month, with a web portal for your collection.",
     "beta": "Android Beta",
     "tagline": "Scan a card and check current prices. Even without signal.",
-    "lead": "The Overpriced Cardboard Scanner recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, Card Shows and openings.",
+    "lead": "The Overpriced Cardboard Scanner recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
     "price": "from {price} a month",
     "priceNote": "Collector, VAT included, cancel monthly",
     "buy": "Choose a plan",

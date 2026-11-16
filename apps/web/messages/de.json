@@ -28,7 +28,10 @@
     "app": "App",
     "vouchers": "Gutscheine",
     "account": "Konto",
-    "login": "Anmelden"
+    "login": "Anmelden",
+    "searchOpen": "Suche öffnen (Taste /)",
+    "searchClose": "Suche schließen",
+    "theme": "Hell oder dunkel umschalten"
   },
   "Home": {
     "title": "Pokémon-Einzelkarten aus allen Serien und Sprachen",
@@ -133,7 +136,7 @@
     "withdrawalInfo": "Widerrufsbelehrung",
     "withdraw": "Bestellung retournieren (Vertrag widerrufen)",
     "events": "Veranstaltungen",
-    "app": "Overpriced Cardboard Scanner",
+    "app": "Handy-App",
     "vouchers": "Gutscheine",
     "contact": "Kontakt",
     "appPrivacy": "Datenschutz der App",
