@@ -86,8 +86,12 @@ cp infra/caddy/.env.example infra/caddy/.env   # set ACME_EMAIL and the staging 
 docker compose -f infra/caddy/compose.yaml up -d
 ```
 
-Staging is protected with basic auth, except `/api/stripe/webhook` and `/api/v1/*`, which
-authenticate themselves.
+Staging is protected with basic auth, except the Stripe webhooks, `/api/v1/*` and
+`/api/store/*` (app-store notifications), which authenticate themselves. The scanner app's CI
+gets through with the header `X-Staging-Access` carrying `STAGING_ACCESS` from
+`infra/caddy/.env`; give the app team the same value (their GitHub secret
+`ACCOUNT_STAGING_ACCESS`). After changing the Caddyfile or its `.env`:
+`docker compose -f infra/caddy/compose.yaml up -d --force-recreate`.
 
 ## 5. Image tags
 

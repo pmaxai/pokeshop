@@ -9,6 +9,7 @@ import { deleteOldContactMessages } from '@pokeshop/core/contact';
 import { sendWantedAlerts, syncWantedPurchases } from '@pokeshop/core/wanted';
 import { billingFromEnv } from '@pokeshop/core/billing';
 import { reportUsage } from '@pokeshop/core/usage';
+import { deleteUnconfirmedAppAccounts, resetReviewAccount } from '@pokeshop/core/app-signin';
 import { createSql } from '@pokeshop/core/db';
 import {
   claimJob,
@@ -264,6 +265,16 @@ async function schedule() {
       // Stripe unreachable: the reports stay queued for the next run
       console.error('[usage] reporting to Stripe failed:', (e as Error).message);
     }
+  }
+  // accounts made in the app (Google) that were never confirmed and never bought: after 30 days
+  const unconfirmed = await deleteUnconfirmedAppAccounts(sql);
+  if (unconfirmed) console.log(`[accounts] ${unconfirmed} unconfirmed app account(s) deleted`);
+  // the reviewers' account starts clean every Monday
+  if ((process.env.REVIEW_LOGIN_CODE?.trim().length ?? 0) >= 6) {
+    const email = (process.env.REVIEW_EMAIL ?? 'review@overpricedcardboard.com')
+      .trim()
+      .toLowerCase();
+    if (await resetReviewAccount(sql, email)) console.log('[review] review account reset');
   }
   await deleteOldDevices(sql);
   const messages = await deleteOldContactMessages(sql);

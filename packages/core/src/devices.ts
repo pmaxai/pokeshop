@@ -11,6 +11,7 @@ import {
   entitlements,
   accountServices,
   subscriptionOf,
+  type Subscription,
   type Entitlements,
 } from './subscriptions.ts';
 
@@ -190,26 +191,79 @@ export async function pairDevice(
       if ((n?.n ?? 0) >= ent.seats) return { ok: false, problem: 'device_limit', seats: ent.seats };
     }
 
-    // the same phone again (here or on another account) gives up its old pairing
-    await tx`
-      UPDATE devices SET ended_at = ${now}, end_reason = 'replaced'
-       WHERE device_uuid = ${input.deviceUuid} AND ended_at IS NULL`;
     if (from && !from.ended_at) {
       await tx`
         UPDATE devices SET ended_at = ${now}, end_reason = 'transferred', successor_name = ${name}
          WHERE id = ${from.id} AND ended_at IS NULL`;
     }
-    const token = newToken();
-    const [d] = await tx<DeviceRow[]>`
-      INSERT INTO devices (public_id, account_id, device_uuid, name, platform, app_version, token_hash,
-                           paired_at, last_seen_at)
-      VALUES (${newPublicId('dev')}, ${accountId}, ${input.deviceUuid}, ${name}, ${input.platform ?? 'android'},
-              ${appVersion}, ${tokenHash(token)}, ${now}, ${now})
-      RETURNING *`;
+    const { token, row: d } = await insertDevice(
+      tx,
+      accountId,
+      { ...input, name, appVersion },
+      now,
+    );
     await tx`
-      UPDATE pairing_codes SET used_at = ${now}, used_by = ${d!.id} WHERE code_hash = ${tokenHash(code)}`;
-    return { ok: true, token, device: toDevice(d!), account };
+      UPDATE pairing_codes SET used_at = ${now}, used_by = ${d.id} WHERE code_hash = ${tokenHash(code)}`;
+    return { ok: true, token, device: toDevice(d), account };
   });
+}
+
+/** A new device row with its token; the same phone's earlier pairing (any account) ends. */
+async function insertDevice(
+  tx: Db,
+  accountId: number,
+  input: { deviceUuid: string; name: string | null; platform?: string; appVersion: string | null },
+  now: Date,
+): Promise<{ token: string; row: DeviceRow }> {
+  await tx`
+    UPDATE devices SET ended_at = ${now}, end_reason = 'replaced'
+     WHERE device_uuid = ${input.deviceUuid} AND ended_at IS NULL`;
+  const token = newToken();
+  const [d] = await tx<DeviceRow[]>`
+    INSERT INTO devices (public_id, account_id, device_uuid, name, platform, app_version, token_hash,
+                         paired_at, last_seen_at)
+    VALUES (${newPublicId('dev')}, ${accountId}, ${input.deviceUuid}, ${input.name}, ${input.platform ?? 'android'},
+            ${input.appVersion}, ${tokenHash(token)}, ${now}, ${now})
+    RETURNING *`;
+  return { token, row: d! };
+}
+
+/** Devices an account without a running subscription may sign in (store buyers, before buying). */
+export const SIGNIN_DEVICES_WITHOUT_SUBSCRIPTION = 5;
+
+/**
+ * Signs a device in to an account without a pairing code (sign-in in the app: Google, e-mail
+ * code). With a running subscription its device limit applies, as for pairing; without one a
+ * few devices may sign in, so the purchase can be made. Call inside a transaction.
+ */
+export async function registerDevice(
+  tx: Db,
+  account: Account,
+  input: Omit<PairInput, 'code'>,
+): Promise<
+  | { ok: true; token: string; device: Device }
+  | { ok: false; problem: 'device_limit'; seats: number }
+> {
+  const now = input.now ?? new Date();
+  await tx`SELECT id FROM accounts WHERE id = ${account.id} FOR UPDATE`;
+  const ent = await accountEntitlements(tx, account, now);
+  const seats = ent.active ? ent.seats : SIGNIN_DEVICES_WITHOUT_SUBSCRIPTION;
+  const [n] = await tx<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM devices
+     WHERE account_id = ${account.id} AND ended_at IS NULL AND device_uuid <> ${input.deviceUuid}`;
+  if ((n?.n ?? 0) >= seats) return { ok: false, problem: 'device_limit', seats };
+  const { token, row } = await insertDevice(
+    tx,
+    account.id,
+    {
+      deviceUuid: input.deviceUuid,
+      name: input.name?.trim().slice(0, 80) || null,
+      platform: input.platform,
+      appVersion: input.appVersion?.trim().slice(0, 40) || null,
+    },
+    now,
+  );
+  return { ok: true, token, device: toDevice(row) };
 }
 
 export type TokenLookup =
@@ -292,14 +346,25 @@ export async function transferredTo(db: Db, deviceId: number): Promise<string | 
 // ---------------------------------------------------------------------------
 
 export type AppStatus = {
-  status: 'active' | 'inactive';
+  /** none: the account never had a subscription (the app shows the store offers) */
+  status: 'active' | 'inactive' | 'none';
   server_time: string;
   valid_until: string;
-  account: { id: string; email: string; name: string | null };
+  account: {
+    id: string;
+    email: string;
+    name: string | null;
+    /** goes with every app-store purchase */
+    store_ref: string;
+    email_verified: boolean;
+  };
   device: { id: string; name: string | null; paired_at: string };
   subscription: {
     plan: string | null;
     state: Entitlements['state'];
+    /** where it is managed: web (the portal), google_play, app_store; null without one */
+    source: 'web' | 'google_play' | 'app_store' | null;
+    manage_url: string | null;
     renews_at: string | null;
     ends_at: string | null;
     devices: { included: number; extra: number; in_use: number };
@@ -326,15 +391,27 @@ export async function appStatus(
   ]);
   const ent = entitlements(sub, account, now, services);
   const iso = (d: Date | null) => (d ? d.toISOString() : null);
+  const portal = `${opts.baseUrl}${account.locale === 'de' ? '/de/konto' : '/account'}`;
+  const manage = subscriptionManagement(sub, {
+    portalUrl: `${opts.baseUrl}${account.locale === 'de' ? '/de/konto/abo' : '/account/subscription'}`,
+  });
   return {
-    status: ent.active ? 'active' : 'inactive',
+    status: ent.active ? 'active' : ent.state === 'none' ? 'none' : 'inactive',
     server_time: now.toISOString(),
     valid_until: ent.validUntil.toISOString(),
-    account: { id: account.publicId, email: account.email, name: account.name },
+    account: {
+      id: account.publicId,
+      email: account.email,
+      name: account.name,
+      store_ref: account.storeRef,
+      email_verified: account.emailVerified,
+    },
     device: { id: device.publicId, name: device.name, paired_at: device.pairedAt.toISOString() },
     subscription: {
       plan: ent.plan,
       state: ent.state,
+      source: manage.source,
+      manage_url: manage.url,
       renews_at: iso(ent.renewsAt),
       ends_at: iso(ent.endsAt),
       devices: { included: ent.active ? 1 : 0, extra: ent.extraDevices, in_use: inUse[0]?.n ?? 0 },
@@ -342,6 +419,15 @@ export async function appStatus(
     features: ent.features,
     webshop: ent.features.webshop && ent.webshopHost ? { host: ent.webshopHost } : null,
     services: { s3: { enabled: ent.services.s3 }, pipeline: { enabled: ent.services.pipeline } },
-    portal_url: `${opts.baseUrl}${account.locale === 'de' ? '/de/konto' : '/account'}`,
+    portal_url: portal,
   };
+}
+
+/** Where a subscription is managed (cancelled, changed): the portal or the app store. */
+export function subscriptionManagement(
+  sub: Subscription | null,
+  opts: { portalUrl: string },
+): { source: AppStatus['subscription']['source']; url: string | null } {
+  if (!sub) return { source: null, url: null };
+  return { source: 'web', url: opts.portalUrl };
 }

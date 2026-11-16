@@ -16,6 +16,8 @@ export type MailTemplate =
   | 'voucher_purchase'
   | 'contact_notification'
   | 'account_login'
+  | 'account_verify'
+  | 'app_login_code'
   | 'subscription_welcome'
   | 'subscription_invoice'
   | 'subscription_payment_failed'

@@ -31,6 +31,29 @@ const TEXT = {
     loginIgnore:
       'Du hast das nicht angefordert? Dann ignoriere diese E-Mail. Ohne Klick auf den Link passiert nichts.',
     hello: 'Hallo,',
+    codeSubject: (code: string) => `${code} ist dein Code für Overpriced Cardboard`,
+    codeIntro: 'gib diesen Code in der App Overpriced Cardboard Scanner ein, um dich anzumelden:',
+    codeValid: (m: number) => `Der Code gilt ${m} Minuten und nur ein Mal.`,
+    codeIgnore:
+      'Du hast das nicht angefordert? Dann ignoriere diese E-Mail. Ohne den Code kann sich niemand anmelden.',
+    verifySubject: (verified: boolean) =>
+      verified
+        ? 'Dein Kundenkonto bei Overpriced Cardboard'
+        : 'Bitte bestätige deine E-Mail-Adresse',
+    verifyIntro: (verified: boolean, again: boolean) =>
+      again
+        ? 'mit diesem Link bestätigst du deine E-Mail-Adresse und meldest dich im Kundenkonto an.'
+        : verified
+          ? 'du hast in der App Overpriced Cardboard Scanner ein Konto mit dieser E-Mail-Adresse angelegt. Mit dem Button meldest du dich im Kundenkonto auf overpricedcardboard.com an, wo du deine Sammlung, deine Geräte und dein Abo siehst.'
+          : 'du hast in der App Overpriced Cardboard Scanner ein Konto mit dieser E-Mail-Adresse angelegt. Bitte bestätige die Adresse mit dem Button. Damit meldest du dich auch im Kundenkonto auf overpricedcardboard.com an, wo du deine Sammlung, deine Geräte und dein Abo siehst.',
+    verifyButton: (verified: boolean) =>
+      verified ? 'Zum Kundenkonto' : 'E-Mail-Adresse bestätigen',
+    verifyValid: (d: number) =>
+      `Der Link gilt ${d} Tage und nur ein Mal. Danach meldest du dich im Konto mit deiner E-Mail-Adresse an und bekommst einen neuen Link.`,
+    verifyIgnore: (verified: boolean) =>
+      verified
+        ? 'Du hast kein Konto angelegt? Dann schreib uns bitte kurz.'
+        : 'Du hast kein Konto angelegt? Dann ignoriere diese E-Mail. Ein unbestätigtes Konto ohne Abo löschen wir nach 30 Tagen.',
     plan: { collector: 'Collector', creator: 'Creator' } as Record<string, string>,
     devices: (n: number) => (n === 1 ? '1 Gerät' : `${n} Geräte`),
     welcomeSubject: `Dein Abo für den ${APP_NAME}`,
@@ -102,6 +125,27 @@ const TEXT = {
     loginIgnore:
       'You did not ask for this? Then ignore this e-mail. Nothing happens unless the link is opened.',
     hello: 'Hello,',
+    codeSubject: (code: string) => `${code} is your Overpriced Cardboard code`,
+    codeIntro: 'enter this code in the Overpriced Cardboard Scanner app to sign in:',
+    codeValid: (m: number) => `The code works for ${m} minutes and only once.`,
+    codeIgnore:
+      'You did not ask for this? Then ignore this e-mail. Nobody can sign in without the code.',
+    verifySubject: (verified: boolean) =>
+      verified ? 'Your Overpriced Cardboard account' : 'Please confirm your e-mail address',
+    verifyIntro: (verified: boolean, again: boolean) =>
+      again
+        ? 'use this link to confirm your e-mail address and log in to your account.'
+        : verified
+          ? 'you created an account with this e-mail address in the Overpriced Cardboard Scanner app. The button logs you in to your account on overpricedcardboard.com, where you see your collection, your devices and your subscription.'
+          : 'you created an account with this e-mail address in the Overpriced Cardboard Scanner app. Please confirm the address with the button. It also logs you in to your account on overpricedcardboard.com, where you see your collection, your devices and your subscription.',
+    verifyButton: (verified: boolean) =>
+      verified ? 'Open your account' : 'Confirm e-mail address',
+    verifyValid: (d: number) =>
+      `The link works for ${d} days and only once. After that, log in to the account with your e-mail address to get a new one.`,
+    verifyIgnore: (verified: boolean) =>
+      verified
+        ? 'You did not create an account? Then please let us know.'
+        : 'You did not create an account? Then ignore this e-mail. An unconfirmed account without a subscription is deleted after 30 days.',
     plan: { collector: 'Collector', creator: 'Creator' } as Record<string, string>,
     devices: (n: number) => (n === 1 ? '1 device' : `${n} devices`),
     welcomeSubject: `Your ${APP_NAME} subscription`,
@@ -250,6 +294,34 @@ export async function renderAccountMail(
         `<p style="margin:0;color:${C.muted};font-size:13px">${esc(t.loginIgnore)}</p>`,
       ].join('\n');
       return { subject: t.loginSubject, html: layout(L, ctx, t.loginSubject, body) };
+    }
+    case 'app_login_code': {
+      const code = String(payload.code ?? '');
+      if (!/^\d{6}$/.test(code)) throw new Error('not a login code');
+      const subject = t.codeSubject(code);
+      const body = [
+        p(esc(t.hello)),
+        p(esc(t.codeIntro)),
+        `<p style="margin:0 0 14px;font-size:32px;font-weight:700;letter-spacing:6px;font-family:Menlo,Consolas,monospace">${code}</p>`,
+        p(esc(t.codeValid(Number(payload.minutes ?? 10)))),
+        `<p style="margin:0;color:${C.muted};font-size:13px">${esc(t.codeIgnore)}</p>`,
+      ].join('\n');
+      return { subject, html: layout(L, ctx, subject, body) };
+    }
+    case 'account_verify': {
+      const url = String(payload.url ?? '');
+      if (!url.startsWith(ctx.baseUrl)) throw new Error('verification link for another host');
+      const verified = payload.verified === true;
+      const subject = t.verifySubject(verified);
+      const body = [
+        p(esc(t.hello)),
+        p(esc(t.verifyIntro(verified, payload.again === true))),
+        button(url, t.verifyButton(verified)),
+        p(esc(t.verifyValid(Number(payload.days ?? 7)))),
+        `<p style="margin:0 0 14px;color:${C.muted};font-size:13px">${esc(t.loginFallback)}<br><a href="${esc(url)}" style="color:${C.muted};word-break:break-all">${esc(url)}</a></p>`,
+        `<p style="margin:0;color:${C.muted};font-size:13px">${esc(t.verifyIgnore(verified))}</p>`,
+      ].join('\n');
+      return { subject, html: layout(L, ctx, subject, body) };
     }
     case 'subscription_welcome':
     case 'subscription_invoice':
