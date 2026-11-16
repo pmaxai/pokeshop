@@ -42,10 +42,10 @@ staging.overpricedcardboard.com {
 
 	# Staging is password-protected, except the machine endpoints that authenticate
 	# themselves (Stripe webhook signatures of both accounts, HMAC product API, the app
-	# stores' notifications) and the app's CI, which sends X-Staging-Access with the secret
-	# STAGING_ACCESS (unset: nobody gets through this way).
+	# stores' notifications, the signed data-pack downloads) and the app's CI, which sends
+	# X-Staging-Access with the secret STAGING_ACCESS (unset: nobody gets through this way).
 	@protected {
-		not path /api/stripe/webhook /api/stripe/webhook-licenses /api/v1/* /api/store/*
+		not path /api/stripe/webhook /api/stripe/webhook-licenses /api/v1/* /api/store/* /api/app/v1/pack/files/*
 		not expression `{http.request.header.X-Staging-Access} != "" && {http.request.header.X-Staging-Access} == "{$STAGING_ACCESS}"`
 	}
 	basic_auth @protected {

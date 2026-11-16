@@ -58,12 +58,14 @@ export async function lastImport(
 }
 
 /** Downloads one file of the pack and checks size and SHA-256 on the way. */
-async function download(
+export async function downloadVerified(
   url: string,
   dest: string,
   expect: { bytes: number; sha256: string },
   doFetch: typeof fetch,
+  maxBytes = MAX_CATALOG_BYTES,
 ): Promise<void> {
+  const name = url.slice(url.lastIndexOf('/') + 1);
   const res = await doFetch(url, {
     redirect: 'follow',
     headers: { 'User-Agent': 'overpricedcardboard.com price import' },
@@ -75,14 +77,56 @@ async function download(
   const body = Readable.fromWeb(res.body as never);
   body.on('data', (chunk: Buffer) => {
     bytes += chunk.length;
-    if (bytes > MAX_CATALOG_BYTES) body.destroy(new Error('catalog.sqlite is too large'));
+    if (bytes > maxBytes) body.destroy(new Error(`${name} is too large`));
     hash.update(chunk);
   });
   await pipeline(body, createWriteStream(dest));
   const sha = hash.digest('hex');
   if (bytes !== expect.bytes || sha !== expect.sha256) {
-    throw new Error(`catalog.sqlite does not match pack.json (${bytes} bytes, sha256 ${sha})`);
+    throw new Error(`${name} does not match pack.json (${bytes} bytes, sha256 ${sha})`);
   }
+}
+
+const RELEASE_URL =
+  /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/download\/([^/]+)\/([^/?#]+)$/;
+
+/**
+ * fetch for the pack's files. With PACK_GITHUB_TOKEN set (a read-only token, for when the
+ * release is private), a github.com release download goes through GitHub's API with the token;
+ * everything else is fetched as is. Create one per run: it caches the release's asset list.
+ */
+export function packFetch(
+  env: NodeJS.ProcessEnv = process.env,
+  base: typeof fetch = fetch,
+): typeof fetch {
+  const token = env.PACK_GITHUB_TOKEN?.trim();
+  if (!token) return base;
+  const assets = new Map<string, string>();
+  const auth = { Authorization: `Bearer ${token}`, 'User-Agent': 'overpricedcardboard.com' };
+  return (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : String(input);
+    const m = RELEASE_URL.exec(url);
+    if (!m) return base(input, init);
+    const [, owner, repo, tag, name] = m;
+    const release = `${owner}/${repo}/${tag}`;
+    if (!assets.has(`${release}/${name}`)) {
+      const r = await base(`https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`, {
+        headers: { ...auth, Accept: 'application/vnd.github+json' },
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!r.ok) return new Response(null, { status: r.status });
+      const j = (await r.json()) as { assets?: { name: string; url: string }[] };
+      for (const a of j.assets ?? []) assets.set(`${release}/${a.name}`, a.url);
+    }
+    const api = assets.get(`${release}/${name}`);
+    if (!api) return new Response(null, { status: 404 });
+    // GitHub answers with a redirect to signed storage; fetch drops the token on the way
+    return base(api, {
+      ...init,
+      redirect: 'follow',
+      headers: { ...auth, Accept: 'application/octet-stream' },
+    });
+  }) as typeof fetch;
 }
 
 type Row = Record<string, unknown>;
@@ -171,7 +215,12 @@ export async function importPack(
   const path = opts.catalogPath ?? join(dir!, 'catalog.sqlite');
   try {
     if (!opts.catalogPath) {
-      await download(`${baseUrl}/catalog.sqlite`, path, manifest.files['catalog.sqlite']!, doFetch);
+      await downloadVerified(
+        `${baseUrl}/catalog.sqlite`,
+        path,
+        manifest.files['catalog.sqlite']!,
+        doFetch,
+      );
       log(`[pack] downloaded ${manifest.version}`);
     }
     const lite = new DatabaseSync(path, { readOnly: true });
