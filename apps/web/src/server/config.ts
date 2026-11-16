@@ -2,6 +2,8 @@ import 'server-only';
 import { parseMasterKey } from '@pokeshop/core/secrets';
 import { getSql } from '@pokeshop/core/db';
 import { httpTcgdexClient, type TcgdexClient } from '@pokeshop/core/tcgdex';
+import { remoteKeys, type KeyLookup } from '@pokeshop/core/jwt';
+import { GOOGLE_KEYS_URL } from '@pokeshop/core/app-signin';
 
 /** Server-side configuration from the environment, read lazily so `next build` works without it. */
 export const config = {
@@ -14,7 +16,40 @@ export const config = {
   get isProduction(): boolean {
     return process.env.NODE_ENV === 'production';
   },
+  /** OAuth client ids a Google ID token from the app may be issued for (comma-separated). */
+  get googleClientIds(): string[] {
+    return (process.env.GOOGLE_OAUTH_CLIENT_IDS ?? '')
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean);
+  },
+  /**
+   * Staging only: test sign-ins, test codes and test purchases (docs/app-account-api.md,
+   * "Testing"). Never on the live shop, whatever the variable says.
+   */
+  get storeTestHooks(): boolean {
+    return (
+      process.env.STORE_TEST_HOOKS === '1' &&
+      !/^https:\/\/(www\.)?overpricedcardboard\.com$/.test(this.baseUrl)
+    );
+  },
+  /** The account for Google's and Apple's reviewers: a fixed code, valid only for it. */
+  get review(): { email: string; code: string } | null {
+    const code = process.env.REVIEW_LOGIN_CODE?.trim() ?? '';
+    if (code.length < 6) return null;
+    return {
+      email: (process.env.REVIEW_EMAIL ?? 'review@overpricedcardboard.com').trim().toLowerCase(),
+      code,
+    };
+  },
 };
+
+let googleKeys: KeyLookup | undefined;
+/** Google's public keys for ID tokens and Pub/Sub push tokens. */
+export function googleSigningKeys(): KeyLookup {
+  googleKeys ??= remoteKeys(GOOGLE_KEYS_URL);
+  return googleKeys;
+}
 
 let masterKey: Buffer | undefined;
 export function apiMasterKey(): Buffer {

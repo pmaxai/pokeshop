@@ -784,6 +784,8 @@ export async function renderTemplate(
     case 'license_resend':
       return renderLicenseMail(db, mail, ctx);
     case 'account_login':
+    case 'account_verify':
+    case 'app_login_code':
     case 'subscription_welcome':
     case 'subscription_invoice':
     case 'subscription_payment_failed':

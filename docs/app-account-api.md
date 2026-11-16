@@ -2,8 +2,9 @@
 
 The Overpriced Cardboard Scanner no longer uses licence keys. A customer has an **account** on
 overpricedcardboard.com (login by e-mail link, no password) and a **subscription** sold by
-Antalyse GmbH. The app is connected to the account by **scanning a QR code** from the web portal;
-there is no login in the app.
+Antalyse GmbH, on the website or in the app stores. The app is connected to the account by
+**scanning a QR code** from the web portal, or — in the store editions, for buying in the app —
+by **signing in** with the phone's Google account or a code sent by e-mail (see _Sign-in_).
 
 This document is the contract between the shop (server) and the app. Part 1 is the API, part 2
 the requirements for the app, part 3 the usage API for the video pipeline.
@@ -70,6 +71,10 @@ and `status` says `inactive`, so renewing in the portal unlocks the app again wi
 | 404    | `unknown_code` / `not_found` | Pairing code or item does not exist                                                   |
 | 409    | `device_limit`               | All devices of the subscription are in use (pairing)                                  |
 | 410    | `code_expired`               | Pairing code expired or already used                                                  |
+| 400    | `invalid_identity`           | Sign-in: the Google token is invalid, expired or for another app                      |
+| 400    | `invalid_email`              | Sign-in: not an e-mail address                                                        |
+| 400    | `wrong_code`                 | Sign-in: the e-mail code doesn't match; `tries_left` says how many remain             |
+| 410    | `code_expired`               | Sign-in: the e-mail code is older than 10 minutes or was used                         |
 | 429    | `rate_limited`               | Too many calls; `Retry-After` header in seconds                                       |
 | 5xx    | `internal`                   | Retry later with backoff                                                              |
 
@@ -176,6 +181,78 @@ sees `inactive` like the old one did).
 
 `204 No Content`. Frees the slot; the token stops working (`unpaired` / `disconnected`).
 
+## Sign-in (store editions)
+
+For buying the subscription in the app: the account is created when the person signs in, before
+the purchase sheet opens. Each sign-in answers like pairing — a device token plus the status —
+with `200` and `"created": true` when the account is new. Unlike pairing, it works **without a
+subscription** (`status: "none"`); with a running subscription its device limit applies
+(`409 device_limit`). Without one, up to 5 devices may sign in.
+
+New accounts get an e-mail with a link that confirms the address and logs in to the portal
+(any portal login confirms it, since it goes through an e-mail link). The subscription works
+before it is clicked; until then `account.email_verified` is `false`, and the app can remind the
+person to click it. An account from Google that never gets a subscription and never confirms its
+address is deleted after 30 days.
+
+All sign-in calls together: 20 per address and 15 minutes.
+
+### `POST /api/app/v1/login/google` – Continue with Google
+
+```json
+{
+  "id_token": "eyJhbGciOiJSUzI1NiIs…",
+  "device_id": "5b0c1d8e-2f4a-4c55-9a11-7f0d3c2b9e61",
+  "device_name": "Google Pixel 8",
+  "platform": "android",
+  "app_version": "2.0.0"
+}
+```
+
+`id_token` is the Google ID token from Credential Manager (Sign in with Google). Request it with
+the **server client id** the shop gives you (`setServerClientId`); the server accepts only tokens
+issued for its configured client ids, with `email_verified` true. The account with the token's
+e-mail address signs in, or a new one is created with it; later sign-ins find it by the Google
+account, even if its address changes.
+
+`200`:
+
+```json
+{
+  "token": "9fJ2kQ…",
+  "device": { "id": "dev_3k9x0q7m2a", "name": "Google Pixel 8", "paired_at": "…" },
+  "created": true,
+  "status": { "…": "the same object as GET /status" }
+}
+```
+
+Errors: `400 invalid_identity`, `400 invalid_request` (with `fields`), `409 device_limit`,
+`429 rate_limited`, `503 store_unavailable` (Google's keys could not be fetched; try again).
+
+### `POST /api/app/v1/login/email` – Use another email
+
+`{ "email": "anna@example.com" }` → `202 { "resend_after": 60 }`. A 6-digit code is e-mailed
+(valid 10 minutes, once). Asking again within a minute sends nothing and answers the seconds left
+in `resend_after`. At most 5 codes per address and hour, then `429 rate_limited` with
+`Retry-After`. The answer is the same whether an account exists or not.
+
+### `POST /api/app/v1/login/email/verify`
+
+```json
+{
+  "email": "anna@example.com",
+  "code": "482913",
+  "device_id": "5b0c1d8e-2f4a-4c55-9a11-7f0d3c2b9e61",
+  "device_name": "Google Pixel 8",
+  "platform": "android",
+  "app_version": "2.0.0"
+}
+```
+
+Answers like `/login/google`. Only the latest code counts. Errors: `400 wrong_code` with
+`tries_left` (5 tries per code, then `429 rate_limited`: ask for a new code), `410 code_expired`,
+`400 invalid_email`, `409 device_limit`. An account registered this way has a confirmed address.
+
 ## Status
 
 ### `GET /api/app/v1/status`
@@ -189,7 +266,13 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
   "status": "active",
   "server_time": "2026-11-15T09:30:00.000Z",
   "valid_until": "2026-12-18T09:30:00.000Z",
-  "account": { "id": "acc_7h2k9q0x3m", "email": "anna@example.com", "name": "Anna" },
+  "account": {
+    "id": "acc_7h2k9q0x3m",
+    "email": "anna@example.com",
+    "name": "Anna",
+    "store_ref": "0f6c1c58-3b8e-4f43-9c1f-2a7d5e9b4c10",
+    "email_verified": true
+  },
   "device": {
     "id": "dev_3k9x0q7m2a",
     "name": "Google Pixel 8",
@@ -198,6 +281,8 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
   "subscription": {
     "plan": "creator",
     "state": "active",
+    "source": "web",
+    "manage_url": "https://overpricedcardboard.com/account/subscription",
     "renews_at": "2026-12-15T09:30:00.000Z",
     "ends_at": null,
     "devices": { "included": 1, "extra": 1, "in_use": 2 }
@@ -222,26 +307,30 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
 }
 ```
 
-| Field                    | Meaning                                                                                                                                                                                                                                  |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                 | `active`: features as listed. `inactive`: no running subscription; every feature is `false`                                                                                                                                              |
-| `valid_until`            | Until when the app may run on this answer without asking again (offline). After it, the app needs one successful check; without a connection it shows "Connect to the internet once to check your subscription" and locks the paid modes |
-| `subscription.plan`      | `collector`, `creator` or `null`                                                                                                                                                                                                         |
-| `subscription.state`     | `active`, `past_due` (payment failed, Stripe retries; features stay on), `canceled` (ends at `ends_at`, features stay on until then), `ended`, `complimentary` (given by the shop), `none`                                               |
-| `subscription.renews_at` | next billing date, `null` when it does not renew                                                                                                                                                                                         |
-| `subscription.ends_at`   | when it ends (cancelled), else `null`                                                                                                                                                                                                    |
-| `features.scanner`       | Scanner mode (recognition, prices, search)                                                                                                                                                                                               |
-| `features.trading`       | Trading mode                                                                                                                                                                                                                             |
-| `features.youtube`       | YouTube mode                                                                                                                                                                                                                             |
-| `features.recording`     | ● REC in YouTube mode (save to the Gallery)                                                                                                                                                                                              |
-| `features.s3_upload`     | "Upload to S3" in Recording & upload                                                                                                                                                                                                     |
-| `features.pipeline`      | The submit screen with templates (needs `s3_upload` too)                                                                                                                                                                                 |
-| `features.webshop`       | Webshop mode; `webshop.host` is the connected shop                                                                                                                                                                                       |
-| `features.collection`    | "Add to collection" and the collection endpoints                                                                                                                                                                                         |
-| `features.wanted`        | "Add to missing cards" and the missing-card endpoints                                                                                                                                                                                    |
-| `webshop`                | `{ "host": "shop.example.com" }` when a webshop is connected, else `null`. The API key for it is still set up in ⚙ → Webshop as today                                                                                                    |
-| `services.s3.enabled`    | the shop set up S3 storage for this customer; settings via `/services/s3`                                                                                                                                                                |
-| `portal_url`             | open in the browser for "Manage subscription"                                                                                                                                                                                            |
+| Field                     | Meaning                                                                                                                                                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                  | `active`: features as listed. `inactive`: the subscription ended; every feature is `false`. `none`: the account never had a subscription (signed in for buying in the store); every feature is `false`, the store editions show their offers |
+| `valid_until`             | Until when the app may run on this answer without asking again (offline). After it, the app needs one successful check; without a connection it shows "Connect to the internet once to check your subscription" and locks the paid modes     |
+| `subscription.plan`       | `collector`, `creator` or `null`                                                                                                                                                                                                             |
+| `subscription.state`      | `active`, `past_due` (payment failed, Stripe retries; features stay on), `canceled` (ends at `ends_at`, features stay on until then), `ended`, `complimentary` (given by the shop), `none`                                                   |
+| `subscription.source`     | where it is managed: `web` (bought or given on the website), `google_play`, `app_store`; `null` without a subscription                                                                                                                       |
+| `subscription.manage_url` | open for "Manage subscription": the portal's subscription page for `web`, the store's subscription page for the stores                                                                                                                       |
+| `subscription.renews_at`  | next billing date, `null` when it does not renew                                                                                                                                                                                             |
+| `subscription.ends_at`    | when it ends (cancelled), else `null`                                                                                                                                                                                                        |
+| `features.scanner`        | Scanner mode (recognition, prices, search)                                                                                                                                                                                                   |
+| `features.trading`        | Trading mode                                                                                                                                                                                                                                 |
+| `features.youtube`        | YouTube mode                                                                                                                                                                                                                                 |
+| `features.recording`      | ● REC in YouTube mode (save to the Gallery)                                                                                                                                                                                                  |
+| `features.s3_upload`      | "Upload to S3" in Recording & upload                                                                                                                                                                                                         |
+| `features.pipeline`       | The submit screen with templates (needs `s3_upload` too)                                                                                                                                                                                     |
+| `features.webshop`        | Webshop mode; `webshop.host` is the connected shop                                                                                                                                                                                           |
+| `features.collection`     | "Add to collection" and the collection endpoints                                                                                                                                                                                             |
+| `features.wanted`         | "Add to missing cards" and the missing-card endpoints                                                                                                                                                                                        |
+| `webshop`                 | `{ "host": "shop.example.com" }` when a webshop is connected, else `null`. The API key for it is still set up in ⚙ → Webshop as today                                                                                                        |
+| `services.s3.enabled`     | the shop set up S3 storage for this customer; settings via `/services/s3`                                                                                                                                                                    |
+| `account.store_ref`       | a UUID fixed per account; the app passes it with every store purchase (Google: `obfuscatedAccountId`, Apple: `appAccountToken`)                                                                                                              |
+| `account.email_verified`  | `false` while an account made in the app has not clicked its confirmation link; a gentle reminder                                                                                                                                            |
+| `portal_url`              | the account in the browser                                                                                                                                                                                                                   |
 
 `valid_until` is the end of the paid period plus 3 days, at most 35 days from now. For an
 `inactive` answer it is `server_time`.
@@ -432,6 +521,21 @@ At most 500 cards on a list (`fields.card_id = "too_many"`).
 
 `POST` errors: `400 invalid_request` with `fields`, e.g. `{ "card_id": "unknown" }`,
 `{ "min_condition": "invalid" }`, `{ "max_price_cents": "invalid" }` (1 – 100,000,000 cents).
+
+## Testing against staging
+
+Staging (`https://staging.overpricedcardboard.com`) is password-protected. The app's CI gets past
+it with the header `X-Staging-Access: <secret>` (GitHub secret `ACCOUNT_STAGING_ACCESS`; the shop
+sets the same value as `STAGING_ACCESS` on the server). Staging only, never in production:
+
+| Hook                | How                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                              |
+| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                        |
+| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production) |
+
+The review account has a free Creator subscription without end, up to 10 devices, and is cleared
+every Monday (collection, missing cards, devices).
 
 ---
 

@@ -36,6 +36,11 @@ export type Account = {
   webshopHost: string | null;
   createdAt: Date;
   lastLoginAt: Date | null;
+  /** Goes with every app-store purchase (Google: obfuscatedAccountId, Apple: appAccountToken). */
+  storeRef: string;
+  /** Confirmed by a login link or an e-mail code. */
+  emailVerified: boolean;
+  signupVia: 'portal' | 'google' | 'apple' | 'email' | 'review';
 };
 
 type AccountRow = {
@@ -49,11 +54,15 @@ type AccountRow = {
   webshop_host: string | null;
   created_at: Date;
   last_login_at: Date | null;
+  store_ref: string;
+  email_verified_at: Date | null;
+  signup_via: Account['signupVia'];
 };
 
-const ACCOUNT_COLUMNS =
-  'id, public_id, email, name, phone, locale, shipping_address, webshop_host, created_at, last_login_at';
+export const ACCOUNT_COLUMNS =
+  'id, public_id, email, name, phone, locale, shipping_address, webshop_host, created_at, last_login_at, store_ref, email_verified_at, signup_via';
 
+export type { AccountRow };
 export const toAccount = (r: AccountRow): Account => ({
   id: Number(r.id),
   publicId: r.public_id,
@@ -65,6 +74,9 @@ export const toAccount = (r: AccountRow): Account => ({
   webshopHost: r.webshop_host,
   createdAt: r.created_at,
   lastLoginAt: r.last_login_at,
+  storeRef: r.store_ref,
+  emailVerified: r.email_verified_at !== null,
+  signupVia: r.signup_via,
 });
 
 export async function accountById(db: Db, id: number): Promise<Account | null> {
@@ -158,6 +170,45 @@ export async function requestLoginLink(
   });
 }
 
+/** The verification link of an account made in the app works this long. */
+export const VERIFY_LINK_DAYS = 7;
+
+/**
+ * For an account made in the app: a link that confirms the address and logs in to the portal
+ * (the subscription works before it is used). Sent once per new account, and again on request.
+ */
+export async function sendVerificationLink(
+  db: Db,
+  account: Pick<Account, 'id' | 'email' | 'locale' | 'emailVerified'>,
+  opts: { baseUrl: string; now?: Date; again?: boolean },
+): Promise<'sent' | 'throttled'> {
+  const now = opts.now ?? new Date();
+  const [c] = await db<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM account_login_links
+     WHERE email = ${account.email} AND created_at > ${now}::timestamptz - interval '1 hour'`;
+  if ((c?.n ?? 0) >= MAX_LINKS_PER_HOUR) return 'throttled';
+  const token = newToken();
+  const next = localePath(account.locale, { de: '/konto', en: '/account' });
+  const [l] = await db<{ id: number }[]>`
+    INSERT INTO account_login_links (token_hash, email, locale, next_path, created_at, expires_at)
+    VALUES (${tokenHash(token)}, ${account.email}, ${account.locale}, ${next}, ${now},
+            ${now}::timestamptz + make_interval(days => ${VERIFY_LINK_DAYS}))
+    RETURNING id`;
+  await enqueueMail(db, {
+    template: 'account_verify',
+    to: account.email,
+    locale: account.locale,
+    payload: {
+      url: loginLinkUrl(opts.baseUrl, account.locale, token),
+      days: VERIFY_LINK_DAYS,
+      verified: account.emailVerified,
+      again: Boolean(opts.again),
+    },
+    dedupeKey: `account_verify:${l!.id}`,
+  });
+  return 'sent';
+}
+
 export type LinkProblem = 'invalid' | 'expired' | 'used';
 
 /** What a link is, without using it (the page shows "Log in as …"). */
@@ -195,9 +246,10 @@ export async function redeemLoginLink(
       RETURNING email, locale, next_path`;
     if (!l) return null;
     const [a] = await tx<(AccountRow & { created: boolean })[]>`
-      INSERT INTO accounts (public_id, email, locale, last_login_at)
-      VALUES (${newPublicId('acc')}, ${l.email}, ${l.locale}, ${now})
-      ON CONFLICT (email) DO UPDATE SET last_login_at = EXCLUDED.last_login_at
+      INSERT INTO accounts (public_id, email, locale, last_login_at, email_verified_at)
+      VALUES (${newPublicId('acc')}, ${l.email}, ${l.locale}, ${now}, ${now})
+      ON CONFLICT (email) DO UPDATE SET last_login_at = EXCLUDED.last_login_at,
+        email_verified_at = coalesce(accounts.email_verified_at, EXCLUDED.email_verified_at)
       RETURNING ${tx.unsafe(ACCOUNT_COLUMNS)}, (xmax = 0) AS created`;
     await linkOrdersByEmail(tx, Number(a!.id), l.email);
     return { account: toAccount(a!), next: l.next_path, created: Boolean(a!.created) };
