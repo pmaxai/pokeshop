@@ -76,7 +76,7 @@ type DeviceRow = {
   successor_name: string | null;
 };
 
-export type EndReason = 'removed' | 'transferred' | 'replaced' | 'disconnected';
+export type EndReason = 'removed' | 'transferred' | 'replaced' | 'disconnected' | 'account_deleted';
 
 const toDevice = (r: DeviceRow): Device => ({
   id: Number(r.id),

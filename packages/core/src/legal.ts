@@ -6,7 +6,13 @@ import type { Db } from './db.ts';
 import { localePath } from './locale-paths.ts';
 
 /** license_terms: the app subscription terms of Antalyse GmbH (formerly the licence terms). */
-export const LEGAL_KINDS = ['agb', 'withdrawal', 'privacy', 'license_terms'] as const;
+export const LEGAL_KINDS = [
+  'agb',
+  'withdrawal',
+  'privacy',
+  'license_terms',
+  'app_privacy',
+] as const;
 export type LegalKind = (typeof LEGAL_KINDS)[number];
 export type LegalLocale = 'de' | 'en';
 
@@ -41,6 +47,7 @@ export async function currentLegalVersions(db: Db): Promise<Record<LegalKind, nu
     withdrawal: null,
     privacy: null,
     license_terms: null,
+    app_privacy: null,
   };
   for (const r of rows) out[r.kind] = r.version;
   return out;
@@ -91,6 +98,10 @@ export function fillPlaceholders(md: string, ctx: LegalContext): string {
     withdraw_url:
       ctx.baseUrl + localePath(ctx.locale, { de: '/vertrag-widerrufen', en: '/withdraw' }),
     privacy_url: ctx.baseUrl + localePath(ctx.locale, { de: '/datenschutz', en: '/privacy' }),
+    app_privacy_url:
+      ctx.baseUrl + localePath(ctx.locale, { de: '/app/datenschutz', en: '/app/privacy' }),
+    delete_account_url:
+      ctx.baseUrl + localePath(ctx.locale, { de: '/konto-loeschen', en: '/delete-account' }),
     contact_url: ctx.baseUrl + localePath(ctx.locale, { de: '/kontakt', en: '/contact' }),
     terms_url: ctx.baseUrl + localePath(ctx.locale, { de: '/agb', en: '/terms' }),
     withdrawal_url:

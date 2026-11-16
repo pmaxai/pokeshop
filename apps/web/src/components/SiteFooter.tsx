@@ -47,10 +47,16 @@ export async function SiteFooter() {
                 <Link href="/datenschutz">{t('privacy')}</Link>
               </li>
               <li>
+                <Link href="/app/datenschutz">{t('appPrivacy')}</Link>
+              </li>
+              <li>
                 <Link href="/agb">{t('terms')}</Link>
               </li>
               <li>
                 <Link href="/widerrufsbelehrung">{t('withdrawalInfo')}</Link>
+              </li>
+              <li>
+                <Link href="/konto-loeschen">{t('deleteAccount')}</Link>
               </li>
             </ul>
           </div>

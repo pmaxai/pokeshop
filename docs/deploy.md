@@ -297,6 +297,18 @@ Google Cloud project and the Play Console of the app `com.overpricedcardboard.ap
    `review@overpricedcardboard.com`) and write e-mail and code into the review notes of the Play
    Console (App content › App access). If recordings are to be uploaded in review, give that
    account S3 settings of a separate test bucket.
+7. **Store listing pages** – Play Console › App content: _Privacy policy_
+   `https://overpricedcardboard.com/app/privacy`; _Data safety_ › account deletion
+   `https://overpricedcardboard.com/delete-account` (the same URL for the OAuth consent screen in
+   step 1). The privacy text is the legal text `app_privacy` (packages/core/legal/app_privacy.*.md),
+   with Antalyse GmbH as controller; it names TCGdex for the card images and lists what the app
+   sends. Have the app team confirm that list before the first release.
+
+Deleting an account (app, portal or `/delete-account`) cancels a running website subscription at
+Stripe and a Google Play one at Google (both run to the end of the paid period; the worker retries
+Google every 10 minutes), signs out all devices and removes the data. The scrubbed account row is
+removed after 30 days, later while a cancelled subscription still runs or usage is still to be
+billed.
 
 What the server does: every report from the app and every notification reads the subscription
 from Google again and stores it (Admin › Kunden › customer › Käufe in den App-Stores); the

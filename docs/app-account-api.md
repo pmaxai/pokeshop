@@ -93,7 +93,7 @@ and `status` says `inactive`, so renewing in the portal unlocks the app again wi
 `reason` is one of `removed` (removed in the portal), `transferred` (another device scanned this
 device's transfer code; `device_name` is the new one), `replaced` (paired to another account, or
 paired again on the same account with a new token), `disconnected` (the app disconnected itself),
-`account_deleted`.
+`account_deleted` (the account was deleted, in the app or the portal).
 
 ## Pairing
 
@@ -180,6 +180,39 @@ sees `inactive` like the old one did).
 ### `DELETE /api/app/v1/device` – disconnect this device
 
 `204 No Content`. Frees the slot; the token stops working (`unpaired` / `disconnected`).
+
+### `POST /api/app/v1/account/delete` – delete the account
+
+Both stores require that an account made in the app can be deleted in the app. Ask first, then
+send `{ "confirm": true }` (without it: `400 invalid_request`, `fields.confirm: "required"`).
+
+```json
+{ "deleted": true, "manage_url": null }
+```
+
+`202 Accepted`, and from then on:
+
+- **Every device** of the account, this one included, answers `401 unpaired` with
+  `reason: "account_deleted"`. Delete the token and the local account data, and show the
+  sign-in screen.
+- **Data:** collection, missing cards, shares, sign-ins, S3 settings, name and address go at once;
+  the e-mail address is removed from the account. The rest of the account is removed after 30
+  days. Orders and invoices stay as the law requires, without the account. A new sign-in with the
+  same Google account or e-mail makes a new, empty account.
+- **Renewals stop; the paid period is not refunded.** The server cancels a website subscription
+  (Stripe) and a Google Play one itself; both run to the end of the paid period. An App Store
+  subscription can only be cancelled by the person: then `manage_url` is the App Store's
+  subscription page, and the app tells the person to cancel there (the App Store is not live yet,
+  so for now it is always `null`).
+- `503 internal`: the website subscription could not be cancelled at Stripe just now; nothing was
+  deleted. Try again later.
+
+Public pages for the store listings (same in both languages, German under `/de/…`):
+
+| Page                                        | URL                                              |
+| ------------------------------------------- | ------------------------------------------------ |
+| Delete account (Play Console › Data safety) | `https://overpricedcardboard.com/delete-account` |
+| Privacy policy of the app                   | `https://overpricedcardboard.com/app/privacy`    |
 
 ## Sign-in (store editions)
 

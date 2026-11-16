@@ -135,7 +135,9 @@
     "events": "Veranstaltungen",
     "app": "Overpriced Cardboard Scanner",
     "vouchers": "Gutscheine",
-    "contact": "Kontakt"
+    "contact": "Kontakt",
+    "appPrivacy": "Datenschutz der App",
+    "deleteAccount": "Konto löschen"
   },
   "Conditions": {
     "M": "Mint",
@@ -701,11 +703,11 @@
       "save": "Speichern",
       "saved": "Gespeichert.",
       "deleteTitle": "Konto löschen",
-      "deleteText": "Damit löschst du dein Konto und deine gespeicherte Adresse und wirst überall abgemeldet. Deine Bestellungen bleiben beim Shop, wie es das Gesetz verlangt, sind aber keinem Konto mehr zugeordnet.",
+      "deleteText": "Damit löschst du dein Konto mit deiner Sammlung, deinen fehlenden Karten, deinen Freigaben und der gespeicherten Adresse und meldest die App auf allen Geräten ab. Ein laufendes Abo – von der Website oder aus Google Play – verlängert sich dann nicht mehr und endet mit dem bezahlten Zeitraum. Deine Bestellungen und Rechnungen bleiben, wie gesetzlich vorgeschrieben, beim Shop, sind aber mit keinem Konto mehr verbunden.",
       "deleteConfirm": "Ja, mein Konto löschen",
       "deleteConfirmMissing": "Bitte bestätige mit dem Häkchen.",
       "deleteButton": "Konto löschen",
-      "deleteSubscription": "Du hast noch ein laufendes Abo. Kündige es zuerst unter „Abo“; nach seinem Ende kannst du das Konto löschen."
+      "deleteSubscription": "Dein Abo konnte gerade nicht gekündigt werden, daher ist das Konto noch nicht gelöscht. Bitte versuch es in ein paar Minuten noch einmal."
     },
     "errors": {
       "title": "Bitte prüfe die markierten Felder.",
@@ -1108,5 +1110,25 @@
     "expired": "Dieser Link ist abgelaufen. Bitte die Person um einen neuen.",
     "unknown": "Dieser Link funktioniert nicht (mehr).",
     "note": "Werte aus den Daten des Overpriced Cardboard Scanner (Cardmarket und TCGplayer), nur Richtwerte."
+  },
+  "DeleteAccount": {
+    "title": "Konto löschen",
+    "done": "Dein Konto ist gelöscht. Die App ist auf allen Geräten abgemeldet.",
+    "intro": "Hier steht, wie du dein Konto bei Overpriced Cardboard löschst – das Konto, mit dem du dich in der Scanner-App und im Kundenportal anmeldest.",
+    "howTitle": "So löschst du dein Konto",
+    "inApp": "In der App: mit der Schaltfläche „Konto löschen“ im Konto-Bereich.",
+    "online": "Hier auf der Website: <link>melde dich an</link> und lösch das Konto auf dieser Seite.",
+    "byMail": "Per E-Mail: schreib von der Adresse deines Kontos an <mail></mail>. Wir löschen das Konto dann innerhalb weniger Tage und bestätigen es dir.",
+    "mailSubject": "Konto löschen",
+    "signedInTitle": "Dein Konto löschen",
+    "signedInText": "Du bist als {email} angemeldet.",
+    "whatTitle": "Was gelöscht wird und was bleibt",
+    "whatGone": "Sofort gelöscht werden deine Sammlung, deine fehlenden Karten, deine Freigaben, deine Anmeldungen (auch mit Google), deine S3-Zugangsdaten, dein Name und deine gespeicherte Adresse. Die E-Mail-Adresse wird aus dem Konto entfernt.",
+    "whatDevices": "Die App wird auf allen Geräten sofort abgemeldet.",
+    "whatKept": "Bestellungen und Rechnungen bleiben, solange es das Gesetz verlangt (in Österreich 7 Jahre), sind aber mit keinem Konto mehr verbunden. Käufe in Google Play bleiben ohne deine E-Mail-Adresse gespeichert.",
+    "whatWhen": "Der Rest des Kontos wird nach 30 Tagen endgültig entfernt.",
+    "subTitle": "Laufendes Abo",
+    "subText": "Ein Abo verlängert sich nach dem Löschen nicht mehr und endet mit dem bezahlten Zeitraum: ein Abo von der Website kündigen wir selbst, eines aus Google Play ebenso. Eine Rückerstattung für den laufenden Zeitraum gibt es dadurch nicht.",
+    "privacy": "Mehr dazu, welche Daten die App und das Konto speichern, steht in der <link>Datenschutzerklärung der App</link>."
   }
 }

@@ -29,6 +29,7 @@ const REASONS: Record<string, string> = {
   transferred: 'This device was replaced by another one.',
   replaced: 'This device was connected again or to another account.',
   disconnected: 'This device was disconnected.',
+  account_deleted: 'The account was deleted.',
 };
 
 /** The device behind "Authorization: Bearer …", or the 401 to send. */

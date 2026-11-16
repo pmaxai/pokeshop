@@ -24,6 +24,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/agb',
     '/widerrufsbelehrung',
     '/datenschutz',
+    '/app/datenschutz',
+    '/konto-loeschen',
     '/impressum',
   ] as const) {
     const u = both(href);

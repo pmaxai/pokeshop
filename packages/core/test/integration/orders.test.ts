@@ -120,7 +120,11 @@ after(async () => drop());
 test('legal texts load once per change', async () => {
   assert.equal(await syncLegalTexts(sql), 0, 'unchanged files add no version');
   const rows = await sql`SELECT kind, locale, version FROM legal_texts ORDER BY kind, locale`;
-  assert.equal(rows.length, 8, 'AGB, withdrawal, privacy and the GmbH licence terms in DE and EN');
+  assert.equal(
+    rows.length,
+    10,
+    'AGB, withdrawal, privacy, the GmbH licence terms and the app privacy policy in DE and EN',
+  );
 });
 
 test('checkout form: postcode by country, e-mail, terms', () => {
