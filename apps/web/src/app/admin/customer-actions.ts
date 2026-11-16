@@ -198,6 +198,7 @@ export async function saveStoreProductsAction(form: FormData) {
         {
           product_id: g(plan, 'product_id'),
           base_plans: { monthly: g(plan, 'monthly'), yearly: g(plan, 'yearly') },
+          device_product_ids: [1, 2, 3, 4].map((i) => g(plan, `device_${i}`)),
         },
       ]),
     ),

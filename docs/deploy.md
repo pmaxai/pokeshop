@@ -274,8 +274,10 @@ Google Cloud project and the Play Console of the app `com.overpricedcardboard.ap
    give it to the app team. The OAuth consent screen needs the privacy policy URL.
 2. **Products** – Play Console › Monetize › Subscriptions: one subscription per plan, each with
    two auto-renewing base plans (monthly, yearly; yearly = 12 × monthly − 10 %, set per country by
-   hand). Turn on the grace period. Enter the product and base plan ids in Admin › Kunden & Abos ›
-   App-Stores. An id can never be reused once created.
+   hand). Turn on the grace period. Extra devices: up to 4 more subscriptions per plan, one per
+   device (e.g. `oc_collector_device_1` … `_4`), each with the same base plan ids and the plan's
+   device price; the app sells them as add-ons. Enter the product, base plan and device ids in
+   Admin › Kunden & Abos › App-Stores. An id can never be reused once created.
 3. **Service account for the Play Developer API** – Google Cloud › IAM: a service account with a
    JSON key; enable the _Google Play Android Developer API_ in the project. In the Play Console ›
    Users and permissions, invite the service account's e-mail with _View financial data_ and
@@ -303,6 +305,11 @@ Google Cloud project and the Play Console of the app `com.overpricedcardboard.ap
    step 1). The privacy text is the legal text `app_privacy` (packages/core/legal/app_privacy.*.md),
    with Antalyse GmbH as controller; it names TCGdex for the card images and lists what the app
    sends. Have the app team confirm that list before the first release.
+
+Extra devices bought in the portal for a Play subscription are a Stripe subscription of their
+own (devices only, the plan's device price). The worker ends it at once when the Play subscription
+stops running (expired, refunded, on hold) and refunds the unused part of its last payment with a
+credit note; it follows a Play plan change with the other device price.
 
 Deleting an account (app, portal or `/delete-account`) cancels a running website subscription at
 Stripe and a Google Play one at Google (both run to the end of the paid period; the worker retries

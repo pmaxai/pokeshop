@@ -198,7 +198,13 @@ test('pairing: QR code, device limit, same phone again, transfer, removal', asyn
   const st = await appStatus(sql, look.account, look.device, { baseUrl: BASE });
   assert.equal(st.status, 'active');
   assert.equal(st.subscription.plan, 'collector');
-  assert.deepEqual(st.subscription.devices, { included: 1, extra: 0, in_use: 1 });
+  assert.deepEqual(st.subscription.devices, {
+    included: 1,
+    extra: 0,
+    in_store: 0,
+    on_web: 0,
+    in_use: 1,
+  });
   assert.equal(st.portal_url, `${BASE}/de/konto`);
   assert.ok(new Date(st.valid_until) > new Date());
 

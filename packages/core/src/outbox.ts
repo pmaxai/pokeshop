@@ -22,6 +22,7 @@ export type MailTemplate =
   | 'subscription_invoice'
   | 'subscription_payment_failed'
   | 'subscription_ended'
+  | 'devices_ended'
   | 'collection_shared'
   | 'wanted_available'
   | 'wanted_offer';

@@ -23,7 +23,7 @@ export default async function Stores({
     </li>
   );
   const input = (name: string, label: string, value: string | null, hint?: string) => (
-    <label className="field">
+    <label className="field" key={name}>
       <span>{label}</span>
       <input name={name} defaultValue={value ?? ''} autoComplete="off" spellCheck={false} />
       {hint && <small className="muted">{hint}</small>}
@@ -39,7 +39,9 @@ export default async function Stores({
         Collector und Creator gibt es auch in Google Play (später im App Store), monatlich und
         jährlich. Die Preise stellst du in der Play Console je Land ein; hier stehen nur die
         Produkt-IDs, damit der Server einen Kauf dem Abo zuordnet und die App die Angebote kennt.
-        Eine einmal angelegte Produkt-ID kann im Store nie wieder verwendet werden.
+        Eine einmal angelegte Produkt-ID kann im Store nie wieder verwendet werden. Bis zu vier
+        zusätzliche Geräte verkauft die App als Add-ons zum Abo; weitere Geräte bucht man im Konto
+        (Stripe), sie enden mit dem Store-Abo.
       </p>
       <h2>Einrichtung</h2>
       <ul className="plain">
@@ -92,6 +94,16 @@ export default async function Stores({
                 `google.${plan}.yearly`,
                 'Basis-Abo jährlich',
                 p.google[plan].base_plans.yearly,
+              )}
+              <p className="small muted">
+                {`Zusätzliche Geräte in der App: je Gerät ein eigenes Abo-Produkt (Add-on) mit denselben Basis-Abo-IDs, Preis wie ein ${plan === 'collector' ? 'Collector' : 'Creator'}-Gerät. Leer = in der App nicht verkauft.`}
+              </p>
+              {[1, 2, 3, 4].map((i) =>
+                input(
+                  `google.${plan}.device_${i}`,
+                  `Gerät ${i} (Produkt-ID)`,
+                  p.google[plan].device_product_ids[i - 1] ?? null,
+                ),
               )}
             </fieldset>
           ))}

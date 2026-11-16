@@ -55,11 +55,12 @@ Stand: November 2026
 
 1. In der App aus Google Play können Sie Collector oder Creator auch über Google Play abschließen, monatlich oder jährlich, in allen Ländern, in denen wir die App dort anbieten. Punkt 2 gilt dafür nicht. Das Abo gehört zu dem Konto, mit dem Sie in der App angemeldet sind.
 2. Der Vertrag kommt zustande, sobald Google den Kauf bestätigt und wir ihn angenommen haben. Es gelten diese Abo-Bedingungen; für den Kauf selbst gelten zusätzlich die Bedingungen von Google Play.
-3. **Preis, Zahlung und Beleg:** Es gilt der Preis, den Google Play beim Kauf anzeigt, einschließlich der Steuern. Google zieht den Betrag ein und stellt den Beleg aus; die Punkte 6 und 7 gelten dafür nicht. Zusätzliche Geräte und die Dienste auf Anfrage (Punkt 4.5) gibt es nur mit einem Abo auf der Website.
+3. **Preis, Zahlung und Beleg:** Es gilt der Preis, den Google Play beim Kauf anzeigt, einschließlich der Steuern. Google zieht den Betrag ein und stellt den Beleg aus; die Punkte 6 und 7 gelten dafür nicht. Die Dienste auf Anfrage (Punkt 4.5) gibt es nur mit einem Abo auf der Website.
 4. **Laufzeit, Wechsel und Kündigung:** Das Abo verlängert sich jeweils um den gewählten Zeitraum, bis Sie es kündigen. Sie kündigen in Google Play unter „Abos“ zum Ende des laufenden Zeitraums; bis dahin funktioniert alles weiter. Den Wechsel zwischen Collector und Creator nehmen Sie in der App vor; Google rechnet ihn ab. Die Punkte 5.1 bis 5.3 gelten dafür nicht. Nach dem Ende gilt Punkt 5.2: Ihre Sammlung bleibt gespeichert.
 5. **Erstattungen** beantragen Sie bei Google; es gelten die Regeln von Google Play. Ihre gesetzlichen Rechte bleiben unberührt.
-6. **Ein bezahltes Abo je Konto:** Hat das Konto bereits ein bezahltes Abo auf der Website, nehmen wir einen Kauf in Google Play nicht an; Google erstattet ihn dann nach drei Tagen von selbst. Solange ein Abo aus Google Play läuft, können Sie auf der Website kein Abo abschließen.
-7. **Konto löschen:** Löschen Sie Ihr Konto, beenden wir die Verlängerung in Google Play. Das Abo endet dann mit dem bezahlten Zeitraum; für diesen gibt es keine Erstattung.
+6. **Ein bezahltes Abo je Konto:** Hat das Konto bereits ein bezahltes Abo auf der Website, nehmen wir einen Kauf in Google Play nicht an; Google erstattet ihn dann nach drei Tagen von selbst. Solange ein Abo aus Google Play läuft, können Sie auf der Website kein Abo abschließen, wohl aber zusätzliche Geräte buchen (Punkt 8.7).
+7. **Zusätzliche Geräte:** Bis zu vier weitere Geräte buchen Sie in der App über Google Play dazu; sie werden mit dem Abo abgerechnet und enden mit ihm. Weitere Geräte können Sie auch in Ihrem Konto auf der Website buchen: diese rechnen wir monatlich über Stripe ab (die Punkte 6 und 7 gelten dafür), Sie können sie zum Monatsende beenden, und sie enden sofort, sobald Ihr Abo aus Google Play nicht mehr läuft; den nicht genutzten Teil der letzten Zahlung erstatten wir dann.
+8. **Konto löschen:** Löschen Sie Ihr Konto, beenden wir die Verlängerung in Google Play und die der im Konto gebuchten Geräte. Beides endet dann mit dem bezahlten Zeitraum; für diesen gibt es keine Erstattung.
 
 ## 9. Sperre
 

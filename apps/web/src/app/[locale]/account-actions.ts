@@ -20,6 +20,11 @@ import {
   SubscribeRejected,
   validateSubscribe,
 } from '@pokeshop/core/subscriptions';
+import {
+  changeDeviceSubscription,
+  DevicesRejected,
+  startDeviceCheckout,
+} from '@pokeshop/core/device-subscriptions';
 import { createPairingCode, endDevice, PAIRING_MINUTES } from '@pokeshop/core/devices';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -276,6 +281,88 @@ export async function cancelSubscriptionAction(form: FormData) {
     redirect(`${here}?change=failed`);
   }
   redirect(`${here}?${cancel ? 'cancelled_sub=1' : 'resumed=1'}`);
+}
+
+/**
+ * Extra devices in the portal for a subscription bought in an app store: the billing details
+ * and Stripe Checkout for the device subscription (the plan is the store subscription's).
+ */
+export async function subscribeDevicesAction(form: FormData) {
+  const locale = localeOf(form);
+  const here = subscriptionPath(locale);
+  const account = await signedIn(locale, here);
+  const values = {
+    plan: str(form, 'plan') === 'creator' ? 'creator' : 'collector',
+    extraDevices: str(form, 'extraDevices') || '1',
+    buyer: str(form, 'buyer') === 'business' ? 'business' : 'consumer',
+    name: str(form, 'name'),
+    company: str(form, 'company'),
+    vatId: str(form, 'vatId'),
+    street: str(form, 'street'),
+    postcode: str(form, 'postcode'),
+    city: str(form, 'city'),
+    country: str(form, 'country'),
+  };
+  const fail = (errors: Record<string, string>): never =>
+    redirect(`${here}?e=${pack({ errors, values })}#devices`);
+  const v = validateSubscribe({
+    ...values,
+    acceptTerms: str(form, 'accept_terms') === 'on',
+    immediateStart: str(form, 'immediate_start') === 'on',
+  });
+  if (!v.ok) fail(v.errors);
+  const data = (v as { ok: true; data: Parameters<typeof checkSubscriber>[0] }).data;
+  if (data.extraDevices < 1) fail({ extraDevices: 'at_least_one' });
+  const b = billing();
+  if (!b) fail({ _: 'payment_unavailable' });
+  const tax = await checkSubscriber(data, viesCheck());
+  if (!tax.ok) fail(tax.errors);
+  let url: string;
+  try {
+    url = await startDeviceCheckout(db(), b!, {
+      account,
+      form: data,
+      tax: tax as Extract<typeof tax, { ok: true }>,
+      locale,
+      successUrl: `${config.baseUrl}${here}?devices=added&session_id={CHECKOUT_SESSION_ID}#devices`,
+      cancelUrl: `${config.baseUrl}${here}?devices=cancelled#devices`,
+    });
+  } catch (e) {
+    if (isRedirect(e)) throw e;
+    if (e instanceof DevicesRejected) {
+      if (e.reason === 'too_many') fail({ extraDevices: 'too_many' });
+      redirect(`${here}?devices=${e.reason}#devices`);
+    }
+    const code = (e as { code?: string }).code ?? (e as Error).message;
+    if (code === 'tax_id_invalid') fail({ vatId: 'vat_id_invalid' });
+    if (code === 'customer_tax_location_invalid') fail({ postcode: 'invalid_address' });
+    console.error('[devices checkout]', (e as Error).message);
+    fail({ _: 'payment_unavailable' });
+  }
+  redirect(url!);
+}
+
+/** Another number of portal devices for a store subscription (0 = ends with the paid month). */
+export async function changeDevicesAction(form: FormData) {
+  const locale = localeOf(form);
+  const here = subscriptionPath(locale);
+  const account = await signedIn(locale, here);
+  const b = billing();
+  const n = Number(str(form, 'devices'));
+  if (!b || !Number.isInteger(n) || n < 0 || n > MAX_EXTRA_DEVICES) {
+    redirect(`${here}?devices=invalid#devices`);
+  }
+  try {
+    await changeDeviceSubscription(db(), b!, account, n);
+  } catch (e) {
+    if (isRedirect(e)) throw e;
+    if (e instanceof DevicesRejected) {
+      redirect(`${here}?devices=${e.reason}${e.inUse ? `&in_use=${e.inUse}` : ''}#devices`);
+    }
+    console.error('[devices change]', (e as Error).message);
+    redirect(`${here}?devices=failed#devices`);
+  }
+  redirect(`${here}?devices=${n === 0 ? 'ending' : 'done'}#devices`);
 }
 
 /** Stripe's customer portal: payment method and invoices. */

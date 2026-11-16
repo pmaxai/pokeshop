@@ -51,7 +51,7 @@ class FakePlay implements GooglePlay {
     const raw = this.subs.get(token);
     if (raw) raw.acknowledgementState = 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED';
   }
-  async cancel(_p: string, token: string) {
+  async cancel(token: string) {
     this.cancels.push(token);
   }
 }
@@ -472,14 +472,14 @@ test('the Google Play client: service-account token, calls, errors', async () =>
   assert.equal(s.state, 'active');
   assert.equal(s.storeRef, anna.storeRef);
   await client.acknowledge('oc_creator', 'tok/1');
-  await client.cancel('oc_creator', 'tok/1');
+  await client.cancel('tok/1');
   await assert.rejects(client.getSubscription('gone'), PurchaseInvalid);
   await assert.rejects(client.getSubscription('busy'), StoreUnavailable);
   assert.deepEqual(calls.slice(0, 4), [
     'POST /token',
     'GET /androidpublisher/v3/applications/com.overpricedcardboard.app/purchases/subscriptionsv2/tokens/tok%2F1',
     'POST /androidpublisher/v3/applications/com.overpricedcardboard.app/purchases/subscriptions/oc_creator/tokens/tok%2F1:acknowledge',
-    'POST /androidpublisher/v3/applications/com.overpricedcardboard.app/purchases/subscriptions/oc_creator/tokens/tok%2F1:cancel',
+    'POST /androidpublisher/v3/applications/com.overpricedcardboard.app/purchases/subscriptionsv2/tokens/tok%2F1:cancel',
   ]);
   assert.equal(calls.filter((c) => c === 'POST /token').length, 1, 'the access token is reused');
 });

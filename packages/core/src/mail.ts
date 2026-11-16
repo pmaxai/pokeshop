@@ -790,6 +790,7 @@ export async function renderTemplate(
     case 'subscription_invoice':
     case 'subscription_payment_failed':
     case 'subscription_ended':
+    case 'devices_ended':
     case 'collection_shared':
     case 'wanted_available':
     case 'wanted_offer':

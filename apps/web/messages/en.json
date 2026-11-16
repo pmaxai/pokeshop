@@ -843,8 +843,13 @@
         "invalid_tax_id": "This VAT ID doesn’t match the format of the chosen country.",
         "vat_id_invalid": "According to the EU check (VIES) this VAT ID is not valid. Please check it, or leave the field empty and pay your country’s VAT.",
         "vies_unavailable": "The EU check (VIES) can’t be reached right now. Please try again in a few minutes, or leave the field empty and pay your country’s VAT.",
-        "invalid_address": "The payment service can’t match this address to a tax region. Please check postcode and city."
-      }
+        "invalid_address": "The payment service can’t match this address to a tax region. Please check postcode and city.",
+        "at_least_one": "At least 1 device."
+      },
+      "devicesOnlyCount": "Number of devices",
+      "devicesOnlySubmit": "Continue to payment",
+      "devicesOnlySubmitNote": "Next you pay through Stripe. The devices renew every month until you end them or your app store subscription ends.",
+      "devicesOnlyHint": "{price} per device per month."
     },
     "usage": {
       "title": "Usage",
@@ -859,6 +864,29 @@
       "app_store": "the App Store",
       "text": "You subscribed in {store}. Changes, cancelling and payment happen there.",
       "manage": "Manage in {store}"
+    },
+    "devicesShop": {
+      "title": "Extra devices",
+      "intro": "Your {plan} subscription from {store} covers 1 device. In the app you can add up to {max} more through {store}. You can also add devices here in your account, for {price} per device per month.",
+      "breakdown": "({inStore} through {store}, {web} in your account)",
+      "here": "Devices in your account",
+      "zeroHint": "0 ends the devices in your account at the end of the paid month.",
+      "change": "Change number",
+      "endNote": "We bill the devices in your account monthly. If your subscription in {store} stops running, they end at once and we refund the unused part of the month.",
+      "notice": {
+        "added": "Thanks, your devices are added. You can connect them under Devices right away.",
+        "cancelled": "The payment was cancelled; no devices were added.",
+        "done": "Done, the number was changed.",
+        "ending": "The devices in your account end at the end of the paid month.",
+        "devices_in_use": "{inUse} devices are connected. Remove one under Devices first.",
+        "unchanged": "That is already the current number.",
+        "payment_failed": "The payment failed, so nothing was changed.",
+        "failed": "That did not work. Please try again later.",
+        "invalid": "Please check the number.",
+        "not_active": "No devices are added in your account.",
+        "already_active": "You have already added devices here. Change the number below.",
+        "no_store_subscription": "For this you need a running subscription from {store}."
+      }
     }
   },
   "Devices": {

@@ -131,6 +131,9 @@ export type Subscription = {
   startedAt: Date;
   /** store subscriptions: the store's product id */
   storeProductId?: string | null;
+  /** store subscriptions: extra devices bought in the app (add-ons) and in the portal */
+  devicesInStore?: number;
+  devicesOnWeb?: number;
 };
 
 type SubRow = {
@@ -189,15 +192,18 @@ type StoreRow = {
   state: string;
   expires_at: Date | null;
   auto_renew: boolean;
+  device_add_ons: { expires_at: string | null }[] | null;
   created_at: Date;
 };
 
-const storeSub = (r: StoreRow): Subscription => ({
+const storeSub = (r: StoreRow, devices = { inStore: 0, onWeb: 0 }): Subscription => ({
   id: Number(r.id),
   accountId: Number(r.account_id),
   source: r.store,
   plan: r.plan ?? 'collector',
-  extraDevices: 0,
+  extraDevices: devices.inStore + devices.onWeb,
+  devicesInStore: devices.inStore,
+  devicesOnWeb: devices.onWeb,
   status: r.state,
   stripeSubscriptionId: null,
   taxBehavior: null,
@@ -224,7 +230,8 @@ export async function subscriptionOf(
   const [[row], [store]] = await Promise.all([
     db<SubRow[]>`SELECT * FROM subscriptions WHERE account_id = ${accountId}`,
     db<StoreRow[]>`
-      SELECT id, account_id, store, product_id, plan, state, expires_at, auto_renew, created_at
+      SELECT id, account_id, store, product_id, plan, state, expires_at, auto_renew,
+             device_add_ons, created_at
         FROM store_purchases
        WHERE account_id = ${accountId} AND replaced_by IS NULL AND refused IS NULL
          AND state <> 'pending' AND plan IS NOT NULL
@@ -234,9 +241,114 @@ export async function subscriptionOf(
   ]);
   const storeRunning =
     store && STORE_RUNNING.includes(store.state) && store.expires_at && store.expires_at > now;
-  if (store && storeRunning) return storeSub(store);
+  if (store && storeRunning) {
+    // extra devices: add-ons of the purchase (paid in the store) + a device subscription (portal)
+    const inStore = (store.device_add_ons ?? []).filter(
+      (a) => a.expires_at && Date.parse(a.expires_at) > now.getTime(),
+    ).length;
+    const web = await deviceSubscriptionOf(db, accountId);
+    const onWeb = web && deviceSubscriptionRunning(web, now) ? web.devices : 0;
+    return storeSub(store, { inStore, onWeb });
+  }
   if (row) return toSub(row);
   return store ? storeSub(store) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Device subscriptions: extra devices bought in the portal for a store subscription
+// ---------------------------------------------------------------------------
+
+export type DeviceSubscription = {
+  id: number;
+  accountId: number;
+  stripeSubscriptionId: string;
+  plan: Plan;
+  devices: number;
+  status: string;
+  taxBehavior: TaxBehavior | null;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  endedAt: Date | null;
+  endedReason: string | null;
+  refundedCents: number | null;
+};
+
+type DeviceSubRow = {
+  id: number;
+  account_id: number;
+  stripe_subscription_id: string;
+  plan: Plan;
+  devices: number;
+  status: string;
+  tax_behavior: TaxBehavior | null;
+  current_period_end: Date | null;
+  cancel_at_period_end: boolean;
+  ended_at: Date | null;
+  ended_reason: string | null;
+  refunded_cents: number | null;
+};
+
+const toDeviceSub = (r: DeviceSubRow): DeviceSubscription => ({
+  id: Number(r.id),
+  accountId: Number(r.account_id),
+  stripeSubscriptionId: r.stripe_subscription_id,
+  plan: r.plan,
+  devices: r.devices,
+  status: r.status,
+  taxBehavior: r.tax_behavior,
+  currentPeriodEnd: r.current_period_end,
+  cancelAtPeriodEnd: r.cancel_at_period_end,
+  endedAt: r.ended_at,
+  endedReason: r.ended_reason,
+  refundedCents: r.refunded_cents,
+});
+
+/** Paid for at `now` (Stripe retries a failed payment for a few days: still counts). */
+export function deviceSubscriptionRunning(d: DeviceSubscription, now = new Date()): boolean {
+  if (!RUNNING.has(d.status) || d.endedAt) return false;
+  const end = d.currentPeriodEnd?.getTime() ?? 0;
+  return end + GRACE_DAYS * 86400_000 > now.getTime();
+}
+
+/** The account's device subscription: the running one, else the latest. */
+export async function deviceSubscriptionOf(
+  db: Db,
+  accountId: number,
+): Promise<DeviceSubscription | null> {
+  const [r] = await db<DeviceSubRow[]>`
+    SELECT * FROM device_subscriptions WHERE account_id = ${accountId}
+     ORDER BY (status IN ('active', 'trialing', 'past_due') AND ended_at IS NULL) DESC,
+              created_at DESC
+     LIMIT 1`;
+  return r ? toDeviceSub(r) : null;
+}
+
+/** Stores what Stripe says about a device subscription. */
+export async function storeDeviceSubscription(
+  db: Db,
+  s: BillingSubscription,
+): Promise<DeviceSubscription | null> {
+  let accountId = s.accountId;
+  if (!accountId) {
+    const [a] = await db<{ id: number }[]>`
+      SELECT id FROM accounts WHERE stripe_customer_id = ${s.customerId}`;
+    accountId = a ? Number(a.id) : null;
+  }
+  if (!accountId || !s.devicePlan) return null;
+  const [r] = await db<DeviceSubRow[]>`
+    INSERT INTO device_subscriptions (account_id, stripe_subscription_id, plan, devices, status,
+                                      tax_behavior, current_period_end, cancel_at_period_end,
+                                      ended_at, item_id)
+    VALUES (${accountId}, ${s.id}, ${s.devicePlan}, ${s.extraDevices}, ${s.status}, ${s.behavior},
+            ${s.currentPeriodEnd}, ${s.cancelAtPeriodEnd}, ${s.endedAt}, ${s.items.devices ?? null})
+    ON CONFLICT (stripe_subscription_id) DO UPDATE SET
+      plan = EXCLUDED.plan, devices = EXCLUDED.devices, status = EXCLUDED.status,
+      tax_behavior = EXCLUDED.tax_behavior, current_period_end = EXCLUDED.current_period_end,
+      cancel_at_period_end = EXCLUDED.cancel_at_period_end,
+      ended_at = coalesce(EXCLUDED.ended_at, device_subscriptions.ended_at),
+      item_id = EXCLUDED.item_id
+    RETURNING *`;
+  return r ? toDeviceSub(r) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -555,10 +667,10 @@ export class SubscribeRejected extends Error {
 }
 
 /**
- * Saves the billing details at Stripe and opens Stripe Checkout. The subscription itself is
- * stored when Stripe reports it (webhook, or the success page asking).
+ * The billing details at Stripe (customer: address, tax id, the invoice footer) and on the
+ * account. Before every checkout of the GmbH (subscription, extra devices).
  */
-export async function startSubscription(
+export async function saveBillingCustomer(
   sql: Sql,
   billing: BillingProvider,
   input: {
@@ -566,17 +678,9 @@ export async function startSubscription(
     form: SubscribeForm;
     tax: { regime: Regime; behavior: TaxBehavior; taxId: TaxId | null; viesName: string | null };
     locale: 'de' | 'en';
-    successUrl: string;
-    cancelUrl: string;
   },
 ): Promise<string> {
   const { account, form, tax } = input;
-  const existing = await subscriptionOf(sql, account.id);
-  const ent = entitlements(existing, account);
-  if (ent.active)
-    throw new SubscribeRejected(
-      existing?.source === 'complimentary' ? 'complimentary' : 'already_active',
-    );
   const [row] = await sql<{ stripe_customer_id: string | null }[]>`
     SELECT stripe_customer_id FROM accounts WHERE id = ${account.id}`;
   const seller = await licenseSeller(sql);
@@ -617,6 +721,33 @@ export async function startSubscription(
            } as never)},
            name = coalesce(name, ${form.name})
      WHERE id = ${account.id}`;
+  return customerId;
+}
+
+/**
+ * Saves the billing details at Stripe and opens Stripe Checkout. The subscription itself is
+ * stored when Stripe reports it (webhook, or the success page asking).
+ */
+export async function startSubscription(
+  sql: Sql,
+  billing: BillingProvider,
+  input: {
+    account: Account;
+    form: SubscribeForm;
+    tax: { regime: Regime; behavior: TaxBehavior; taxId: TaxId | null; viesName: string | null };
+    locale: 'de' | 'en';
+    successUrl: string;
+    cancelUrl: string;
+  },
+): Promise<string> {
+  const { account, form, tax } = input;
+  const existing = await subscriptionOf(sql, account.id);
+  const ent = entitlements(existing, account);
+  if (ent.active)
+    throw new SubscribeRejected(
+      existing?.source === 'complimentary' ? 'complimentary' : 'already_active',
+    );
+  const customerId = await saveBillingCustomer(sql, billing, input);
   const prices = await subscriptionPrices(sql);
   const cents = planCents(prices, form.plan, tax.behavior);
   const s = await billing.startCheckout({
@@ -646,6 +777,10 @@ export async function syncStripeSubscription(
 ): Promise<Subscription | null> {
   const s = await billing.getSubscription(subscriptionId);
   if (!s) return null;
+  if (s.kind === 'devices') {
+    await storeDeviceSubscription(sql, s);
+    return null;
+  }
   return storeStripeSubscription(sql, s);
 }
 
@@ -735,29 +870,38 @@ export async function handleBillingEvent(
     case 'subscription':
     case 'checkout_completed': {
       if (!event.subscriptionId) return 'no subscription';
-      const sub = await syncStripeSubscription(sql, billing, event.subscriptionId);
+      const s = await billing.getSubscription(event.subscriptionId);
+      if (!s) return 'unknown subscription';
+      if (s.kind === 'devices') {
+        const d = await storeDeviceSubscription(sql, s);
+        return d ? `synced devices ${d.devices} ${d.status}` : 'unknown account';
+      }
+      const sub = await storeStripeSubscription(sql, s);
       return sub ? `synced ${sub.plan} ${sub.status}` : 'unknown account';
     }
     case 'invoice_paid':
     case 'invoice_failed': {
       if (!event.subscriptionId) return 'not a subscription invoice';
-      const sub = await syncStripeSubscription(sql, billing, event.subscriptionId);
-      if (!sub) return 'unknown account';
+      const s = await billing.getSubscription(event.subscriptionId);
+      if (!s) return 'unknown subscription';
+      const devicesOnly = s.kind === 'devices';
+      const accountId = devicesOnly
+        ? (await storeDeviceSubscription(sql, s))?.accountId
+        : (await storeStripeSubscription(sql, s))?.accountId;
+      if (!accountId) return 'unknown account';
       const [acc] = await sql<{ email: string; locale: 'de' | 'en' }[]>`
-        SELECT email, locale FROM accounts WHERE id = ${sub.accountId}`;
+        SELECT email, locale FROM accounts WHERE id = ${accountId}`;
       if (!acc) return 'unknown account';
       if (event.type === 'invoice_paid') {
         const inv = await billing.invoice(event.invoiceId);
-        if (inv.total <= 0 && event.reason !== 'subscription_create') return 'zero invoice';
+        const first = event.reason === 'subscription_create' && !devicesOnly;
+        if (inv.total <= 0 && !first) return 'zero invoice';
         await enqueueMail(sql, {
-          template:
-            event.reason === 'subscription_create'
-              ? 'subscription_welcome'
-              : 'subscription_invoice',
+          template: first ? 'subscription_welcome' : 'subscription_invoice',
           to: acc.email,
           locale: acc.locale,
           payload: {
-            account_id: sub.accountId,
+            account_id: accountId,
             invoice_id: event.invoiceId,
             number: inv.number,
             total: inv.total,
@@ -783,7 +927,7 @@ export async function handleBillingEvent(
         to: acc.email,
         locale: acc.locale,
         payload: {
-          account_id: sub.accountId,
+          account_id: accountId,
           invoice_id: event.invoiceId,
           next_attempt: event.nextAttempt?.toISOString() ?? null,
         },
@@ -1042,6 +1186,12 @@ export async function subscriptionCounts(
   let mrr = 0;
   for (const r of rows)
     mrr += monthlyCents(prices, r.plan, r.extra_devices, r.tax_behavior ?? 'incl');
+  // extra devices bought in the portal for store subscriptions (Stripe too)
+  const devices = await db<{ plan: Plan; devices: number; tax_behavior: TaxBehavior | null }[]>`
+    SELECT plan, devices, tax_behavior FROM device_subscriptions
+     WHERE status IN ('active', 'trialing', 'past_due') AND ended_at IS NULL`;
+  for (const d of devices)
+    mrr += d.devices * planCents(prices, d.plan, d.tax_behavior ?? 'incl').device;
   // accounts with a running subscription (a store one counts once, before a free one)
   const [c] = await db<{ collector: number; creator: number }[]>`
     WITH running AS (

@@ -34,11 +34,19 @@ export function SubscribeForm(p: {
   prices: PlanPrices;
   sellerName: string;
   sellerAddress: string;
+  /**
+   * Only extra devices, for a subscription bought in an app store: no plan to pick (it is the
+   * store subscription's), at least one device, at most `max`.
+   */
+  devicesOnly?: { plan: Plan; max: number };
 }) {
   const t = useTranslations('Subscription.form');
   const tp = useTranslations('Subscription.plans');
-  const [plan, setPlan] = useState<Plan>(p.values.plan === 'creator' ? 'creator' : 'collector');
-  const [devices, setDevices] = useState(p.values.extraDevices || '0');
+  const only = p.devicesOnly;
+  const [picked, setPlan] = useState<Plan>(p.values.plan === 'creator' ? 'creator' : 'collector');
+  const plan = only?.plan ?? picked;
+  const [devices, setDevices] = useState(p.values.extraDevices || (only ? '1' : '0'));
+  const maxDevices = only?.max ?? MAX_DEVICES;
   const [business, setBusiness] = useState(p.values.buyer === 'business');
   const [country, setCountry] = useState(p.values.country || (p.locale === 'de' ? HOME : ''));
   const [vatId, setVatId] = useState(p.values.vatId ?? '');
@@ -46,8 +54,8 @@ export function SubscribeForm(p: {
   const net = business && country !== '' && country !== HOME && vatId.trim() !== '';
   const price = (k: keyof PlanPrices) => (net ? p.prices[k].net : p.prices[k].gross);
   const n = Number(devices);
-  const validN = Number.isInteger(n) && n >= 0 && n <= MAX_DEVICES;
-  const total = price(plan) + (validN ? n : 0) * price(`${plan}_device`);
+  const validN = Number.isInteger(n) && n >= (only ? 1 : 0) && n <= maxDevices;
+  const total = (only ? 0 : price(plan)) + (validN ? n : 0) * price(`${plan}_device`);
   const eur = (c: number) => formatEuro(c, p.locale);
 
   const field = (
@@ -103,42 +111,45 @@ export function SubscribeForm(p: {
   return (
     <form action={p.action} className="subscribe" noValidate>
       <input type="hidden" name="locale" value={p.locale} />
-      <fieldset className="plan-pick">
-        <legend>{t('planTitle')}</legend>
-        {(['collector', 'creator'] as const).map((k) => (
-          <label key={k} className="plan-pick__opt" data-plan={k}>
-            <input
-              type="radio"
-              name="plan"
-              value={k}
-              checked={plan === k}
-              onChange={() => setPlan(k)}
-            />
-            <span className="plan-pick__body">
-              <span className="plan-pick__head">
-                <strong>{tp(`${k}.name`)}</strong>
-                <span className="plan-pick__price">
-                  <span className="num">{eur(price(k))}</span> {t('perMonth')}
+      {only && <input type="hidden" name="plan" value={only.plan} />}
+      {!only && (
+        <fieldset className="plan-pick">
+          <legend>{t('planTitle')}</legend>
+          {(['collector', 'creator'] as const).map((k) => (
+            <label key={k} className="plan-pick__opt" data-plan={k}>
+              <input
+                type="radio"
+                name="plan"
+                value={k}
+                checked={plan === k}
+                onChange={() => setPlan(k)}
+              />
+              <span className="plan-pick__body">
+                <span className="plan-pick__head">
+                  <strong>{tp(`${k}.name`)}</strong>
+                  <span className="plan-pick__price">
+                    <span className="num">{eur(price(k))}</span> {t('perMonth')}
+                  </span>
                 </span>
+                <span className="plan-pick__what">{tp(`${k}.short`)}</span>
               </span>
-              <span className="plan-pick__what">{tp(`${k}.short`)}</span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
+            </label>
+          ))}
+        </fieldset>
+      )}
 
       <label
         className={p.errors.extraDevices ? 'field field--error' : 'field'}
         htmlFor="sub-devices"
       >
-        <span>{t('extraDevices')}</span>
+        <span>{only ? t('devicesOnlyCount') : t('extraDevices')}</span>
         <input
           id="sub-devices"
           name="extraDevices"
           type="number"
           inputMode="numeric"
-          min={0}
-          max={MAX_DEVICES}
+          min={only ? 1 : 0}
+          max={maxDevices}
           step={1}
           value={devices}
           onChange={(e) => setDevices(e.target.value)}
@@ -146,7 +157,10 @@ export function SubscribeForm(p: {
           className="subscribe__devices"
         />
         <small id="sub-devices-hint" className={p.errors.extraDevices ? 'field__error' : 'muted'}>
-          {p.errors.extraDevices ?? t('extraDevicesHint', { price: eur(price(`${plan}_device`)) })}
+          {p.errors.extraDevices ??
+            t(only ? 'devicesOnlyHint' : 'extraDevicesHint', {
+              price: eur(price(`${plan}_device`)),
+            })}
         </small>
       </label>
 
@@ -255,9 +269,9 @@ export function SubscribeForm(p: {
           <small className="field__error">{p.errors.immediateStart}</small>
         )}
         <button type="submit" className="btn btn--accent btn--wide">
-          {t('submit')}
+          {only ? t('devicesOnlySubmit') : t('submit')}
         </button>
-        <p className="muted small">{t('submitNote')}</p>
+        <p className="muted small">{only ? t('devicesOnlySubmitNote') : t('submitNote')}</p>
         <p className="muted small">
           {t('seller', { seller: p.sellerName, address: p.sellerAddress })}
         </p>
