@@ -253,6 +253,84 @@ Answers like `/login/google`. Only the latest code counts. Errors: `400 wrong_co
 `tries_left` (5 tries per code, then `429 rate_limited`: ask for a new code), `410 code_expired`,
 `400 invalid_email`, `409 device_limit`. An account registered this way has a confirmed address.
 
+## Buying in Google Play
+
+The store editions sell the subscription with Play Billing. The server is told about every
+purchase and reads it from Google itself; the app never acknowledges purchases (the server does,
+once it has accepted them).
+
+1. `GET /store/offers` → the plans on sale and their product ids. Show only offers whose products
+   Play Billing also returns, with the store's own localized prices.
+2. Launch the purchase with `setObfuscatedAccountId(status.account.store_ref)`. This ties the
+   purchase to the account even if the app never reports it.
+3. Report it: `POST /store/google` with the product id and the purchase token. Repeat until you
+   get an answer other than `503` (the same token always gives the same answer).
+4. **Restore purchases** / app start: report every purchase `queryPurchasesAsync` returns.
+5. Manage / cancel: open `status.subscription.manage_url` (the Play subscriptions page).
+
+### `GET /api/app/v1/store/offers`
+
+```json
+{
+  "offers": [
+    {
+      "plan": "collector",
+      "name": "Collector",
+      "features": ["scanner", "trading", "collection", "wanted"],
+      "google": {
+        "product_id": "oc_collector",
+        "base_plans": { "monthly": "monthly", "yearly": "yearly" }
+      },
+      "apple": null
+    },
+    {
+      "plan": "creator",
+      "name": "Creator",
+      "features": ["scanner", "trading", "youtube", "recording", "collection", "wanted"],
+      "google": {
+        "product_id": "oc_creator",
+        "base_plans": { "monthly": "monthly", "yearly": "yearly" }
+      },
+      "apple": null
+    }
+  ]
+}
+```
+
+`google` is `null` while the shop has not entered the product ids (Admin › App-Stores). The line-up
+can change without an app update.
+
+### `POST /api/app/v1/store/google`
+
+`{ "product_id": "oc_creator", "purchase_token": "…" }` → `200` with the `/status` body (now
+`active`, `subscription.source: "google_play"`).
+
+The server reads the subscription from Google (`purchases.subscriptionsv2.get`), checks that it
+was bought for this account (`obfuscatedExternalAccountId` = `store_ref`), stores plan and expiry
+and acknowledges it. A plan change (`linkedPurchaseToken`) replaces the older purchase. A purchase
+still pending payment is stored but unlocks nothing yet (`status: "none"`).
+
+| HTTP | `error`              | When                                                                                                                                                         |
+| ---- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 400  | `invalid_purchase`   | Google doesn't know the token, or it is not one of our products                                                                                              |
+| 409  | `linked_elsewhere`   | bought for another account; `owner` holds its masked e-mail (`a***@example.com`)                                                                             |
+| 409  | `already_subscribed` | the account already has a running subscription; `source` says where (`web`, `google_play`). The purchase is not acknowledged, so Google refunds it in 3 days |
+| 503  | `store_unavailable`  | Google didn't answer. Keep the purchase and try again                                                                                                        |
+
+One paid source at a time: the app should not offer the store plans while `status` is `active`.
+After that, renewals, cancellations, grace periods and refunds reach the server directly from
+Google; the app sees them in `/status`.
+
+| Google state          | `subscription.state` | Features                                    |
+| --------------------- | -------------------- | ------------------------------------------- |
+| active, renews        | `active`             | on until `valid_until` (the store's expiry) |
+| cancelled             | `canceled`           | on until `ends_at`                          |
+| grace period          | `past_due`           | on until the end of the grace period        |
+| on hold, paused       | `ended`              | off                                         |
+| expired               | `ended`              | off                                         |
+| refunded or revoked   | `ended`              | off at once                                 |
+| payment still pending | `none`               | off                                         |
+
 ## Status
 
 ### `GET /api/app/v1/status`
@@ -528,11 +606,13 @@ Staging (`https://staging.overpricedcardboard.com`) is password-protected. The a
 it with the header `X-Staging-Access: <secret>` (GitHub secret `ACCOUNT_STAGING_ACCESS`; the shop
 sets the same value as `STAGING_ACCESS` on the server). Staging only, never in production:
 
-| Hook                | How                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                              |
-| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                        |
-| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production) |
+| Hook                | How                                                                                                                                                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                                                                                                                                            |
+| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                                                                                                                                      |
+| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production)                                                                                                               |
+| Test purchases      | `purchase_token` `test_active`, `test_canceled`, `test_grace`, `test_on_hold`, `test_expired`, `test_refunded` (a suffix such as `test_active-42` is allowed) is accepted without asking Google, for the reporting account |
+| Test events         | `POST /api/app/v1/test/store-event` `{ "store_ref": "…", "state": "renewed" }` moves the account's latest test purchase: `active`, `renewed`, `canceled`, `grace`, `on_hold`, `paused`, `expired`, `refunded`              |
 
 The review account has a free Creator subscription without end, up to 10 devices, and is cleared
 every Monday (collection, missing cards, devices).

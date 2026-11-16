@@ -18,6 +18,7 @@ import { db } from '@/server/config';
 import { requireAccount } from '@/server/account';
 import { billing } from '@/server/billing';
 import { billingPeriodStart, usageSince } from '@pokeshop/core/usage';
+import { storeManageUrl } from '@pokeshop/core/store';
 import { AccountShell } from '@/components/account/AccountShell';
 import { SubscribeForm, type PlanPrices } from '@/components/account/SubscribeForm';
 import {
@@ -156,6 +157,18 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
             </div>
           </dl>
           {sub.source === 'complimentary' && <p className="muted">{t('complimentary')}</p>}
+          {(sub.source === 'google_play' || sub.source === 'app_store') && (
+            <p className="sub-store">
+              {t('store.text', { store: t(`store.${sub.source}`) })}{' '}
+              <a
+                href={storeManageUrl(sub.source, sub.storeProductId)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t('store.manage', { store: t(`store.${sub.source}`) })}
+              </a>
+            </p>
+          )}
         </section>
 
         {usage && (

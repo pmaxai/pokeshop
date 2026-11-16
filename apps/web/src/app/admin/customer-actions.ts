@@ -12,6 +12,7 @@ import {
   setWebshopHost,
 } from '@pokeshop/core/subscriptions';
 import { saveS3Config, setService, type UsageService } from '@pokeshop/core/usage';
+import { saveStoreProducts } from '@pokeshop/core/store';
 import { apiMasterKey, db } from '@/server/config';
 import { audit, requireAdmin } from '@/server/admin-auth';
 import { billing } from '@/server/billing';
@@ -183,4 +184,34 @@ export async function s3ConfigAction(form: FormData) {
     `${page(id)}#dienste`,
     'S3-Einstellungen gespeichert. Die App holt sie beim nächsten Start.',
   );
+}
+
+/** Product ids of the plans in Google Play and the App Store. */
+export async function saveStoreProductsAction(form: FormData) {
+  const user = await requireAdmin('owner');
+  const g = (plan: string, k: string) => str(form, `google.${plan}.${k}`);
+  const a = (plan: string, k: string) => str(form, `apple.${plan}.${k}`);
+  const input = {
+    google: Object.fromEntries(
+      ['collector', 'creator'].map((plan) => [
+        plan,
+        {
+          product_id: g(plan, 'product_id'),
+          base_plans: { monthly: g(plan, 'monthly'), yearly: g(plan, 'yearly') },
+        },
+      ]),
+    ),
+    apple: Object.fromEntries(
+      ['collector', 'creator'].map((plan) => [
+        plan,
+        { monthly: a(plan, 'monthly'), yearly: a(plan, 'yearly') },
+      ]),
+    ),
+  };
+  const r = await saveStoreProducts(db(), input);
+  if (!r.ok) {
+    back('/admin/kunden/stores', `Nicht gespeichert, bitte prüfen: ${r.errors.join(', ')}`, true);
+  }
+  await audit(user, 'store.products', 'settings', 0, null, input);
+  back('/admin/kunden/stores', 'Gespeichert.');
 }

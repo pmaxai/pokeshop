@@ -4,6 +4,12 @@ import { getSql } from '@pokeshop/core/db';
 import { httpTcgdexClient, type TcgdexClient } from '@pokeshop/core/tcgdex';
 import { remoteKeys, type KeyLookup } from '@pokeshop/core/jwt';
 import { GOOGLE_KEYS_URL } from '@pokeshop/core/app-signin';
+import {
+  googlePlayClient,
+  googlePlayPackage,
+  parseServiceAccount,
+  type GooglePlay,
+} from '@pokeshop/core/store';
 
 /** Server-side configuration from the environment, read lazily so `next build` works without it. */
 export const config = {
@@ -84,4 +90,27 @@ export function licenseSalesConfigured(): boolean {
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const [row] = await db()<{ value: T }[]>`SELECT value FROM settings WHERE key = ${key}`;
   return row?.value ?? fallback;
+}
+
+let play: GooglePlay | null | undefined;
+/**
+ * The Google Play Developer API with the company's service account (GOOGLE_PLAY_SERVICE_ACCOUNT),
+ * or null while it isn't set up.
+ */
+export function googlePlay(): GooglePlay | null {
+  if (play === undefined) {
+    const account = parseServiceAccount(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT);
+    play = account ? googlePlayClient({ packageName: googlePlayPackage(), account }) : null;
+  }
+  return play;
+}
+
+/** Who may push Google's notifications: the audience and (optionally) the push account. */
+export function pubSubAuth(): { audience: string; email: string | null } {
+  return {
+    audience:
+      process.env.GOOGLE_PUBSUB_AUDIENCE?.trim() ||
+      `${config.baseUrl}/api/store/google/notifications`,
+    email: process.env.GOOGLE_PUBSUB_SERVICE_ACCOUNT?.trim().toLowerCase() || null,
+  };
 }

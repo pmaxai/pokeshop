@@ -107,6 +107,19 @@ export const localInput = (d: Date | string | null | undefined) => {
   return parts.replace(' ', 'T');
 };
 
+/** States of an app-store purchase in the admin's words. */
+export const STORE_STATE: Record<string, string> = {
+  pending: 'Zahlung ausstehend',
+  active: 'Aktiv',
+  canceled: 'Aktiv',
+  grace: 'Zahlung offen (Kulanzzeit)',
+  past_due: 'Zahlung offen (Kulanzzeit)',
+  on_hold: 'Zahlung fehlgeschlagen, gesperrt',
+  paused: 'Pausiert',
+  expired: 'Beendet',
+  revoked: 'Erstattet',
+};
+
 /** Status of a customer's subscription in the admin's words. */
 export function subscriptionStatusLabel(r: {
   source: string | null;
@@ -115,6 +128,12 @@ export function subscriptionStatusLabel(r: {
   endsAt: Date | null;
 }) {
   if (!r.status) return '–';
+  if (r.source === 'google_play' || r.source === 'app_store') {
+    const store = r.source === 'google_play' ? 'Google Play' : 'App Store';
+    const s = STORE_STATE[r.status] ?? r.status;
+    const running = ['active', 'canceled', 'past_due', 'grace'].includes(r.status);
+    return `${s} (${store})${running && r.cancelAtPeriodEnd ? ', gekündigt' : ''}`;
+  }
   if (r.source === 'complimentary') {
     return r.endsAt && r.endsAt <= new Date() ? 'Gratis, abgelaufen' : 'Gratis';
   }

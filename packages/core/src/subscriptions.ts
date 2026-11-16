@@ -114,7 +114,8 @@ export const monthlyCents = (
 export type Subscription = {
   id: number;
   accountId: number;
-  source: 'stripe' | 'complimentary';
+  /** stripe: bought on the website; google_play / app_store: bought in the app (store_purchases) */
+  source: 'stripe' | 'complimentary' | 'google_play' | 'app_store';
   plan: Plan;
   extraDevices: number;
   status: string;
@@ -128,6 +129,8 @@ export type Subscription = {
   note: string | null;
   grantedBy: string | null;
   startedAt: Date;
+  /** store subscriptions: the store's product id */
+  storeProductId?: string | null;
 };
 
 type SubRow = {
@@ -168,9 +171,72 @@ const toSub = (r: SubRow): Subscription => ({
   startedAt: r.started_at,
 });
 
-export async function subscriptionOf(db: Db, accountId: number): Promise<Subscription | null> {
+/** The subscriptions row: bought on the website (Stripe) or given by the shop. */
+export async function websiteSubscription(db: Db, accountId: number): Promise<Subscription | null> {
   const [r] = await db<SubRow[]>`SELECT * FROM subscriptions WHERE account_id = ${accountId}`;
   return r ? toSub(r) : null;
+}
+
+/** States of a store purchase that keep the subscription running (until expires_at). */
+export const STORE_RUNNING = ['active', 'canceled', 'grace'];
+
+type StoreRow = {
+  id: number;
+  account_id: number;
+  store: 'google_play' | 'app_store';
+  product_id: string;
+  plan: Plan | null;
+  state: string;
+  expires_at: Date | null;
+  auto_renew: boolean;
+  created_at: Date;
+};
+
+const storeSub = (r: StoreRow): Subscription => ({
+  id: Number(r.id),
+  accountId: Number(r.account_id),
+  source: r.store,
+  plan: r.plan ?? 'collector',
+  extraDevices: 0,
+  status: r.state,
+  stripeSubscriptionId: null,
+  taxBehavior: null,
+  currentPeriodEnd: r.expires_at,
+  cancelAtPeriodEnd: !r.auto_renew,
+  endsAt: r.auto_renew ? null : r.expires_at,
+  endedAt: STORE_RUNNING.includes(r.state) ? null : r.expires_at,
+  items: {},
+  note: null,
+  grantedBy: null,
+  startedAt: r.created_at,
+  storeProductId: r.product_id,
+});
+
+/**
+ * The account's subscription: a running app-store purchase if there is one (it is paid, so it
+ * comes before a free one), else the website's row, else the last store purchase (ended).
+ */
+export async function subscriptionOf(
+  db: Db,
+  accountId: number,
+  now = new Date(),
+): Promise<Subscription | null> {
+  const [[row], [store]] = await Promise.all([
+    db<SubRow[]>`SELECT * FROM subscriptions WHERE account_id = ${accountId}`,
+    db<StoreRow[]>`
+      SELECT id, account_id, store, product_id, plan, state, expires_at, auto_renew, created_at
+        FROM store_purchases
+       WHERE account_id = ${accountId} AND replaced_by IS NULL AND refused IS NULL
+         AND state <> 'pending' AND plan IS NOT NULL
+       ORDER BY (state IN ('active', 'canceled', 'grace') AND expires_at > ${now}) DESC,
+                expires_at DESC NULLS LAST
+       LIMIT 1`,
+  ]);
+  const storeRunning =
+    store && STORE_RUNNING.includes(store.state) && store.expires_at && store.expires_at > now;
+  if (store && storeRunning) return storeSub(store);
+  if (row) return toSub(row);
+  return store ? storeSub(store) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -248,6 +314,18 @@ export function entitlements(
       state = 'complimentary';
       endsAt = sub.endsAt;
       validUntil = min(sub.endsAt ?? cap, cap);
+    }
+  } else if (sub && (sub.source === 'google_play' || sub.source === 'app_store')) {
+    // the store's expiry is the end; in the grace period it is the end of the grace period
+    const end = sub.currentPeriodEnd;
+    if (STORE_RUNNING.includes(sub.status) && end && end > now) {
+      state =
+        sub.status === 'grace' ? 'past_due' : sub.status === 'canceled' ? 'canceled' : 'active';
+      if (sub.status === 'canceled') endsAt = end;
+      else if (sub.status === 'active') renewsAt = end;
+      validUntil = min(end, cap);
+    } else {
+      state = sub.status === 'pending' ? 'none' : 'ended';
     }
   } else if (sub) {
     if (RUNNING.has(sub.status)) {
@@ -872,7 +950,7 @@ export type CustomerRow = {
   createdAt: Date;
   lastLoginAt: Date | null;
   plan: Plan | null;
-  source: 'stripe' | 'complimentary' | null;
+  source: Subscription['source'] | null;
   status: string | null;
   extraDevices: number;
   devices: number;
@@ -897,7 +975,7 @@ export async function listCustomers(
       created_at: Date;
       last_login_at: Date | null;
       plan: Plan | null;
-      source: 'stripe' | 'complimentary' | null;
+      source: Subscription['source'] | null;
       status: string | null;
       extra_devices: number | null;
       devices: number;
@@ -908,16 +986,31 @@ export async function listCustomers(
     }[]
   >`
     SELECT a.id, a.public_id, a.email, a.name, a.created_at, a.last_login_at, a.webshop_host,
-           s.plan, s.source, s.status, s.extra_devices, s.current_period_end, s.cancel_at_period_end,
-           s.ends_at,
+           coalesce(sp.plan, s.plan) AS plan, coalesce(sp.store, s.source) AS source,
+           coalesce(sp.status, s.status) AS status,
+           CASE WHEN sp.store IS NULL THEN s.extra_devices ELSE 0 END AS extra_devices,
+           coalesce(sp.expires_at, s.current_period_end) AS current_period_end,
+           CASE WHEN sp.store IS NULL THEN s.cancel_at_period_end ELSE NOT sp.auto_renew END AS cancel_at_period_end,
+           CASE WHEN sp.store IS NULL THEN s.ends_at END AS ends_at,
            (SELECT count(*)::int FROM devices d WHERE d.account_id = a.id AND d.ended_at IS NULL) AS devices
-      FROM accounts a LEFT JOIN subscriptions s ON s.account_id = a.id
+      FROM accounts a
+      LEFT JOIN subscriptions s ON s.account_id = a.id
+      -- a running app-store subscription comes first
+      LEFT JOIN LATERAL (
+        SELECT p.store, p.plan, CASE p.state WHEN 'grace' THEN 'past_due' ELSE 'active' END AS status,
+               p.expires_at, p.auto_renew
+          FROM store_purchases p
+         WHERE p.account_id = a.id AND p.replaced_by IS NULL AND p.refused IS NULL
+           AND p.state IN ('active', 'canceled', 'grace') AND p.expires_at > now()
+         ORDER BY p.expires_at DESC LIMIT 1) sp ON true
      WHERE (${like}::text IS NULL OR a.email LIKE ${like} OR lower(coalesce(a.name, '')) LIKE ${like}
             OR a.public_id = ${q ?? ''})
        AND (${opts.filter ?? 'all'} = 'all'
-            OR (${opts.filter ?? 'all'} = 'subscribed' AND s.status IN ('active', 'trialing', 'past_due', 'complimentary')
-                AND (s.ends_at IS NULL OR s.ends_at > now() OR s.source = 'stripe'))
-            OR (${opts.filter ?? 'all'} = 'free' AND (s.id IS NULL OR s.status NOT IN ('active', 'trialing', 'past_due', 'complimentary'))))
+            OR (${opts.filter ?? 'all'} = 'subscribed' AND (sp.store IS NOT NULL OR (
+                s.status IN ('active', 'trialing', 'past_due', 'complimentary')
+                AND (s.ends_at IS NULL OR s.ends_at > now() OR s.source = 'stripe'))))
+            OR (${opts.filter ?? 'all'} = 'free' AND sp.store IS NULL
+                AND (s.id IS NULL OR s.status NOT IN ('active', 'trialing', 'past_due', 'complimentary'))))
      ORDER BY a.created_at DESC LIMIT 300`;
   return rows.map((r) => ({
     id: Number(r.id),
@@ -948,12 +1041,21 @@ export async function subscriptionCounts(
   let mrr = 0;
   for (const r of rows)
     mrr += monthlyCents(prices, r.plan, r.extra_devices, r.tax_behavior ?? 'incl');
+  // accounts with a running subscription (a store one counts once, before a free one)
   const [c] = await db<{ collector: number; creator: number }[]>`
+    WITH running AS (
+      SELECT DISTINCT ON (account_id) account_id, plan FROM (
+        SELECT account_id, plan, 1 AS rank FROM store_purchases
+         WHERE replaced_by IS NULL AND refused IS NULL AND account_id IS NOT NULL
+           AND state IN ('active', 'canceled', 'grace') AND expires_at > now()
+        UNION ALL
+        SELECT account_id, plan, 2 FROM subscriptions
+         WHERE (source = 'stripe' AND status IN ('active', 'trialing', 'past_due'))
+            OR (source = 'complimentary' AND ended_at IS NULL AND (ends_at IS NULL OR ends_at > now()))
+      ) x ORDER BY account_id, rank)
     SELECT count(*) FILTER (WHERE plan = 'collector')::int AS collector,
            count(*) FILTER (WHERE plan = 'creator')::int AS creator
-      FROM subscriptions
-     WHERE (source = 'stripe' AND status IN ('active', 'trialing', 'past_due'))
-        OR (source = 'complimentary' AND ended_at IS NULL AND (ends_at IS NULL OR ends_at > now()))`;
+      FROM running`;
   return { collector: c?.collector ?? 0, creator: c?.creator ?? 0, mrrCents: mrr };
 }
 

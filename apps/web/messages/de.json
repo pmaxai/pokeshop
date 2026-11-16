@@ -851,6 +851,12 @@
       "pipeline": "Automatic Content Processing (Videominuten)",
       "billed": "Die Beträge sind ungefähr (inkl. USt.); verrechnet wird mit der nächsten Abo-Rechnung.",
       "notBilled": "Bei deinem Abo wird die Nutzung nicht verrechnet."
+    },
+    "store": {
+      "google_play": "Google Play",
+      "app_store": "App Store",
+      "text": "Du hast dieses Abo in {store} abgeschlossen. Ändern, kündigen und bezahlen erfolgt dort.",
+      "manage": "In {store} verwalten"
     }
   },
   "Devices": {
