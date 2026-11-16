@@ -41,5 +41,5 @@ export async function POST(req: NextRequest) {
     const [status, message] = MESSAGES[r.problem];
     return apiError(status, r.problem, message, r.seats !== undefined ? { seats: r.seats } : {});
   }
-  return signedIn(r, 201);
+  return signedIn(r, 201, b);
 }

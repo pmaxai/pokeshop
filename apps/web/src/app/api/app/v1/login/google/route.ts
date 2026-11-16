@@ -54,5 +54,5 @@ export async function POST(req: NextRequest) {
     }
     return apiError(400, 'invalid_identity', 'The Google account has no e-mail address.');
   }
-  return signedIn(r, 200);
+  return signedIn(r, 200, b);
 }

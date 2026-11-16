@@ -306,6 +306,13 @@ Google Cloud project and the Play Console of the app `com.overpricedcardboard.ap
    with Antalyse GmbH as controller; it names TCGdex for the card images and lists what the app
    sends. Have the app team confirm that list before the first release.
 
+Creator codes (Admin › Affiliates): each link can carry a website discount (a Stripe coupon
+`oc_aff_<percent>_<months>`, created on first use) and a Google Play offer id. Create that offer in
+the Play Console under every base plan (Collector and Creator, monthly and yearly) with the same id,
+eligibility _Developer determined_ and the same discount; the app buys with it when the server
+names it. Links: `https://overpricedcardboard.com/r/<CODE>` (cookie `oc_ref`, 90 days). Payouts are
+made by hand from the CSV export of a period.
+
 Extra devices bought in the portal for a Play subscription are a Stripe subscription of their
 own (devices only, the plan's device price). The worker ends it at once when the Play subscription
 stops running (expired, refunded, on hold) and refunds the unused part of its last payment with a

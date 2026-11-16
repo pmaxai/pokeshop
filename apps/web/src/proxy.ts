@@ -38,6 +38,7 @@ export default function proxy(req: NextRequest) {
 // Set codes contain dots ("sv03.5"), so only real file extensions are excluded.
 export const config = {
   matcher: [
-    '/((?!api|admin|media|dev|_next|_vercel|.*\\.(?:ico|png|jpe?g|svg|gif|webp|avif|txt|xml|json|js|css|map|woff2?|webmanifest)$).*)',
+    // r/<code>: affiliate links, no language prefix
+    '/((?!api|admin|media|dev|r/|_next|_vercel|.*\\.(?:ico|png|jpe?g|svg|gif|webp|avif|txt|xml|json|js|css|map|woff2?|webmanifest)$).*)',
   ],
 };

@@ -4,6 +4,7 @@ import { appStatus, deviceByToken, type Device, type TokenLookup } from '@pokesh
 import type { Account } from '@pokeshop/core/accounts';
 import type { DeviceInput } from '@pokeshop/core/app-signin';
 import { accountEntitlements } from '@pokeshop/core/subscriptions';
+import { applyAppCode } from './affiliate';
 import { config, db } from './config';
 import { clientIp, rateLimited } from './rate-limit';
 
@@ -135,7 +136,12 @@ export function deviceFields(
 export async function signedIn(
   r: { token: string; device: Device; account: Account; created?: boolean },
   status: number,
+  /** the request body: an `affiliate_code` in it registers the account for that link */
+  body?: Record<string, unknown> | null,
 ) {
+  const code = body?.affiliate_code;
+  const affiliate =
+    typeof code === 'string' && code.trim() ? await applyAppCode(r.account.id, code) : null;
   const s = await appStatus(db(), r.account, r.device, { baseUrl: config.baseUrl });
   return ok(
     {
@@ -146,6 +152,7 @@ export async function signedIn(
         paired_at: r.device.pairedAt.toISOString(),
       },
       ...(r.created !== undefined ? { created: r.created } : {}),
+      ...(affiliate ? { affiliate_code: affiliate.result, affiliate: affiliate.affiliate } : {}),
       status: s,
     },
     status,
