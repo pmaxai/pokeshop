@@ -66,7 +66,7 @@ and `status` says `inactive`, so renewing in the portal unlocks the app again wi
 | 400    | `invalid_code`               | Not a pairing code (format)                                                           |
 | 401    | `invalid_token`              | Token missing or unknown                                                              |
 | 401    | `unpaired`                   | This device was disconnected; see `reason` (below)                                    |
-| 402    | `subscription_required`      | The account has no active subscription (pairing, collection, missing cards)           |
+| 402    | `subscription_required`      | The account has no active subscription (pairing, collection, missing cards, pack)     |
 | 403    | `feature_not_included`       | The plan does not include this (e.g. S3 settings without the service)                 |
 | 404    | `unknown_code` / `not_found` | Pairing code or item does not exist                                                   |
 | 409    | `device_limit`               | All devices of the subscription are in use (pairing)                                  |
@@ -467,6 +467,53 @@ Creator only, and only when the shop switched the service on (`features.s3_uploa
 `provider` is `aws`, `exoscale` or `other` (same as the app's S3 settings). The app fills its
 Recording & upload settings from this (secret into the Keystore as today), and fetches it again when
 `updated_at` changes or uploads fail with an access error.
+
+## Data pack (store editions)
+
+The store editions can't get a new app every night, so they download the nightly data pack (cards,
+prices, fingerprints, model) from the shop. The shop mirrors the Data pipeline's release
+`data-pack` about hourly and keeps the last 3 versions.
+
+### `GET /api/app/v1/pack`
+
+Token and a running subscription (`402 subscription_required` otherwise).
+
+```json
+{
+  "version": "2026-11-16T00:11:25Z",
+  "files": [
+    {
+      "name": "catalog.sqlite",
+      "size": 27705344,
+      "sha256": "7620eb4f…",
+      "url": "https://overpricedcardboard.com/api/app/v1/pack/files/7620eb4f…/catalog.sqlite?expires=…&sig=…"
+    },
+    { "name": "index.f16", "size": 41540608, "sha256": "…", "url": "…" },
+    { "name": "model.onnx", "size": 19425628, "sha256": "…", "url": "…" },
+    { "name": "texture.u8", "size": 2920824, "sha256": "…", "url": "…" },
+    { "name": "pack.json", "size": 733, "sha256": "…", "url": "…" }
+  ]
+}
+```
+
+| File             | Changes                                                                  |
+| ---------------- | ------------------------------------------------------------------------ |
+| `catalog.sqlite` | every night                                                              |
+| `index.f16`      | when cards are added                                                     |
+| `model.onnx`     | rarely                                                                   |
+| `texture.u8`     | when cards are added                                                     |
+| `pack.json`      | every night (the release's own manifest: version, checksums, model info) |
+
+- Download only the files whose `sha256` differs from what the app has, usually just the catalog
+  and `pack.json`. Check the SHA-256 after downloading and swap the files in only when all are
+  complete.
+- `url` works for **1 hour** and needs no token (any downloader can fetch it; on staging it needs
+  no `X-Staging-Access` either). After that: `410 url_expired`, ask `/pack` again. A changed URL:
+  `403 invalid_url`.
+- Responses are sent chunked, without `Content-Length`; take the size from `/pack`. A single
+  `Range: bytes=start-` is supported (`206` with `Content-Range`), so an interrupted download can
+  go on where it stopped; `ETag` is the SHA-256.
+- `503 pack_unavailable` (with `Retry-After`) only before the shop has mirrored the first pack.
 
 ## Cards
 

@@ -310,6 +310,13 @@ Google every 10 minutes), signs out all devices and removes the data. The scrubb
 removed after 30 days, later while a cancelled subscription still runs or usage is still to be
 billed.
 
+Data pack for the store editions: the worker mirrors the Data pipeline's release `data-pack`
+into the media volume (`app-pack/`, files named by SHA-256, the last 3 versions; about 100 MB
+the first time, then usually only the catalog each night) and the app downloads it through
+`GET /api/app/v1/pack` with URLs that work one hour. The worker reaches github.com for it, like
+the price import. When the release is made private, set `PACK_GITHUB_TOKEN` (fine-grained,
+_Contents: read_ on `pmaxai/TCGdex`) for the worker; both the price import and the mirror use it.
+
 What the server does: every report from the app and every notification reads the subscription
 from Google again and stores it (Admin › Kunden › customer › Käufe in den App-Stores); the
 worker re-reads every subscription that runs out within 2 days twice a day. A purchase on an

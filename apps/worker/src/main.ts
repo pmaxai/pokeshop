@@ -41,7 +41,8 @@ import {
   revokeOrderLicenses,
 } from '@pokeshop/core/licenses';
 import { paymentsFromEnv } from '@pokeshop/core/payments';
-import { importPack } from '@pokeshop/core/pricepack';
+import { importPack, packFetch } from '@pokeshop/core/pricepack';
+import { mirrorAppPack } from '@pokeshop/core/app-pack';
 import {
   fillLocalNames,
   httpTcgdexClient,
@@ -131,10 +132,15 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
   'pricepack.import': async (job) => {
     const r = await importPack(sql, {
       force: job.payload.force === true,
+      fetch: packFetch(),
       log: (m) => console.log(m),
     });
     if (r.status === 'current') console.log(`[pack] ${r.version} is current`);
     await beat();
+  },
+  // The same pack for the store editions of the app (GET /api/app/v1/pack).
+  'apppack.mirror': async () => {
+    await mirrorAppPack(sql, { mediaDir, fetch: packFetch(), log: (m) => console.log(m) });
   },
   // Invoice or credit note PDF requested in the admin before its mail went out.
   'document.render': async (job) => {
@@ -246,6 +252,7 @@ async function schedule() {
       {},
       { dedupeKey: 'pricepack.import', maxAttempts: 2 },
     );
+    await enqueueJob(sql, 'apppack.mirror', {}, { dedupeKey: 'apppack.mirror', maxAttempts: 2 });
   }
   await requeueStaleJobs(sql);
   const carts = await deleteStaleCarts(sql);
