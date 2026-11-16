@@ -6,6 +6,7 @@ import { netPrice, subscriptionPrices } from '@pokeshop/core/subscriptions';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
+import { cookieAffiliate } from '@/server/affiliate';
 import { getCompany } from '@/server/shop';
 import { pageAlternates } from '@/server/seo';
 
@@ -64,6 +65,12 @@ export default async function AppPage({ params }: Props) {
       typeof playStore === 'string' && playStore.startsWith('https://') ? playStore : null,
   };
   const store = sales.playStoreUrl !== null;
+  // came through an influencer's link (/r/<code>): their code and discount
+  const affiliate = await cookieAffiliate();
+  const playWithReferrer =
+    affiliate && sales.playStoreUrl
+      ? `${sales.playStoreUrl}${sales.playStoreUrl.includes('?') ? '&' : '?'}referrer=${encodeURIComponent(`aff=${affiliate.code}`)}`
+      : null;
   // The services are the GmbH's; enquiries go to its mailbox.
   const ask = (service: string) =>
     `mailto:${seller.email || email}?subject=${encodeURIComponent(t('services.askSubject', { service }))}`;
@@ -77,6 +84,23 @@ export default async function AppPage({ params }: Props) {
           </h1>
           <p className="app-hero__tagline">{t('tagline')}</p>
           <p className="hero__lead">{t('lead')}</p>
+          {affiliate && (
+            <p className="notice app-affiliate" role="status">
+              {affiliate.discountPercent > 0
+                ? t('affiliate.discount', {
+                    code: affiliate.code,
+                    percent: affiliate.discountPercent,
+                    months: affiliate.discountMonths ?? 0,
+                  })
+                : t('affiliate.noDiscount', { code: affiliate.code })}
+              {playWithReferrer && (
+                <>
+                  {' '}
+                  <a href={playWithReferrer}>{t('affiliate.play')}</a>
+                </>
+              )}
+            </p>
+          )}
           <p className="app-hero__price">
             <strong>{t('price', { price })}</strong>
             <span>{t('priceNote')}</span>

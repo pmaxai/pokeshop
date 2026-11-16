@@ -36,6 +36,7 @@ import {
 } from '@pokeshop/core/usage';
 import { apiMasterKey } from '@/server/config';
 import { activeDeviceAddOns, storeManageUrl, storePurchasesOf } from '@pokeshop/core/store';
+import { accountAffiliate } from '@pokeshop/core/affiliates';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Kunde' };
@@ -83,7 +84,10 @@ export default async function Customer({
     recentUsage(db(), id, 10),
   ]);
   const usage = await usageSince(db(), id, period);
-  const purchases = await storePurchasesOf(db(), id);
+  const [purchases, affiliate] = await Promise.all([
+    storePurchasesOf(db(), id),
+    accountAffiliate(db(), id),
+  ]);
   const deviceSubs = await db()<
     {
       stripe_subscription_id: string;
@@ -128,6 +132,23 @@ export default async function Customer({
           </>
         )}
       </p>
+      {affiliate && (
+        <p className="muted">
+          Affiliate:{' '}
+          <a href={`/admin/affiliates#aff-${affiliate.link.affiliateId}`}>
+            {affiliate.link.affiliateName}
+          </a>{' '}
+          (Code {affiliate.link.code}), registriert {dateTime(affiliate.registeredAt)} über{' '}
+          {
+            { link: 'Link', code: 'Code auf der Website', app: 'App', admin: 'Admin' }[
+              affiliate.via
+            ]
+          }
+          {affiliate.firstPurchaseAt
+            ? ` · erstes Abo ${dateTime(affiliate.firstPurchaseAt)}${affiliate.discountUsed ? ' mit Rabatt' : ''}`
+            : ' · noch kein Abo'}
+        </p>
+      )}
 
       <section className="panel">
         <h2>Abo</h2>

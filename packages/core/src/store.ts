@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { Db, Sql } from './db.ts';
 import { signRs256 } from './jwt.ts';
 import { entitlements, websiteSubscription, type Plan } from './subscriptions.ts';
+import { noteAffiliatePurchase } from './affiliates.ts';
 
 export type Store = 'google_play' | 'app_store';
 
@@ -161,8 +162,14 @@ export function googleDevicePlanOf(products: StoreProducts, productId: string): 
   return null;
 }
 
-/** GET /store/offers: the plans on sale, with the stores' product ids. */
-export function storeOffers(products: StoreProducts) {
+/**
+ * GET /store/offers: the plans on sale, with the stores' product ids. With an affiliate discount
+ * for the account, `google.offer_id` names the Play offer to buy with (under each base plan).
+ */
+export function storeOffers(
+  products: StoreProducts,
+  discount?: { googleOfferId: string | null } | null,
+) {
   const features = {
     collector: ['scanner', 'trading', 'collection', 'wanted'],
     creator: ['scanner', 'trading', 'youtube', 'recording', 'collection', 'wanted'],
@@ -177,6 +184,7 @@ export function storeOffers(products: StoreProducts) {
           base_plans: products.google[plan].base_plans,
           // add-ons, one per extra device, bought with the subscription
           device_product_ids: products.google[plan].device_product_ids,
+          offer_id: discount?.googleOfferId ?? null,
         }
       : null,
     apple:
@@ -199,6 +207,8 @@ export class PurchaseInvalid extends Error {}
 export type GoogleLine = {
   productId: string;
   basePlanId: string | null;
+  /** the offer (discount) the item was bought with */
+  offerId?: string | null;
   expiresAt: Date | null;
   autoRenew: boolean;
 };
@@ -250,7 +260,7 @@ export function parseGoogleSubscription(raw: Record<string, unknown>): GoogleSub
     productId?: string;
     expiryTime?: string;
     autoRenewingPlan?: { autoRenewEnabled?: boolean };
-    offerDetails?: { basePlanId?: string };
+    offerDetails?: { basePlanId?: string; offerId?: string };
   };
   const date = (s: string | undefined) => {
     const d = s ? new Date(s) : null;
@@ -261,6 +271,7 @@ export function parseGoogleSubscription(raw: Record<string, unknown>): GoogleSub
     .map((l) => ({
       productId: l.productId!,
       basePlanId: l.offerDetails?.basePlanId ?? null,
+      offerId: l.offerDetails?.offerId ?? null,
       expiresAt: date(l.expiryTime),
       autoRenew: Boolean(l.autoRenewingPlan?.autoRenewEnabled),
     }));
@@ -731,6 +742,18 @@ export async function processGooglePurchase(
     accountId: input.accountId,
     now: input.now,
   });
+  // the first paid subscription of an account that came through an affiliate link
+  if (r.ok && r.accountId !== null && PAID.includes(r.purchase.state) && !r.purchase.refused) {
+    const region = (g.raw as { regionCode?: unknown }).regionCode;
+    await noteAffiliatePurchase(sql, r.accountId, {
+      source: 'google_play',
+      plan: r.purchase.plan,
+      period: r.purchase.period,
+      country: typeof region === 'string' ? region : null,
+      offerId: g.lines.find((l) => l.productId === r.purchase.productId)?.offerId ?? null,
+      at: input.now,
+    });
+  }
   if (r.ok && r.acknowledge) {
     // one acknowledgement for the whole purchase, with the subscription's product id
     if (!test) await play!.acknowledge(r.purchase.productId, input.token);

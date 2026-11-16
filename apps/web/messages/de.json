@@ -525,7 +525,12 @@
     "plansTitle": "Die Abos",
     "plansIntro": "Monatlich, jederzeit zum Monatsende kündbar. Preise inkl. USt.",
     "planCta": "{plan} wählen",
-    "plansNote": "Zum Abschließen meldest du dich mit deiner E-Mail-Adresse an, das Konto wird dabei angelegt. Unternehmen in der EU außerhalb Österreichs zahlen mit UID-Nummer netto (ab {net}). Verkäuferin: {seller}."
+    "plansNote": "Zum Abschließen meldest du dich mit deiner E-Mail-Adresse an, das Konto wird dabei angelegt. Unternehmen in der EU außerhalb Österreichs zahlen mit UID-Nummer netto (ab {net}). Verkäuferin: {seller}.",
+    "affiliate": {
+      "discount": "Mit dem Code {code} zahlst du {percent} % weniger{months, plural, =0 {} one { im ersten Monat} other { in den ersten # Monaten}} – für dein erstes Abo, hier auf der Website oder in der App.",
+      "noDiscount": "Du kommst mit dem Code {code}. Er gilt für dein erstes Abo, hier auf der Website oder in der App.",
+      "play": "App in Google Play öffnen"
+    }
   },
   "Codes": {
     "unknown": "Diesen Code kennen wir nicht. Bitte prüf die Schreibweise.",
@@ -847,12 +852,19 @@
         "vat_id_invalid": "Laut EU-Abfrage (VIES) ist diese UID-Nummer nicht gültig. Bitte prüf sie – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
         "vies_unavailable": "Die EU-Abfrage (VIES) ist gerade nicht erreichbar. Bitte versuch es in ein paar Minuten noch einmal – oder lass das Feld leer, dann zahlst du die Umsatzsteuer deines Landes.",
         "invalid_address": "Diese Adresse kann der Zahlungsdienst keinem Steuergebiet zuordnen. Bitte prüf PLZ und Ort.",
-        "at_least_one": "Mindestens 1 Gerät."
+        "at_least_one": "Mindestens 1 Gerät.",
+        "affiliate_unknown": "Diesen Code gibt es nicht (mehr). Prüf die Schreibweise oder lass das Feld leer.",
+        "affiliate_customer": "Der Code gilt nur für das erste Abo eines Kontos."
       },
       "devicesOnlyCount": "Anzahl Geräte",
       "devicesOnlySubmit": "Weiter zur Zahlung",
       "devicesOnlySubmitNote": "Als Nächstes zahlst du über Stripe. Die Geräte verlängern sich jeden Monat, bis du sie beendest oder dein Abo aus dem App-Store endet.",
-      "devicesOnlyHint": "{price} pro Gerät und Monat."
+      "devicesOnlyHint": "{price} pro Gerät und Monat.",
+      "affiliateLabel": "Creator-Code (optional)",
+      "affiliateHint": "Von einem Creator bekommen? Der Code gilt für dein erstes Abo.",
+      "affiliateActive": "Creator-Code {code}: {percent} % weniger{months, plural, =0 { für die ganze Laufzeit} one { im ersten Monat} other { in den ersten # Monaten}}.",
+      "affiliateActiveNoDiscount": "Creator-Code {code} ist gespeichert.",
+      "affiliateTotal": "Mit dem Code: {price} pro Monat{months, plural, =0 {} one { im ersten Monat} other { in den ersten # Monaten}}."
     },
     "usage": {
       "title": "Nutzung",

@@ -44,6 +44,7 @@ Stand: November 2026
 3. Unternehmen in einem anderen EU-Land mit gültiger Umsatzsteuer-Identifikationsnummer zahlen den Nettopreis; die Steuerschuld geht auf sie über (Reverse Charge). Ohne gültige Nummer zahlen sie den Preis einschließlich der Umsatzsteuer ihres Landes.
 4. Preisänderungen teilen wir Ihnen mindestens einen Monat vorher per E-Mail mit. Sie gelten ab dem nächsten Abrechnungsmonat nach Ablauf dieser Frist; bis dahin können Sie kündigen.
 5. Aktionscodes gelten zu den Bedingungen der jeweiligen Aktion. Geschenkgutscheine des Shops gelten nicht für das Abo.
+6. **Creator-Codes:** Mit dem Link oder Code eines Creators erhalten Sie den dort genannten Rabatt auf Ihr erstes Abo, für die genannte Zeit; danach gilt der normale Preis. Ein Konto kann nur einen Creator-Code verwenden, und nur, bevor es zum ersten Mal ein Abo bezahlt hat. Der Rabatt lässt sich nicht mit anderen Aktionscodes kombinieren. In Google Play gilt er als Angebot von Google Play zu den dort angezeigten Bedingungen.
 
 ## 7. Zahlung und Rechnung
 

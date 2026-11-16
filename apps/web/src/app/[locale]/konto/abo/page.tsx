@@ -22,6 +22,8 @@ import { billing } from '@/server/billing';
 import { billingPeriodStart, usageSince } from '@pokeshop/core/usage';
 import { MAX_STORE_DEVICES, storeManageUrl } from '@pokeshop/core/store';
 import { maxWebDevices } from '@pokeshop/core/device-subscriptions';
+import { accountAffiliate, affiliateDiscount } from '@pokeshop/core/affiliates';
+import { cookieAffiliate } from '@/server/affiliate';
 import { AccountShell } from '@/components/account/AccountShell';
 import { SubscribeForm, type PlanPrices } from '@/components/account/SubscribeForm';
 import {
@@ -497,6 +499,22 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
   }
 
   // No running subscription: the plans and the form.
+  // the affiliate code: registered on the account, else the one from the visitor's link
+  const [registered, discount, fromLink] = await Promise.all([
+    accountAffiliate(db(), account.id),
+    affiliateDiscount(db(), account.id),
+    cookieAffiliate(),
+  ]);
+  const affiliate = discount
+    ? { code: discount.code, percent: discount.percent, months: discount.months, saved: true }
+    : !registered && fromLink
+      ? {
+          code: fromLink.code,
+          percent: fromLink.discountPercent,
+          months: fromLink.discountMonths,
+          saved: false,
+        }
+      : null;
   const defaults: Record<string, string> = await formDefaults(
     q.plan === 'creator' ? 'creator' : 'collector',
     '0',
@@ -555,6 +573,7 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
             prices={planPrices}
             sellerName={seller.name}
             sellerAddress={`${seller.street}, ${seller.postcode} ${seller.city}`}
+            affiliate={affiliate}
           />
         ) : (
           <p className="notice notice--warn">{tf('closed')}</p>

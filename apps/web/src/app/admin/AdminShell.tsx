@@ -7,6 +7,7 @@ const LINKS = [
   { href: '/admin', label: 'Übersicht', key: 'home' },
   { href: '/admin/bestellungen', label: 'Bestellungen', key: 'orders' },
   { href: '/admin/kunden', label: 'Kunden & Abos', key: 'customers' },
+  { href: '/admin/affiliates', label: 'Affiliates', key: 'affiliates' },
   { href: '/admin/gesucht', label: 'Gesuchte Karten', key: 'wanted' },
   { href: '/admin/produkte', label: 'Produkte', key: 'products' },
   { href: '/admin/kategorien', label: 'Kategorien', key: 'categories' },

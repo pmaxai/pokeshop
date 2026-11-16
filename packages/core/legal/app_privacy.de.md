@@ -43,6 +43,7 @@ Was Sie in der App oder im Portal in Ihre Sammlung oder Ihre Liste fehlender Kar
 
 ## 7. Abo und Käufe
 
+- **Creator-Code:** Kommen Sie über den Link oder Code eines Creators, speichern wir zu Ihrem Konto, welcher Code es war, wann und auf welchem Weg (Link, eingegebener Code, App), und zu Ihrem ersten bezahlten Abo den Zeitpunkt, wo Sie es abgeschlossen haben (Website oder Google Play), Plan, Laufzeit, das Land des Kaufs und ob der Rabatt genutzt wurde. Den Code aus dem Link merkt sich die Website bis zu 90 Tage im Cookie „oc_ref“; die App aus Google Play erhält ihn beim Installieren (Install-Referrer). Damit gewähren wir Ihnen den Rabatt (Art. 6 Abs. 1 lit. b DSGVO) und vergüten den Creator für vermittelte Abos (unser berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO). Der Creator erfährt dabei nichts über Sie, nur die Zahl der Registrierungen und Abos.
 - **Abo in Google Play:** Die Zahlung wickelt Google ab (Google Commerce Limited bzw. Google Ireland Limited, Dublin, Irland), die dafür selbst verantwortlich ist. Zahlungsdaten erhalten wir nicht. Google teilt uns zum Abo mit: das Kauf-Token, die Bestellnummer, das Produkt, den Status, das Laufzeitende, ob es sich verlängert, das Land des Kaufs und die zufällige Kennung Ihres Kontos, die die App beim Kauf mitgibt. Damit schalten wir das Abo frei und halten es aktuell; Google meldet uns jede Änderung.
 - **Abo und zusätzliche Geräte auf der Website:** Was wir dafür verarbeiten, steht in Punkt 13 der Abo-Bedingungen ({{license_terms_url}}).
 
@@ -65,7 +66,7 @@ Sie können Ihr Konto jederzeit löschen: in der App, im Web-Portal oder per E-M
 
 - Sofort gelöscht werden Ihre Sammlung, Ihre fehlenden Karten, Ihre Freigaben, Ihre Anmeldungen (auch mit Google), die S3-Zugangsdaten, Ihr Name und Ihre Adresse; die E-Mail-Adresse wird aus dem Konto entfernt und die App auf allen Geräten abgemeldet. Der Rest des Kontos wird nach 30 Tagen gelöscht, wenn bis dahin kein Abo mehr läuft und nichts mehr abzurechnen ist.
 - Ein laufendes Abo verlängert sich nach dem Löschen nicht mehr und endet mit dem bezahlten Zeitraum.
-- Rechnungen und Buchhaltungsunterlagen bewahren wir sieben Jahre auf (§ 132 BAO). Die Angaben von Google zu Käufen in Google Play bewahren wir ohne Ihre E-Mail-Adresse ebenso lange auf.
+- Rechnungen und Buchhaltungsunterlagen bewahren wir sieben Jahre auf (§ 132 BAO). Die Angaben von Google zu Käufen in Google Play und die Angaben zum Creator-Code bewahren wir ohne Ihre E-Mail-Adresse ebenso lange auf, für die Abrechnung mit Google und den Creatorn.
 - Solange Ihr Konto besteht, speichern wir die Daten oben, solange Sie sie nicht selbst löschen. Endet ein Abo, bleiben Konto und Sammlung erhalten; nur die Funktionen der App sind dann gesperrt.
 
 ## 11. Ihre Rechte

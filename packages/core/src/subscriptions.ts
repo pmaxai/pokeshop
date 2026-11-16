@@ -11,6 +11,7 @@ import type { Db, Sql } from './db.ts';
 import { licenseSeller, type LicenseSeller } from './licenses.ts';
 import { validPostcode } from './orders.ts';
 import { enqueueMail } from './outbox.ts';
+import { affiliateDiscount, noteAffiliatePurchase } from './affiliates.ts';
 import { isEuCountry, HOME_COUNTRY, STANDARD_VAT_RATES } from './vat.ts';
 import { parseTaxId, type TaxId, type ViesChecker } from './tax-id.ts';
 
@@ -750,7 +751,10 @@ export async function startSubscription(
   const customerId = await saveBillingCustomer(sql, billing, input);
   const prices = await subscriptionPrices(sql);
   const cents = planCents(prices, form.plan, tax.behavior);
+  // the discount of the affiliate link the account came with (first subscription only)
+  const discount = await affiliateDiscount(sql, account.id);
   const s = await billing.startCheckout({
+    discount: discount && discount.percent > 0 ? discount : null,
     accountId: account.id,
     publicId: account.publicId,
     customerId,
@@ -832,6 +836,17 @@ export async function storeStripeSubscription(
     const wasRunning = before
       ? RUNNING.has(before.status) && before.stripe_subscription_id === s.id
       : false;
+    if (RUNNING.has(s.status)) {
+      const [b] = await tx<{ country: string | null }[]>`
+        SELECT billing->>'country' AS country FROM accounts WHERE id = ${accountId}`;
+      await noteAffiliatePurchase(tx, accountId, {
+        source: 'stripe',
+        plan: s.plan,
+        period: 'monthly',
+        country: b?.country ?? null,
+        discountUsed: Boolean(s.affiliateCode),
+      });
+    }
     if (wasRunning && !RUNNING.has(s.status)) {
       await enqueueMail(tx, {
         template: 'subscription_ended',

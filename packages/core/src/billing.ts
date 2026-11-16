@@ -97,6 +97,8 @@ export type BillingSubscription = {
   items: { base?: string; devices?: string };
   /** Metered items (usage services) on the subscription. */
   metered: Partial<Record<UsageService, string>>;
+  /** the affiliate code whose discount the checkout applied (metadata) */
+  affiliateCode: string | null;
 };
 
 export type BillingEvent =
@@ -133,6 +135,8 @@ export type CheckoutInput = {
   extraDevices: number;
   /** only the extra devices (at least one), for a subscription bought in an app store */
   devicesOnly?: boolean;
+  /** an affiliate link's discount: a coupon instead of promotion codes */
+  discount?: { code: string; percent: number; months: number | null } | null;
   /** Amount per month in cents for the chosen tax behaviour. */
   baseCents: number;
   deviceCents: number;
@@ -285,8 +289,13 @@ function toBilling(s: Stripe.Subscription): BillingSubscription {
     endedAt: s.ended_at ? new Date(s.ended_at * 1000) : null,
     items,
     metered,
+    affiliateCode: s.metadata?.affiliate || null,
   };
 }
+
+/** Stripe coupon of an affiliate discount, shared by all links with the same one. */
+export const affiliateCouponId = (percent: number, months: number | null) =>
+  `oc_aff_${percent}_${months ?? 'forever'}`;
 
 export function normaliseBillingEvent(e: Stripe.Event): BillingEvent {
   switch (e.type) {
@@ -382,6 +391,34 @@ export function stripeBilling(opts: { secretKey: string; client?: Stripe }): Bil
       id = p.id;
     }
     priceCache.set(key, id);
+    return id;
+  }
+
+  /** The coupon for an affiliate discount, created on first use. */
+  async function coupon(percent: number, months: number | null): Promise<string> {
+    const id = affiliateCouponId(percent, months);
+    if (priceCache.has(id)) return id;
+    try {
+      await stripe.coupons.retrieve(id);
+    } catch (e) {
+      if ((e as { statusCode?: number }).statusCode !== 404) throw e;
+      try {
+        await stripe.coupons.create({
+          id,
+          percent_off: percent,
+          ...(months
+            ? { duration: 'repeating', duration_in_months: months }
+            : { duration: 'forever' }),
+          name: months
+            ? `Creator-Code −${percent} % (${months} ${months === 1 ? 'Monat' : 'Monate'})`
+            : `Creator-Code −${percent} %`,
+          metadata: { kind: 'affiliate' },
+        });
+      } catch (e2) {
+        if ((e2 as { code?: string }).code !== 'resource_already_exists') throw e2;
+      }
+    }
+    priceCache.set(id, id);
     return id;
   }
 
@@ -530,12 +567,18 @@ export function stripeBilling(opts: { secretKey: string; client?: Stripe }): Bil
         client_reference_id: input.publicId,
         line_items: await lines(input),
         automatic_tax: { enabled: true },
-        allow_promotion_codes: true,
+        // an affiliate discount is a coupon; Stripe allows either that or promotion codes
+        ...(input.discount && input.discount.percent > 0 && !input.devicesOnly
+          ? { discounts: [{ coupon: await coupon(input.discount.percent, input.discount.months) }] }
+          : { allow_promotion_codes: true }),
         subscription_data: {
           metadata: {
             account_id: String(input.accountId),
             account: input.publicId,
             ...(input.devicesOnly ? { kind: 'devices' } : {}),
+            ...(input.discount && input.discount.percent > 0 && !input.devicesOnly
+              ? { affiliate: input.discount.code }
+              : {}),
           },
         },
         metadata: {
@@ -857,14 +900,15 @@ export function fakeBilling(baseUrl: string): FakeBilling {
         },
         metered: {},
         fakeDeviceCents: s.input.deviceCents,
+        affiliateCode:
+          !only && s.input.discount && s.input.discount.percent > 0 ? s.input.discount.code : null,
       };
       store.subs.set(sub.id, sub);
       s.status = 'complete';
       s.subscriptionId = sub.id;
-      const invoiceId = invoiceFor(
-        sub,
-        (only ? 0 : s.input.baseCents) + s.input.extraDevices * s.input.deviceCents,
-      );
+      const full = (only ? 0 : s.input.baseCents) + s.input.extraDevices * s.input.deviceCents;
+      const off = sub.affiliateCode ? (s.input.discount?.percent ?? 0) : 0;
+      const invoiceId = invoiceFor(sub, Math.round((full * (100 - off)) / 100));
       return { subscriptionId: sub.id, invoiceId };
     },
     renew(subscriptionId) {

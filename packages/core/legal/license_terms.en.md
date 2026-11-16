@@ -44,6 +44,7 @@ Last updated: November 2026
 3. Businesses in another EU country with a valid VAT identification number pay the net price; the VAT liability passes to them (reverse charge). Without a valid number they pay the price including their country's VAT.
 4. We announce price changes by e-mail at least one month in advance. They apply from the next billing month after that period; until then you can cancel.
 5. Promotion codes apply under the conditions of the promotion. The shop's gift vouchers cannot be used for the subscription.
+6. **Creator codes:** with a creator's link or code you get the discount stated there on your first subscription, for the period stated; after that the normal price applies. An account can use only one creator code, and only before it has paid for a subscription for the first time. The discount cannot be combined with other promotion codes. In Google Play it applies as a Google Play offer on the terms shown there.
 
 ## 7. Payment and invoice
 

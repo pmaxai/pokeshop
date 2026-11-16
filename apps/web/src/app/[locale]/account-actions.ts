@@ -40,6 +40,8 @@ import {
 } from '@/server/account';
 import { billing } from '@/server/billing';
 import { viesCheck } from '@/server/payments';
+import { registerAffiliate } from '@pokeshop/core/affiliates';
+import { cookieAffiliate, registerFromCookie } from '@/server/affiliate';
 import { clientIp, rateLimited } from '@/server/rate-limit';
 
 const str = (f: FormData, k: string) => {
@@ -106,6 +108,8 @@ export async function loginConfirmAction(form: FormData) {
   }
   await startAccountSession(r.account.id);
   (await cookies()).delete({ name: LOGIN_SENT_COOKIE, path: '/' });
+  // came through an influencer's link: the account takes its code (before its first purchase)
+  await registerFromCookie(r.account.id);
   // The account's language from now on is the one it was opened in, unless chosen otherwise.
   redirect(r.next ?? getPathname({ href: '/konto', locale }));
 }
@@ -196,7 +200,9 @@ export async function subscribeAction(form: FormData) {
   const locale = localeOf(form);
   const here = subscriptionPath(locale);
   const account = await signedIn(locale, here);
+  const affiliateCode = str(form, 'affiliateCode');
   const values = {
+    affiliateCode,
     plan: str(form, 'plan'),
     extraDevices: str(form, 'extraDevices') || '0',
     buyer: str(form, 'buyer') === 'business' ? 'business' : 'consumer',
@@ -217,6 +223,17 @@ export async function subscribeAction(form: FormData) {
   });
   if (!v.ok) fail(v.errors);
   const data = (v as { ok: true; data: Parameters<typeof checkSubscriber>[0] }).data;
+  // a creator code: the account is registered for it (its discount comes with the checkout)
+  if (affiliateCode) {
+    const fromLink = (await cookieAffiliate())?.code === affiliateCode.toUpperCase();
+    const r = await registerAffiliate(db(), {
+      accountId: account.id,
+      code: affiliateCode,
+      via: fromLink ? 'link' : 'code',
+    });
+    if (!r.ok && r.problem === 'unknown_code') fail({ affiliateCode: 'affiliate_unknown' });
+    if (!r.ok && r.problem === 'already_customer') fail({ affiliateCode: 'affiliate_customer' });
+  }
   const b = billing();
   if (!b) fail({ _: 'payment_unavailable' });
   const tax = await checkSubscriber(data, viesCheck());

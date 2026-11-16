@@ -39,6 +39,11 @@ export function SubscribeForm(p: {
    * store subscription's), at least one device, at most `max`.
    */
   devicesOnly?: { plan: Plan; max: number };
+  /**
+   * The affiliate code: `saved` = the account is registered for it (shown, not editable);
+   * otherwise the field is offered, filled with the code from the visitor's link.
+   */
+  affiliate?: { code: string; percent: number; months: number | null; saved: boolean } | null;
 }) {
   const t = useTranslations('Subscription.form');
   const tp = useTranslations('Subscription.plans');
@@ -164,6 +169,45 @@ export function SubscribeForm(p: {
         </small>
       </label>
 
+      {!only &&
+        (p.affiliate?.saved ? (
+          <p className="notice subscribe__affiliate">
+            {p.affiliate.percent > 0
+              ? t('affiliateActive', {
+                  code: p.affiliate.code,
+                  percent: p.affiliate.percent,
+                  months: p.affiliate.months ?? 0,
+                })
+              : t('affiliateActiveNoDiscount', { code: p.affiliate.code })}
+          </p>
+        ) : (
+          <label
+            className={p.errors.affiliateCode ? 'field field--error' : 'field'}
+            htmlFor="sub-affiliateCode"
+          >
+            <span>{t('affiliateLabel')}</span>
+            <input
+              id="sub-affiliateCode"
+              name="affiliateCode"
+              type="text"
+              defaultValue={p.values.affiliateCode ?? p.affiliate?.code ?? ''}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={30}
+              className="subscribe__code"
+              aria-invalid={p.errors.affiliateCode ? true : undefined}
+              aria-describedby="sub-affiliateCode-hint"
+            />
+            <small
+              id="sub-affiliateCode-hint"
+              className={p.errors.affiliateCode ? 'field__error' : 'muted'}
+            >
+              {p.errors.affiliateCode ?? t('affiliateHint')}
+            </small>
+          </label>
+        ))}
+
       <fieldset className="buyer-type">
         <legend>{t('buyerTitle')}</legend>
         <label className="buyer-type__opt">
@@ -247,6 +291,14 @@ export function SubscribeForm(p: {
         <p className="small muted" aria-live="polite">
           {net ? t('reverseCharge') : t('inclVat')} {t('cancelAnytime')}
         </p>
+        {!only && p.affiliate && p.affiliate.percent > 0 && validN && (
+          <p className="small" aria-live="polite">
+            {t('affiliateTotal', {
+              price: eur(Math.round((total * (100 - p.affiliate.percent)) / 100)),
+              months: p.affiliate.months ?? 0,
+            })}
+          </p>
+        )}
         <label className={p.errors.acceptTerms ? 'check check--error' : 'check'}>
           <input type="checkbox" name="accept_terms" required />
           <span>

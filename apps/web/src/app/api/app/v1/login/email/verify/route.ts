@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     review: config.review,
     testHooks: config.storeTestHooks,
   });
-  if (r.ok) return signedIn(r, 200);
+  if (r.ok) return signedIn(r, 200, b);
   switch (r.problem) {
     case 'invalid_email':
       return apiError(400, 'invalid_email', 'That is not an e-mail address.');

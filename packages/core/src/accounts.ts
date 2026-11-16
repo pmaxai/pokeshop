@@ -506,5 +506,8 @@ export async function purgeDeletedAccounts(db: Db, now = new Date()): Promise<nu
   await db`
     DELETE FROM store_purchases
      WHERE account_id IS NULL AND updated_at < ${now}::timestamptz - interval '7 years'`;
+  await db`
+    DELETE FROM affiliate_registrations
+     WHERE account_id IS NULL AND registered_at < ${now}::timestamptz - interval '7 years'`;
   return r.count;
 }

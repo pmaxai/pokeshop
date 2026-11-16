@@ -43,6 +43,7 @@ What you enter in your collection or your list of missing cards in the app or th
 
 ## 7. Subscription and purchases
 
+- **Creator code:** if you come through a creator's link or code, we store with your account which code it was, when and by which way (link, code typed in, app), and for your first paid subscription the time, where you took it out (website or Google Play), plan, term, country of purchase and whether the discount was used. The website remembers the code from the link for up to 90 days in the cookie "oc_ref"; the app from Google Play receives it when it is installed (install referrer). We use this to give you the discount (Art. 6(1)(b) GDPR) and to pay the creator for subscriptions they brought in (our legitimate interest, Art. 6(1)(f) GDPR). The creator learns nothing about you, only the number of registrations and subscriptions.
 - **Subscription in Google Play:** payment is handled by Google (Google Commerce Limited or Google Ireland Limited, Dublin, Ireland), which is responsible for it itself. We do not receive payment details. Google tells us about the subscription: the purchase token, the order number, the product, the status, the end of the term, whether it renews, the country of purchase and the random ID of your account that the app passes on with the purchase. We use this to activate the subscription and keep it up to date; Google tells us about every change.
 - **Subscription and extra devices on the website:** what we process for it is set out in point 13 of the subscription terms ({{license_terms_url}}).
 
@@ -65,7 +66,7 @@ You can delete your account at any time: in the app, in the web portal or by e-m
 
 - Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google), the S3 credentials, your name and your address; the e-mail address is removed from the account and the app is signed out on all devices. What is left of the account is deleted after 30 days, once no subscription is running any more and nothing remains to be billed.
 - After deleting, a running subscription no longer renews and ends with the paid period.
-- We keep invoices and accounting records for seven years (§ 132 BAO). Google's details of purchases in Google Play are kept just as long, without your e-mail address.
+- We keep invoices and accounting records for seven years (§ 132 BAO). Google's details of purchases in Google Play and the creator-code details are kept just as long, without your e-mail address, for the accounts with Google and the creators.
 - While your account exists, we keep the data above unless you delete it yourself. When a subscription ends, the account and collection stay; only the app's features are locked.
 
 ## 11. Your rights

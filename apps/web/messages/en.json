@@ -525,7 +525,12 @@
     "plansTitle": "The plans",
     "plansIntro": "Monthly, cancel any time to the end of the month. Prices include VAT.",
     "planCta": "Choose {plan}",
-    "plansNote": "To subscribe you log in with your e-mail address; that creates your account. EU businesses outside Austria with a VAT ID pay net (from {net}). Seller: {seller}."
+    "plansNote": "To subscribe you log in with your e-mail address; that creates your account. EU businesses outside Austria with a VAT ID pay net (from {net}). Seller: {seller}.",
+    "affiliate": {
+      "discount": "With the code {code} you pay {percent} % less{months, plural, =0 {} one { in the first month} other { in the first # months}} – on your first subscription, here on the website or in the app.",
+      "noDiscount": "You came with the code {code}. It is for your first subscription, here on the website or in the app.",
+      "play": "Open the app in Google Play"
+    }
   },
   "Codes": {
     "unknown": "We don’t know this code. Please check the spelling.",
@@ -847,12 +852,19 @@
         "vat_id_invalid": "According to the EU check (VIES) this VAT ID is not valid. Please check it, or leave the field empty and pay your country’s VAT.",
         "vies_unavailable": "The EU check (VIES) can’t be reached right now. Please try again in a few minutes, or leave the field empty and pay your country’s VAT.",
         "invalid_address": "The payment service can’t match this address to a tax region. Please check postcode and city.",
-        "at_least_one": "At least 1 device."
+        "at_least_one": "At least 1 device.",
+        "affiliate_unknown": "This code doesn’t exist (any more). Check the spelling or leave the field empty.",
+        "affiliate_customer": "The code is only for an account’s first subscription."
       },
       "devicesOnlyCount": "Number of devices",
       "devicesOnlySubmit": "Continue to payment",
       "devicesOnlySubmitNote": "Next you pay through Stripe. The devices renew every month until you end them or your app store subscription ends.",
-      "devicesOnlyHint": "{price} per device per month."
+      "devicesOnlyHint": "{price} per device per month.",
+      "affiliateLabel": "Creator code (optional)",
+      "affiliateHint": "Got one from a creator? The code is for your first subscription.",
+      "affiliateActive": "Creator code {code}: {percent} % less{months, plural, =0 { for as long as it runs} one { in the first month} other { in the first # months}}.",
+      "affiliateActiveNoDiscount": "Creator code {code} is saved.",
+      "affiliateTotal": "With the code: {price} per month{months, plural, =0 {} one { in the first month} other { in the first # months}}."
     },
     "usage": {
       "title": "Usage",

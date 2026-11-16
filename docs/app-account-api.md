@@ -321,6 +321,41 @@ A Play subscription covers 1 device. More can be added in two places, and they a
 
 `409 device_limit` at sign-in or pairing counts both.
 
+### Creator codes (affiliates)
+
+Influencers promote the app with a code (`MISTY`) or a link (`https://overpricedcardboard.com/r/MISTY`).
+An account that brings a code before its first paid subscription is registered for it (the first
+code counts) and gets the code's discount on its first subscription. In the app the discount is a
+Google Play offer, so it works in every country Play sells in.
+
+- **Install referrer:** the website adds `referrer=aff%3DMISTY` to its Play links. At first start,
+  read it with the Play Install Referrer library; `aff=<code>` is the code.
+- **Send it** with the first sign-in or pairing: `"affiliate_code": "MISTY"` in the body of
+  `/login/google`, `/login/email/verify` or `/pair`. The answer then also carries
+  `"affiliate_code": "applied" | "unknown_code" | "already_registered" | "already_customer"` and
+  `"affiliate"` (below). The sign-in itself never fails because of the code.
+- **Typed in** ("Have a creator code?" on the paywall): `POST /api/app/v1/affiliate`
+  `{ "code": "misty" }` (case does not matter) → `200 { "affiliate": … }`, `404 unknown_code`,
+  `409 already_registered` (another code; `affiliate` holds it) or `409 already_customer` (codes are
+  only for the first subscription). `GET /api/app/v1/affiliate` → `{ "affiliate": … }`.
+- **The discount:** `/store/offers` returns `affiliate` and, per plan, `google.offer_id`: buy the
+  base plan with the offer of that id (`ProductDetails.subscriptionOfferDetails`, `offerId`) instead
+  of the base price. The offer exists under every base plan with the same id. `null` (no code, or
+  already a customer): buy as usual.
+
+```json
+"affiliate": {
+  "code": "MISTY",
+  "discount_percent": 20,
+  "discount_months": 3,
+  "google_offer_id": "creator-20-3m"
+}
+```
+
+`discount_percent` / `discount_months` describe the website discount (for the text on the
+paywall; `discount_months: null` = for as long as it runs); in the app the Play offer's own
+phases are what the person pays. Report the purchase as usual.
+
 ### `GET /api/app/v1/store/offers`
 
 ```json
@@ -338,7 +373,8 @@ A Play subscription covers 1 device. More can be added in two places, and they a
           "oc_collector_device_2",
           "oc_collector_device_3",
           "oc_collector_device_4"
-        ]
+        ],
+        "offer_id": null
       },
       "apple": null
     },
@@ -349,11 +385,13 @@ A Play subscription covers 1 device. More can be added in two places, and they a
       "google": {
         "product_id": "oc_creator",
         "base_plans": { "monthly": "monthly", "yearly": "yearly" },
-        "device_product_ids": ["oc_creator_device_1", "oc_creator_device_2"]
+        "device_product_ids": ["oc_creator_device_1", "oc_creator_device_2"],
+        "offer_id": null
       },
       "apple": null
     }
-  ]
+  ],
+  "affiliate": null
 }
 ```
 
