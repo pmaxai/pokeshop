@@ -224,6 +224,22 @@ test('test hooks: test_active-d2 and store-event devices', async () => {
   assert.equal(entitlements(await subscriptionOf(sql, a.id), a).seats, 5);
   await setTestStoreState(sql, a.storeRef, 'renewed');
   assert.equal(entitlements(await subscriptionOf(sql, a.id), a).seats, 5, 'kept without devices');
+  assert.equal((await subscriptionOf(sql, a.id))?.period, 'monthly');
+
+  // a yearly subscription: its add-ons must be yearly too, so /status names the period
+  const y = await account('yearly@example.com');
+  assert.ok(
+    (
+      await processGooglePurchase(sql, null, {
+        token: 'test_active-yearly',
+        productId: 'oc_creator',
+        accountId: y.id,
+        storeRef: y.storeRef,
+        testHooks: true,
+      })
+    ).ok,
+  );
+  assert.equal((await subscriptionOf(sql, y.id))?.period, 'yearly');
 });
 
 test('devices in the portal for a Play subscription: buy, change, end with a refund', async () => {
@@ -315,6 +331,7 @@ test('devices in the portal for a Play subscription: buy, change, end with a ref
 
   // the app sees where the devices come from
   const st = await appStatus(sql, a, paired[1]!, { baseUrl: BASE });
+  assert.equal(st.subscription.base_plan, 'monthly');
   assert.deepEqual(st.subscription.devices, {
     included: 1,
     extra: 3,
