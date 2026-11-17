@@ -36,6 +36,8 @@ export function discountJson(d: AffiliateDiscount | null) {
         discount_percent: d.percent,
         discount_months: d.months,
         google_offer_id: d.googleOfferId,
+        // App Store: the custom offer code to redeem in Apple's sheet
+        apple_offer_code: d.appleOfferCode,
       }
     : null;
 }

@@ -1,5 +1,5 @@
 import { storeProducts } from '@pokeshop/core/store';
-import { config, db, googlePlay, pubSubAuth } from '@/server/config';
+import { appleSignInKey, appStore, config, db, googlePlay, pubSubAuth } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
 import { saveStoreProductsAction } from '../../customer-actions';
@@ -36,11 +36,11 @@ export default async function Stores({
       </p>
       <h1>App-Stores</h1>
       <p>
-        Collector und Creator gibt es auch in Google Play (später im App Store), monatlich und
-        jährlich. Die Preise stellst du in der Play Console je Land ein; hier stehen nur die
-        Produkt-IDs, damit der Server einen Kauf dem Abo zuordnet und die App die Angebote kennt.
-        Eine einmal angelegte Produkt-ID kann im Store nie wieder verwendet werden. Bis zu vier
-        zusätzliche Geräte verkauft die App als Add-ons zum Abo; weitere Geräte bucht man im Konto
+        Collector und Creator gibt es auch in Google Play und im App Store, monatlich und jährlich.
+        Die Preise stellst du in der Play Console bzw. in App Store Connect je Land ein; hier stehen
+        nur die Produkt-IDs, damit der Server einen Kauf dem Abo zuordnet und die App die Angebote
+        kennt. Eine einmal angelegte Produkt-ID kann im Store nie wieder verwendet werden. Bis zu
+        vier zusätzliche Geräte verkauft die App im Store; weitere Geräte bucht man im Konto
         (Stripe), sie enden mit dem Store-Abo.
       </p>
       <h2>Einrichtung</h2>
@@ -65,6 +65,20 @@ export default async function Stores({
           ) : (
             ' (GOOGLE_PUBSUB_SERVICE_ACCOUNT nicht gesetzt: jedes Google-Konto mit dieser Audience wird angenommen)'
           )}
+        </li>
+        {check(
+          appleSignInKey() !== null,
+          `Sign in with Apple: Schlüssel eingerichtet (Bundle-ID ${config.appleBundleId})`,
+          `Sign in with Apple: APPLE_TEAM_ID, APPLE_SIGNIN_KEY_ID oder APPLE_SIGNIN_PRIVATE_KEY fehlt – Anmelden geht, aber beim Löschen kann der Server die Anmeldung bei Apple nicht widerrufen`,
+        )}
+        {check(
+          appStore() !== null,
+          'App Store Server API: In-App-Purchase-Schlüssel eingerichtet',
+          'App Store Server API: APPLE_IAP_ISSUER_ID, APPLE_IAP_KEY_ID oder APPLE_IAP_PRIVATE_KEY fehlt',
+        )}
+        <li>
+          App Store Server Notifications (Version 2, Produktion und Sandbox) an{' '}
+          <code>{config.baseUrl}/api/store/apple/notifications</code>
         </li>
         {config.review && (
           <li>
@@ -109,13 +123,32 @@ export default async function Stores({
           ))}
         </div>
         <h2>App Store</h2>
-        <p className="muted">Kommt mit der iOS-App; bis dahin leer lassen.</p>
+        <p className="muted">
+          Beide Pläne liegen in einer Abo-Gruppe (so wechselt man zwischen ihnen). Zusätzliche
+          Geräte sind eigene Abos, je Plan in einer eigenen Gruppe („Extra devices (Collector)“,
+          „Extra devices (Creator)“), mit einem Produkt je Anzahl und Laufzeit; leer = nicht
+          verkauft. Familienfreigabe aus.
+        </p>
         <div className="store-plans">
           {(['collector', 'creator'] as const).map((plan) => (
             <fieldset key={plan}>
               <legend>{plan === 'collector' ? 'Collector' : 'Creator'}</legend>
               {input(`apple.${plan}.monthly`, 'Produkt-ID monatlich', p.apple[plan].monthly)}
               {input(`apple.${plan}.yearly`, 'Produkt-ID jährlich', p.apple[plan].yearly)}
+              {(['monthly', 'yearly'] as const).map((period) => (
+                <div key={period}>
+                  <p className="small muted">
+                    {`Zusätzliche Geräte ${period === 'monthly' ? 'monatlich' : 'jährlich'} (Gruppe „Extra devices (${plan === 'collector' ? 'Collector' : 'Creator'})“)`}
+                  </p>
+                  {[1, 2, 3, 4].map((i) =>
+                    input(
+                      `apple.${plan}.devices_${period}_${i}`,
+                      `${i} ${i === 1 ? 'Gerät' : 'Geräte'} (Produkt-ID)`,
+                      p.apple[plan].device_product_ids[period][i - 1] ?? null,
+                    ),
+                  )}
+                </div>
+              ))}
             </fieldset>
           ))}
         </div>

@@ -9,7 +9,14 @@ import { deleteOldContactMessages } from '@pokeshop/core/contact';
 import { sendWantedAlerts, syncWantedPurchases } from '@pokeshop/core/wanted';
 import { billingFromEnv } from '@pokeshop/core/billing';
 import { reportUsage } from '@pokeshop/core/usage';
-import { deleteUnconfirmedAppAccounts, resetReviewAccount } from '@pokeshop/core/app-signin';
+import {
+  deleteUnconfirmedAppAccounts,
+  resetReviewAccount,
+  revokeAppleTokens,
+} from '@pokeshop/core/app-signin';
+import { appleSignInKeyFromEnv, appStoreClient, appStoreKeyFromEnv } from '@pokeshop/core/apple';
+import { noticeUncountedAppleDevices, recheckApplePurchases } from '@pokeshop/core/store-apple';
+import { parseMasterKey } from '@pokeshop/core/secrets';
 import {
   cancelRequestedRenewals,
   googlePlayClient,
@@ -71,6 +78,17 @@ const playAccount = parseServiceAccount(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT)
 const play = playAccount
   ? googlePlayClient({ packageName: googlePlayPackage(), account: playAccount })
   : null;
+// App Store: the same for Apple; Sign in with Apple tokens of deleted accounts are revoked
+const appStoreKey = appStoreKeyFromEnv(process.env);
+const appStore = appStoreKey ? appStoreClient(appStoreKey) : null;
+const appleSignIn = appleSignInKeyFromEnv(process.env);
+const masterKey = (() => {
+  try {
+    return parseMasterKey(process.env.API_KEY_MASTER_KEY);
+  } catch {
+    return null;
+  }
+})();
 const mailer = mailTransportFromEnv();
 const licenses = licenseClientFromEnv();
 let stopping = false;
@@ -296,6 +314,22 @@ async function schedule() {
       console.error('[store] re-reading Google subscriptions failed:', (e as Error).message);
     }
   }
+  if (appStore) {
+    try {
+      const a = await recheckApplePurchases(sql, appStore);
+      if (a.checked || a.failed)
+        console.log(`[store] ${a.checked} App Store subscription(s) re-read, ${a.failed} failed`);
+    } catch (e) {
+      console.error('[store] re-reading App Store subscriptions failed:', (e as Error).message);
+    }
+  }
+  // extra devices bought in the App Store that no longer count: the person is told (once a period)
+  try {
+    const n = await noticeUncountedAppleDevices(sql);
+    if (n) console.log(`[store] ${n} notice(s) about App Store extra devices that don't count`);
+  } catch (e) {
+    console.error('[store] App Store extra devices:', (e as Error).message);
+  }
   // extra devices bought in the portal for a store subscription: end them (rest refunded) once
   // it no longer runs, follow its plan's device price
   if (billing) {
@@ -318,6 +352,15 @@ async function schedule() {
       );
   } catch (e) {
     console.error('[store] stopping renewals failed:', (e as Error).message);
+  }
+  try {
+    const r = await revokeAppleTokens(sql, appleSignIn, masterKey);
+    if (r.revoked || r.failed || r.dropped)
+      console.log(
+        `[apple] ${r.revoked} sign-in(s) of deleted accounts revoked, ${r.failed} failed, ${r.dropped} given up`,
+      );
+  } catch (e) {
+    console.error('[apple] revoking sign-ins failed:', (e as Error).message);
   }
   const purged = await purgeDeletedAccounts(sql);
   if (purged) console.log(`[accounts] ${purged} deleted account(s) removed`);

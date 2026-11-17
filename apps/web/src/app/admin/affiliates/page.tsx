@@ -82,6 +82,9 @@ export default async function Affiliates({ searchParams }: { searchParams: Promi
       {field('google_offer_id', 'Google-Play-Angebot (ID)', l?.googleOfferId, {
         hint: 'In der Play Console unter jedem Basis-Abo mit dieser ID anlegen, Teilnahme „Vom Entwickler festgelegt“, gleicher Rabatt.',
       })}
+      {field('apple_offer_code', 'App-Store-Angebotscode', l?.appleOfferCode, {
+        hint: 'In App Store Connect als Angebotscode mit eigenem Code (nur Buchstaben und Ziffern) für die Abos anlegen, Angebots-ID = dieser Code, gleicher Rabatt. Die App öffnet damit Apples Code-Fenster.',
+      })}
     </>
   );
 
@@ -92,9 +95,9 @@ export default async function Affiliates({ searchParams }: { searchParams: Promi
         Influencer bekommen Links wie <code>{config.baseUrl}/r/CODE</code> oder nennen den Code
         einfach. Wer damit ein Konto anlegt oder sich anmeldet, bevor er zum ersten Mal ein Abo
         bezahlt, wird dem Link zugeordnet (der erste Code zählt) und bekommt beim ersten Abo den
-        Rabatt des Links: auf der Website als Stripe-Gutschein, in der App als Google-Play-Angebot –
-        das funktioniert weltweit, auch außerhalb der EU. Die Auszahlung an die Influencer machst du
-        von Hand anhand des Exports.
+        Rabatt des Links: auf der Website als Stripe-Gutschein, in der App als Google-Play-Angebot
+        oder App-Store-Angebotscode – das funktioniert weltweit, auch außerhalb der EU. Die
+        Auszahlung an die Influencer machst du von Hand anhand des Exports.
       </p>
 
       <section className="panel">
@@ -121,9 +124,9 @@ export default async function Affiliates({ searchParams }: { searchParams: Promi
         </p>
         <p className="muted small" style={{ maxWidth: '72ch' }}>
           Eine Zeile je Registrierung im Zeitraum, für alle Influencer: Influencer, Code, Rabatt,
-          Weg (Link, Code, App), Konto-ID, erstes bezahltes Abo (wann, Website oder Google Play,
-          Plan, Laufzeit, Land), ob der Rabatt genutzt wurde und ob das Abo heute läuft. Gelöschte
-          Konten bleiben drin (ohne Daten). Für Excel: Semikolon, UTF-8.
+          Weg (Link, Code, App), Konto-ID, erstes bezahltes Abo (wann, Website, Google Play oder App
+          Store, Plan, Laufzeit, Land), ob der Rabatt genutzt wurde und ob das Abo heute läuft.
+          Gelöschte Konten bleiben drin (ohne Daten). Für Excel: Semikolon, UTF-8.
         </p>
       </section>
 
@@ -181,7 +184,14 @@ export default async function Affiliates({ searchParams }: { searchParams: Promi
                           </code>
                         </div>
                       </td>
-                      <td>{discountLabel(l.discountPercent, l.discountMonths, l.googleOfferId)}</td>
+                      <td>
+                        {discountLabel(
+                          l.discountPercent,
+                          l.discountMonths,
+                          l.googleOfferId,
+                          l.appleOfferCode,
+                        )}
+                      </td>
                       <td className="r">{l.registrations}</td>
                       <td className="r">{l.purchases}</td>
                       <td className="r">{l.total}</td>

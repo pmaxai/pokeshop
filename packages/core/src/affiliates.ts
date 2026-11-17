@@ -3,8 +3,8 @@
 // website or in the app. An account that comes with a code before its first paid subscription is
 // registered for that link (one link per account, the first one counts) and gets the link's
 // discount on its first subscription: a Stripe coupon on the website, the link's Google Play offer
-// in the app. Its first purchase is noted on the registration. Payouts are made by hand from the
-// export of the registrations of a period.
+// or App Store offer code in the app. Its first purchase is noted on the registration. Payouts are
+// made by hand from the export of the registrations of a period.
 import { z } from 'zod';
 import type { Db } from './db.ts';
 
@@ -30,6 +30,8 @@ export type AffiliateLink = {
   /** null: as long as the subscription runs */
   discountMonths: number | null;
   googleOfferId: string | null;
+  /** the custom offer code in App Store Connect with the link's discount */
+  appleOfferCode: string | null;
   active: boolean;
   createdAt: Date;
 };
@@ -40,6 +42,7 @@ export type AffiliateDiscount = {
   percent: number;
   months: number | null;
   googleOfferId: string | null;
+  appleOfferCode: string | null;
 };
 
 export type AffiliateVia = 'link' | 'code' | 'app' | 'admin';
@@ -115,6 +118,15 @@ export const AffiliateLinkInput = z
       .nullable()
       .optional()
       .transform((v) => v ?? null),
+    // letters and digits only (App Store Connect's rule for custom codes)
+    appleOfferCode: z
+      .string()
+      .trim()
+      .refine((v) => v === '' || /^[A-Za-z0-9]{1,64}$/.test(v), 'invalid')
+      .transform((v) => v.toUpperCase() || null)
+      .nullable()
+      .optional()
+      .transform((v) => v ?? null),
     active: z.boolean().default(true),
   })
   .refine((v) => v.discountPercent > 0 || v.discountMonths === null, {
@@ -162,13 +174,14 @@ export async function saveAffiliateLink(
       ? await db<{ id: number }[]>`
           UPDATE affiliate_links SET code = ${v.code}, label = ${v.label},
                  discount_percent = ${v.discountPercent}, discount_months = ${v.discountMonths},
-                 google_offer_id = ${v.googleOfferId}, active = ${v.active}
+                 google_offer_id = ${v.googleOfferId}, apple_offer_code = ${v.appleOfferCode},
+                 active = ${v.active}
            WHERE id = ${id} AND affiliate_id = ${v.affiliateId} RETURNING id`
       : await db<{ id: number }[]>`
           INSERT INTO affiliate_links (affiliate_id, code, label, discount_percent, discount_months,
-                                       google_offer_id, active)
+                                       google_offer_id, apple_offer_code, active)
           VALUES (${v.affiliateId}, ${v.code}, ${v.label}, ${v.discountPercent}, ${v.discountMonths},
-                  ${v.googleOfferId}, ${v.active})
+                  ${v.googleOfferId}, ${v.appleOfferCode}, ${v.active})
           RETURNING id`;
     return r ? { ok: true, id: Number(r.id) } : { ok: false, errors: { _: 'not_found' } };
   } catch (e) {
@@ -189,6 +202,7 @@ type LinkRow = {
   discount_percent: number;
   discount_months: number | null;
   google_offer_id: string | null;
+  apple_offer_code: string | null;
   active: boolean;
   created_at: Date;
 };
@@ -202,6 +216,7 @@ const toLink = (r: LinkRow): AffiliateLink => ({
   discountPercent: r.discount_percent,
   discountMonths: r.discount_months,
   googleOfferId: r.google_offer_id,
+  appleOfferCode: r.apple_offer_code,
   active: r.active,
   createdAt: r.created_at,
 });
@@ -277,14 +292,18 @@ export async function affiliateLinkByCode(db: Db, code: string): Promise<Affilia
 // Registering an account, its discount, its first purchase
 // ---------------------------------------------------------------------------
 
-/** Has the account ever paid for a subscription (website or store)? Free ones don't count. */
-async function everPaid(db: Db, accountId: number): Promise<boolean> {
+/**
+ * Has the account ever paid for a subscription (website or store)? Free ones don't count;
+ * `exceptPurchase`: leaving out this store purchase.
+ */
+async function everPaid(db: Db, accountId: number, exceptPurchase?: number): Promise<boolean> {
   const [r] = await db<{ paid: boolean }[]>`
     SELECT EXISTS (SELECT 1 FROM subscriptions
                     WHERE account_id = ${accountId} AND source = 'stripe'
                       AND status NOT IN ('incomplete', 'incomplete_expired'))
         OR EXISTS (SELECT 1 FROM store_purchases
-                    WHERE account_id = ${accountId} AND refused IS NULL AND state <> 'pending')
+                    WHERE account_id = ${accountId} AND refused IS NULL AND state <> 'pending'
+                      AND kind = 'plan' AND id <> ${exceptPurchase ?? 0})
            AS paid`;
   return Boolean(r?.paid);
 }
@@ -369,7 +388,7 @@ export async function affiliateDiscount(
 ): Promise<AffiliateDiscount | null> {
   const a = await accountAffiliate(db, accountId);
   if (!a || !a.link.active || a.firstPurchaseAt) return null;
-  if (a.link.discountPercent === 0 && !a.link.googleOfferId) return null;
+  if (a.link.discountPercent === 0 && !a.link.googleOfferId && !a.link.appleOfferCode) return null;
   const [inf] = await db<{ active: boolean }[]>`
     SELECT active FROM affiliates WHERE id = ${a.link.affiliateId}`;
   if (!inf?.active || (await everPaid(db, accountId))) return null;
@@ -378,12 +397,44 @@ export async function affiliateDiscount(
     percent: a.link.discountPercent,
     months: a.link.discountMonths,
     googleOfferId: a.link.googleOfferId,
+    appleOfferCode: a.link.appleOfferCode,
   };
 }
 
 /**
+ * An App Store purchase made with an offer code (offerType 3) by an account without a link: if
+ * the offer is a link's (offerIdentifier = its offer code or its code, as set up in App Store
+ * Connect), the account is registered for that link – codes are also redeemed in the App Store
+ * itself, outside the app. Only for the account's first paid subscription (`purchaseId`).
+ */
+export async function registerFromOfferCode(
+  db: Db,
+  accountId: number,
+  offerIdentifier: string,
+  purchaseId: number,
+  now = new Date(),
+): Promise<boolean> {
+  const id = offerIdentifier.trim().toUpperCase();
+  if (!id) return false;
+  const [link] = await db<{ id: number }[]>`
+    SELECT l.id FROM affiliate_links l JOIN affiliates a ON a.id = l.affiliate_id
+     WHERE l.active AND a.active AND (upper(l.apple_offer_code) = ${id} OR l.code = ${id})
+     ORDER BY (upper(l.apple_offer_code) = ${id}) DESC NULLS LAST LIMIT 1`;
+  if (!link) return false;
+  const [known] = await db`SELECT 1 FROM affiliate_registrations WHERE account_id = ${accountId}`;
+  if (known || (await everPaid(db, accountId, purchaseId))) return false;
+  const r = await db`
+    INSERT INTO affiliate_registrations (link_id, account_id, account_public_id, registered_at, via)
+    SELECT ${link.id}, id, public_id, ${now}, 'app' FROM accounts
+     WHERE id = ${accountId} AND deleted_at IS NULL
+    ON CONFLICT (account_id) DO NOTHING`;
+  return r.count > 0;
+}
+
+/**
  * The account's first paid subscription, noted on its registration (once). The discount counts
- * as used when the website checkout carried the code, or the Play purchase used the link's offer.
+ * as used when the website checkout carried the code, the Play purchase used the link's offer,
+ * or the App Store purchase was made with an offer code (`discountUsed`).
  */
 export async function noteAffiliatePurchase(
   db: Db,
@@ -393,7 +444,7 @@ export async function noteAffiliatePurchase(
     plan: 'collector' | 'creator' | null;
     period: 'monthly' | 'yearly' | null;
     country: string | null;
-    /** website: whether the checkout carried the code */
+    /** website: whether the checkout carried the code; App Store: whether an offer code was used */
     discountUsed?: boolean;
     /** Google Play: the offer the purchase used */
     offerId?: string | null;
@@ -439,12 +490,18 @@ export type AffiliateExportRow = {
   now: 'running' | 'ended' | 'none';
 };
 
-export const discountLabel = (percent: number, months: number | null, offer: string | null) =>
+export const discountLabel = (
+  percent: number,
+  months: number | null,
+  offer: string | null,
+  appleCode: string | null = null,
+) =>
   [
     percent > 0
       ? `${percent} %${months ? ` für ${months} Monat${months === 1 ? '' : 'e'}` : ''}`
       : '',
     offer ? `Play-Angebot ${offer}` : '',
+    appleCode ? `App-Store-Code ${appleCode}` : '',
   ]
     .filter(Boolean)
     .join(', ') || 'kein Rabatt';
@@ -466,6 +523,7 @@ export async function affiliateRegistrations(
       discount_percent: number;
       discount_months: number | null;
       google_offer_id: string | null;
+      apple_offer_code: string | null;
       via: AffiliateVia;
       account_public_id: string;
       account_id: number | null;
@@ -481,7 +539,8 @@ export async function affiliateRegistrations(
     }[]
   >`
     SELECT r.registered_at, a.name AS affiliate, a.country AS affiliate_country, a.commission,
-           l.code, l.label, l.discount_percent, l.discount_months, l.google_offer_id, r.via,
+           l.code, l.label, l.discount_percent, l.discount_months, l.google_offer_id,
+           l.apple_offer_code, r.via,
            r.account_public_id, r.account_id, acc.deleted_at IS NOT NULL AS deleted,
            r.first_purchase_at, r.first_purchase_source, r.first_plan, r.first_period,
            r.first_country, r.discount_used,
@@ -490,6 +549,7 @@ export async function affiliateRegistrations(
                       AND s.status IN ('active', 'trialing', 'past_due')) AS web_running,
            EXISTS (SELECT 1 FROM store_purchases p
                     WHERE p.account_id = r.account_id AND p.refused IS NULL AND p.replaced_by IS NULL
+                      AND p.kind = 'plan'
                       AND p.state IN ('active', 'canceled', 'grace') AND p.expires_at > ${now})
              AS store_running
       FROM affiliate_registrations r
@@ -505,7 +565,12 @@ export async function affiliateRegistrations(
     commission: r.commission,
     code: r.code,
     label: r.label,
-    discount: discountLabel(r.discount_percent, r.discount_months, r.google_offer_id),
+    discount: discountLabel(
+      r.discount_percent,
+      r.discount_months,
+      r.google_offer_id,
+      r.apple_offer_code,
+    ),
     via: r.via,
     account: r.account_public_id,
     accountDeleted: r.account_id === null || Boolean(r.deleted),

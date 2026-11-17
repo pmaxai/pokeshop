@@ -1,6 +1,6 @@
 // Signing in from the app, for customers who buy the subscription in an app store: "Continue
-// with Google" (an ID token from the phone's Google account) or "Use another email" (a 6-digit
-// code by e-mail). The account is created on the first sign-in, before anything is bought, and
+// with Google" (an ID token from the phone's Google account), "Sign in with Apple" (an identity
+// token from the iPhone) or "Use another email" (a 6-digit code by e-mail). The account is created on the first sign-in, before anything is bought, and
 // gets a device token like pairing does. New accounts get an e-mail with a link that confirms
 // the address and logs in to the portal. See docs/app-account-api.md.
 import { createHash, randomInt } from 'node:crypto';
@@ -17,6 +17,8 @@ import {
 import { registerDevice, type Device, type PairInput } from './devices.ts';
 import { enqueueMail } from './outbox.ts';
 import { JwtError, verifyJwt, type KeyLookup } from './jwt.ts';
+import { APPLE_ISSUER, revokeAppleToken, type AppleSignInKey } from './apple.ts';
+import { decryptSecret } from './secrets.ts';
 
 export const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 export const GOOGLE_KEYS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
@@ -60,6 +62,34 @@ export async function verifyGoogleIdToken(
     email,
     name: typeof c.name === 'string' ? c.name.slice(0, 120) : null,
   };
+}
+
+/**
+ * Checks an identity token from Sign in with Apple: Apple's signature, issuer, audience (the
+ * app's bundle id). Apple puts the e-mail address (or a private relay address for "Hide my
+ * email") in it at least at the first sign-in; later it may be missing, then the Apple user id
+ * finds the account.
+ */
+export async function verifyAppleIdToken(
+  token: string,
+  opts: { audiences: string[]; keys: KeyLookup; now?: Date },
+): Promise<Identity> {
+  const c = await verifyJwt(token, {
+    keys: opts.keys,
+    issuers: [APPLE_ISSUER],
+    audiences: opts.audiences,
+    now: opts.now,
+  });
+  const sub = typeof c.sub === 'string' ? c.sub : '';
+  if (!sub) throw new JwtError('no_subject');
+  const email = typeof c.email === 'string' ? c.email.trim().toLowerCase() : '';
+  // Apple sends the flag as a string or a boolean; relay addresses are always verified
+  const verified =
+    c.email_verified === true ||
+    c.email_verified === 'true' ||
+    c.is_private_email === true ||
+    c.is_private_email === 'true';
+  return { provider: 'apple', subject: sub, email: email && verified ? email : null, name: null };
 }
 
 export type DeviceInput = Omit<PairInput, 'code' | 'now'>;
@@ -111,7 +141,12 @@ export async function signInWithIdentity(
   sql: Sql,
   identity: Identity,
   device: DeviceInput,
-  opts: { baseUrl: string; now?: Date },
+  opts: {
+    baseUrl: string;
+    now?: Date;
+    /** Sign in with Apple: the refresh token from the app's code, encrypted (revoked at deletion) */
+    refreshTokenEnc?: string | null;
+  },
 ): Promise<SignInResult> {
   const now = opts.now ?? new Date();
   return sql.begin(async (tx) => {
@@ -138,11 +173,15 @@ export async function signInWithIdentity(
       }));
     }
     await tx`
-      INSERT INTO account_identities (provider, subject, account_id, email, created_at, last_used_at)
-      VALUES (${identity.provider}, ${identity.subject}, ${account.id}, ${identity.email}, ${now}, ${now})
+      INSERT INTO account_identities (provider, subject, account_id, email, created_at, last_used_at,
+                                      refresh_token_enc)
+      VALUES (${identity.provider}, ${identity.subject}, ${account.id}, ${identity.email}, ${now}, ${now},
+              ${opts.refreshTokenEnc ?? null})
       ON CONFLICT (provider, subject) DO UPDATE
         SET account_id = EXCLUDED.account_id, last_used_at = EXCLUDED.last_used_at,
-            email = coalesce(EXCLUDED.email, account_identities.email)`;
+            email = coalesce(EXCLUDED.email, account_identities.email),
+            refresh_token_enc = coalesce(EXCLUDED.refresh_token_enc,
+                                         account_identities.refresh_token_enc)`;
     return finishSignIn(tx, account, created, device, { baseUrl: opts.baseUrl, now });
   });
 }
@@ -331,11 +370,73 @@ export async function resetReviewAccount(
  * had a subscription: deleted after 30 days.
  */
 export async function deleteUnconfirmedAppAccounts(db: Db, now = new Date()): Promise<number> {
-  const r = await db`
-    DELETE FROM accounts a
-     WHERE a.signup_via IN ('google', 'apple') AND a.email_verified_at IS NULL
-       AND a.created_at < ${now}::timestamptz - interval '30 days'
-       AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.account_id = a.id)
-       AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.account_id = a.id)`;
-  return r.count;
+  // (Sign in with Apple tokens are revoked at Apple first, as at any deletion)
+  const [r] = await db<{ n: number }[]>`
+    WITH gone AS (
+      DELETE FROM accounts a
+       WHERE a.signup_via IN ('google', 'apple') AND a.email_verified_at IS NULL
+         AND a.created_at < ${now}::timestamptz - interval '30 days'
+         AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.account_id = a.id)
+         AND NOT EXISTS (SELECT 1 FROM store_purchases p WHERE p.account_id = a.id)
+         AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.account_id = a.id)
+       RETURNING a.id),
+    queued AS (
+      INSERT INTO apple_token_revocations (token_enc, test)
+      SELECT i.refresh_token_enc, i.subject LIKE 'test:%'
+        FROM account_identities i JOIN gone g ON g.id = i.account_id
+       WHERE i.provider = 'apple' AND i.refresh_token_enc IS NOT NULL
+      RETURNING 1)
+    SELECT (SELECT count(*) FROM gone)::int AS n, (SELECT count(*) FROM queued) AS q`;
+  return r?.n ?? 0;
+}
+
+/** Days a Sign in with Apple token of a deleted account is tried to be revoked. */
+export const REVOKE_DAYS = 30;
+
+/**
+ * Deleted accounts: revokes their Sign in with Apple tokens at Apple (Apple requires it), so
+ * Apple forgets that the person signed in to the app. Retried with growing pauses, up to
+ * REVOKE_DAYS. Worker; also right after the deletion.
+ */
+export async function revokeAppleTokens(
+  sql: Sql,
+  key: AppleSignInKey | null,
+  masterKey: Buffer | null,
+  opts: { now?: Date; fetch?: typeof fetch } = {},
+): Promise<{ revoked: number; failed: number; dropped: number }> {
+  const now = opts.now ?? new Date();
+  const due = await sql<
+    { id: number; token_enc: string; test: boolean; tries: number; created_at: Date }[]
+  >`
+    SELECT id, token_enc, test, tries, created_at FROM apple_token_revocations
+     WHERE next_try_at <= greatest(${now}::timestamptz, now()) ORDER BY next_try_at LIMIT 50`;
+  let revoked = 0;
+  let failed = 0;
+  let dropped = 0;
+  for (const d of due) {
+    try {
+      // tokens made with the staging test hooks don't exist at Apple
+      if (!d.test) {
+        if (!key || !masterKey) throw new Error('Sign in with Apple is not set up');
+        await revokeAppleToken(key, decryptSecret(d.token_enc, masterKey), opts.fetch);
+      }
+      await sql`DELETE FROM apple_token_revocations WHERE id = ${d.id}`;
+      revoked++;
+    } catch (e) {
+      if (d.created_at.getTime() < now.getTime() - REVOKE_DAYS * 86400_000) {
+        console.error(`[apple] giving up revoking a token: ${(e as Error).message}`);
+        await sql`DELETE FROM apple_token_revocations WHERE id = ${d.id}`;
+        dropped++;
+        continue;
+      }
+      const hours = Math.min(24, 2 ** d.tries);
+      await sql`
+        UPDATE apple_token_revocations
+           SET tries = tries + 1, last_error = ${(e as Error).message.slice(0, 300)},
+               next_try_at = ${now}::timestamptz + make_interval(hours => ${hours})
+         WHERE id = ${d.id}`;
+      failed++;
+    }
+  }
+  return { revoked, failed, dropped };
 }

@@ -228,6 +228,8 @@ const storeSub = (r: StoreRow, devices = { inStore: 0, onWeb: 0 }): Subscription
 /**
  * The account's subscription: a running app-store purchase if there is one (it is paid, so it
  * comes before a free one), else the website's row, else the last store purchase (ended).
+ * Extra devices of a store subscription: Google Play add-ons of the purchase, App Store
+ * extra-devices subscriptions of the same plan, and a device subscription from the portal.
  */
 export async function subscriptionOf(
   db: Db,
@@ -241,7 +243,7 @@ export async function subscriptionOf(
              device_add_ons, created_at
         FROM store_purchases
        WHERE account_id = ${accountId} AND replaced_by IS NULL AND refused IS NULL
-         AND state <> 'pending' AND plan IS NOT NULL
+         AND state <> 'pending' AND plan IS NOT NULL AND kind = 'plan'
        ORDER BY (state IN ('active', 'canceled', 'grace') AND expires_at > ${now}) DESC,
                 expires_at DESC NULLS LAST
        LIMIT 1`,
@@ -250,9 +252,17 @@ export async function subscriptionOf(
     store && STORE_RUNNING.includes(store.state) && store.expires_at && store.expires_at > now;
   if (store && storeRunning) {
     // extra devices: add-ons of the purchase (paid in the store) + a device subscription (portal)
-    const inStore = (store.device_add_ons ?? []).filter(
+    let inStore = (store.device_add_ons ?? []).filter(
       (a) => a.expires_at && Date.parse(a.expires_at) > now.getTime(),
     ).length;
+    if (store.store === 'app_store') {
+      const [apple] = await db<{ n: number }[]>`
+        SELECT coalesce(sum(devices), 0)::int AS n FROM store_purchases
+         WHERE account_id = ${accountId} AND store = 'app_store' AND kind = 'devices'
+           AND plan = ${store.plan} AND replaced_by IS NULL AND refused IS NULL
+           AND state IN ('active', 'canceled', 'grace') AND expires_at > ${now}`;
+      inStore = Math.min(4, inStore + (apple?.n ?? 0));
+    }
     const web = await deviceSubscriptionOf(db, accountId);
     const onWeb = web && deviceSubscriptionRunning(web, now) ? web.devices : 0;
     return storeSub(store, { inStore, onWeb });
@@ -1166,6 +1176,7 @@ export async function listCustomers(
                p.expires_at, p.auto_renew
           FROM store_purchases p
          WHERE p.account_id = a.id AND p.replaced_by IS NULL AND p.refused IS NULL
+           AND p.kind = 'plan'
            AND p.state IN ('active', 'canceled', 'grace') AND p.expires_at > now()
          ORDER BY p.expires_at DESC LIMIT 1) sp ON true
      WHERE a.deleted_at IS NULL
@@ -1218,7 +1229,7 @@ export async function subscriptionCounts(
     WITH running AS (
       SELECT DISTINCT ON (account_id) account_id, plan FROM (
         SELECT account_id, plan, 1 AS rank FROM store_purchases
-         WHERE replaced_by IS NULL AND refused IS NULL AND account_id IS NOT NULL
+         WHERE replaced_by IS NULL AND refused IS NULL AND account_id IS NOT NULL AND kind = 'plan'
            AND state IN ('active', 'canceled', 'grace') AND expires_at > now()
         UNION ALL
         SELECT account_id, plan, 2 FROM subscriptions

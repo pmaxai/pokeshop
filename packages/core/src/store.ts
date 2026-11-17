@@ -1,7 +1,7 @@
-// Subscriptions bought in the app stores. Google Play now; the App Store follows with the iOS app
-// (same tables and rules). The app reports a purchase (POST /api/app/v1/store/google), Google
-// notifies every change (Pub/Sub), a daily job re-reads what is about to run out. Each time the
-// server reads the subscription from Google and stores what Google says; it never acts on a
+// Subscriptions bought in the app stores: Google Play here, the App Store in store-apple.ts (same
+// tables and rules). The app reports a purchase (POST /api/app/v1/store/google), Google notifies
+// every change (Pub/Sub), a daily job re-reads what is about to run out. Each time the server
+// reads the subscription from Google and stores what Google says; it never acts on a
 // notification type alone. See docs/app-account-api.md and docs/deploy.md.
 import { z } from 'zod';
 import type { Db, Sql } from './db.ts';
@@ -66,9 +66,22 @@ const GooglePlan = z.object({
     )
     .default([]),
 });
+// Apple: extra devices are their own subscriptions, in one more group per plan, one product per
+// number of devices and period (index 0 = 1 extra device); null where none is on sale
+const appleDeviceIds = z
+  .preprocess((v) => {
+    if (!Array.isArray(v)) return v;
+    const ids = v.map((x) => empty(x) ?? null);
+    while (ids.length && ids[ids.length - 1] === null) ids.pop();
+    return ids;
+  }, z.array(appleId).max(MAX_STORE_DEVICES))
+  .default([]);
 const ApplePlan = z.object({
   monthly: z.preprocess(empty, appleId),
   yearly: z.preprocess(empty, appleId),
+  device_product_ids: z
+    .object({ monthly: appleDeviceIds, yearly: appleDeviceIds })
+    .default({ monthly: [], yearly: [] }),
 });
 export const StoreProducts = z.object({
   google: z.object({ collector: GooglePlan, creator: GooglePlan }),
@@ -90,8 +103,8 @@ const EMPTY_PRODUCTS: StoreProducts = {
     },
   },
   apple: {
-    collector: { monthly: null, yearly: null },
-    creator: { monthly: null, yearly: null },
+    collector: { monthly: null, yearly: null, device_product_ids: { monthly: [], yearly: [] } },
+    creator: { monthly: null, yearly: null, device_product_ids: { monthly: [], yearly: [] } },
   },
 };
 
@@ -125,6 +138,26 @@ export async function saveStoreProducts(
       if (!id) continue;
       if (seen.has(id)) return { ok: false, errors: [path] };
       seen.add(id);
+    }
+  }
+  // and every App Store product id once
+  const apple = new Set<string>();
+  for (const plan of ['collector', 'creator'] as const) {
+    const a = v.apple[plan];
+    const ids: [string, string | null][] = [
+      [`apple.${plan}.monthly`, a.monthly],
+      [`apple.${plan}.yearly`, a.yearly],
+      ...(['monthly', 'yearly'] as const).flatMap((period) =>
+        a.device_product_ids[period].map((id, i): [string, string | null] => [
+          `apple.${plan}.device_product_ids.${period}.${i}`,
+          id,
+        ]),
+      ),
+    ];
+    for (const [path, id] of ids) {
+      if (!id) continue;
+      if (apple.has(id)) return { ok: false, errors: [path] };
+      apple.add(id);
     }
   }
   await db`
@@ -162,9 +195,27 @@ export function googleDevicePlanOf(products: StoreProducts, productId: string): 
   return null;
 }
 
+export type AppleProduct =
+  | { kind: 'plan'; plan: Plan; period: Period }
+  | { kind: 'devices'; plan: Plan; period: Period; devices: number };
+
+/** What an App Store product is: a plan, or extra devices of a plan; null when not on sale. */
+export function applePlanOf(products: StoreProducts, productId: string): AppleProduct | null {
+  for (const plan of ['collector', 'creator'] as const) {
+    const a = products.apple[plan];
+    for (const period of ['monthly', 'yearly'] as const) {
+      if (a[period] === productId) return { kind: 'plan', plan, period };
+      const i = a.device_product_ids[period].indexOf(productId);
+      if (i >= 0) return { kind: 'devices', plan, period, devices: i + 1 };
+    }
+  }
+  return null;
+}
+
 /**
  * GET /store/offers: the plans on sale, with the stores' product ids. With an affiliate discount
- * for the account, `google.offer_id` names the Play offer to buy with (under each base plan).
+ * for the account, `google.offer_id` names the Play offer to buy with (under each base plan); the
+ * App Store's offer code comes in `affiliate.apple_offer_code`.
  */
 export function storeOffers(
   products: StoreProducts,
@@ -189,7 +240,14 @@ export function storeOffers(
       : null,
     apple:
       products.apple[plan].monthly || products.apple[plan].yearly
-        ? { product_ids: products.apple[plan] }
+        ? {
+            product_ids: {
+              monthly: products.apple[plan].monthly,
+              yearly: products.apple[plan].yearly,
+            },
+            // extra devices: [i] = the product for i + 1 devices (its own subscription group)
+            device_product_ids: products.apple[plan].device_product_ids,
+          }
         : null,
   }));
 }
@@ -483,6 +541,9 @@ export type StorePurchase = {
   cancelRequestedAt: Date | null;
   /** add-ons that are extra devices (of this purchase's plan) */
   deviceAddOns: DeviceAddOn[];
+  /** plan: the subscription; devices: extra devices of `plan` (App Store, own subscription) */
+  kind: 'plan' | 'devices';
+  devices: number | null;
   createdAt: Date;
   checkedAt: Date;
 };
@@ -493,7 +554,7 @@ export type DeviceAddOn = { product_id: string; expires_at: string | null; auto_
 export const activeDeviceAddOns = (addOns: DeviceAddOn[] | null | undefined, now = new Date()) =>
   (addOns ?? []).filter((a) => a.expires_at && Date.parse(a.expires_at) > now.getTime()).length;
 
-type PurchaseRow = {
+export type PurchaseRow = {
   id: number;
   store: Store;
   account_id: number | null;
@@ -512,11 +573,13 @@ type PurchaseRow = {
   latest_order_id: string | null;
   cancel_requested_at: Date | null;
   device_add_ons: DeviceAddOn[];
+  kind: 'plan' | 'devices';
+  devices: number | null;
   created_at: Date;
   checked_at: Date;
 };
 
-const toPurchase = (r: PurchaseRow): StorePurchase => ({
+export const toPurchase = (r: PurchaseRow): StorePurchase => ({
   id: Number(r.id),
   store: r.store,
   accountId: r.account_id === null ? null : Number(r.account_id),
@@ -535,11 +598,13 @@ const toPurchase = (r: PurchaseRow): StorePurchase => ({
   latestOrderId: r.latest_order_id,
   cancelRequestedAt: r.cancel_requested_at,
   deviceAddOns: r.device_add_ons ?? [],
+  kind: r.kind ?? 'plan',
+  devices: r.devices ?? null,
   createdAt: r.created_at,
   checkedAt: r.checked_at,
 });
 
-const PAID: StoreState[] = ['active', 'canceled', 'grace'];
+export const PAID: StoreState[] = ['active', 'canceled', 'grace'];
 
 /** a***@example.com */
 export function maskEmail(email: string): string {
@@ -652,7 +717,7 @@ export async function applyGooglePurchase(
       } else {
         const [other] = await tx<{ store: Store }[]>`
           SELECT store FROM store_purchases
-           WHERE account_id = ${accountId} AND purchase_token <> ${token}
+           WHERE account_id = ${accountId} AND purchase_token <> ${token} AND kind = 'plan'
              AND (${g.linkedToken}::text IS NULL OR purchase_token <> ${g.linkedToken})
              AND replaced_by IS NULL AND refused IS NULL
              AND state IN ('active', 'canceled', 'grace') AND expires_at > ${now}`;
@@ -809,13 +874,21 @@ export async function recheckGooglePurchases(
   return { checked, failed };
 }
 
-/** Staging: moves the account's latest store purchase to a state (POST /test/store-event). */
+/** Staging: the original transaction id of a test App Store purchase (one per group, as Apple). */
+export const testAppleId = (storeRef: string, group: 'main' | `devices-${Plan}`) =>
+  `test:${storeRef.toLowerCase()}:${group}`;
+
+/**
+ * Staging: moves the account's latest store purchase to a state (POST /test/store-event).
+ * `devices`: the extra devices it then has (0–4) – Google: add-ons of the purchase; App Store:
+ * the plan's extra-devices subscription. App Store extra devices follow the state.
+ */
 export async function setTestStoreState(
   db: Db,
   storeRef: string,
   state: StoreState | 'refunded' | 'renewed',
   now = new Date(),
-  /** extra-device add-ons the purchase then has (0–4); unchanged when left out */
+  /** extra devices the purchase then has (0–4); unchanged when left out */
   devices?: number,
 ): Promise<StorePurchase | null> {
   if (!UUID.test(storeRef)) return null;
@@ -828,10 +901,11 @@ export async function setTestStoreState(
         ? new Date(now.getTime() + 3 * day)
         : new Date(now.getTime() - 60_000);
   const renew = s === 'active' || s === 'grace';
+  const n = devices === undefined ? null : Math.max(0, Math.min(MAX_STORE_DEVICES, devices));
   const addOns =
-    devices === undefined
+    n === null
       ? null
-      : Array.from({ length: Math.max(0, Math.min(MAX_STORE_DEVICES, devices)) }, (_, i) => ({
+      : Array.from({ length: n }, (_, i) => ({
           product_id: `test_device_${i + 1}`,
           expires_at: expires.toISOString(),
           auto_renew: renew,
@@ -839,17 +913,55 @@ export async function setTestStoreState(
   const [r] = await db<PurchaseRow[]>`
     UPDATE store_purchases SET state = ${s}, expires_at = ${expires},
            auto_renew = ${renew}, checked_at = ${now},
-           device_add_ons = CASE WHEN ${addOns === null}
+           device_add_ons = CASE WHEN store = 'app_store' THEN '[]'::jsonb WHEN ${addOns === null}
              THEN (SELECT coalesce(jsonb_agg(a || jsonb_build_object('expires_at', ${expires.toISOString()}::text,
                                                                    'auto_renew', ${renew}::boolean)), '[]')
                      FROM jsonb_array_elements(device_add_ons) a)
              ELSE ${db.json((addOns ?? []) as never)}::jsonb END
      WHERE id = (SELECT p.id FROM store_purchases p JOIN accounts a ON a.id = p.account_id
                   WHERE a.store_ref = ${storeRef}::uuid AND p.test AND p.replaced_by IS NULL
-                    AND p.refused IS NULL
+                    AND p.refused IS NULL AND p.kind = 'plan'
                   ORDER BY p.created_at DESC LIMIT 1)
     RETURNING *`;
-  return r ? toPurchase(r) : null;
+  if (!r) return null;
+  if (r.store === 'app_store' && r.plan) {
+    // the plan's extra-devices subscription follows (or is set to `devices`)
+    const ended = n === 0;
+    await db`
+      UPDATE store_purchases
+         SET state = ${ended ? 'expired' : s}, auto_renew = ${ended ? false : renew},
+             expires_at = ${ended ? new Date(now.getTime() - 60_000) : expires}, checked_at = ${now},
+             devices = coalesce(${n || null}::int, devices),
+             product_id = CASE WHEN ${n || null}::int IS NULL THEN product_id
+                          ELSE ${`test_${r.plan}_${r.period ?? 'monthly'}_devices_${n}`} END
+       WHERE account_id = ${r.account_id} AND store = 'app_store' AND kind = 'devices' AND test
+         AND plan = ${r.plan} AND replaced_by IS NULL`;
+    if (n) {
+      await db`
+        INSERT INTO store_purchases (store, account_id, store_ref, purchase_token, product_id, plan,
+                                     period, state, expires_at, auto_renew, acknowledged, test,
+                                     latest_order_id, kind, devices, raw, checked_at)
+        VALUES ('app_store', ${r.account_id}, ${storeRef}::uuid,
+                ${testAppleId(storeRef, `devices-${r.plan}`)},
+                ${`test_${r.plan}_${r.period ?? 'monthly'}_devices_${n}`}, ${r.plan},
+                ${r.period ?? 'monthly'}, ${s}, ${expires}, ${renew}, true, true, 'TEST', 'devices',
+                ${n}, ${db.json({ test: true } as never)}, ${now})
+        ON CONFLICT (store, purchase_token) DO NOTHING`;
+    }
+  }
+  return toPurchase(r);
+}
+
+/** The extra devices a store purchase pays for now: Google add-ons, App Store device subscriptions. */
+export async function storeDevicesOf(db: Db, p: StorePurchase, now = new Date()): Promise<number> {
+  if (p.store === 'google_play') return activeDeviceAddOns(p.deviceAddOns, now);
+  if (!p.accountId || !p.plan) return 0;
+  const [r] = await db<{ n: number }[]>`
+    SELECT coalesce(sum(devices), 0)::int AS n FROM store_purchases
+     WHERE account_id = ${p.accountId} AND store = 'app_store' AND kind = 'devices'
+       AND plan = ${p.plan} AND refused IS NULL AND replaced_by IS NULL
+       AND state IN ('active', 'canceled', 'grace') AND expires_at > ${now}`;
+  return Math.min(MAX_STORE_DEVICES, r?.n ?? 0);
 }
 
 // ---------------------------------------------------------------------------

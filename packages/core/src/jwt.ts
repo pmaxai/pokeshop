@@ -1,6 +1,6 @@
 // JSON Web Tokens with node:crypto: checking Google's and Apple's signed tokens (ID tokens,
-// Pub/Sub push tokens) against their published keys, and signing the service-account token
-// for Google's APIs. RS256 and ES256 only.
+// Pub/Sub push tokens) against their published keys, and signing the tokens for Google's and
+// Apple's APIs. RS256 and ES256 only.
 import { createPublicKey, createSign, createVerify, type KeyObject } from 'node:crypto';
 
 export class JwtError extends Error {
@@ -24,8 +24,9 @@ const b64json = (s: string): Record<string, unknown> => {
   return v as Record<string, unknown>;
 };
 
-export function decodeJwt(token: string): JwtParts {
-  if (typeof token !== 'string' || token.length > 16_384) throw new JwtError('malformed');
+/** `maxLength`: Apple's notifications carry two signed tokens with their certificates inside. */
+export function decodeJwt(token: string, maxLength = 16_384): JwtParts {
+  if (typeof token !== 'string' || token.length > maxLength) throw new JwtError('malformed');
   const parts = token.split('.');
   if (parts.length !== 3 || parts.some((p) => !/^[A-Za-z0-9_-]*$/.test(p))) {
     throw new JwtError('malformed');
@@ -152,5 +153,25 @@ export function signRs256(
     JSON.stringify(claims),
   ).toString('base64url')}`;
   const sig = createSign('RSA-SHA256').update(input).sign(privateKeyPem);
+  return `${input}.${sig.toString('base64url')}`;
+}
+
+/**
+ * Signs claims with an EC P-256 private key (PEM, e.g. Apple's .p8 file) as ES256: the client
+ * secret for Sign in with Apple, the token for the App Store Server API.
+ */
+export function signEs256(
+  claims: Record<string, unknown>,
+  privateKeyPem: string,
+  kid: string,
+  extraHeader: Record<string, string> = {},
+): string {
+  const header = { alg: 'ES256', kid, typ: 'JWT', ...extraHeader };
+  const input = `${Buffer.from(JSON.stringify(header)).toString('base64url')}.${Buffer.from(
+    JSON.stringify(claims),
+  ).toString('base64url')}`;
+  const sig = createSign('SHA256')
+    .update(input)
+    .sign({ key: privateKeyPem, dsaEncoding: 'ieee-p1363' });
   return `${input}.${sig.toString('base64url')}`;
 }

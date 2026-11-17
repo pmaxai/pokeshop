@@ -23,6 +23,7 @@ export type MailTemplate =
   | 'subscription_payment_failed'
   | 'subscription_ended'
   | 'devices_ended'
+  | 'store_devices_running'
   | 'collection_shared'
   | 'wanted_available'
   | 'wanted_offer';

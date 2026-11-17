@@ -2,7 +2,7 @@
 
 As of November 2026. This is a translation for your convenience; only the German version is legally binding.
 
-This privacy policy covers the Overpriced Cardboard Scanner app (Android, from Google Play or from {{app_url}}) and the account you sign in with in the app and in the web portal. For orders in the card shop, the shop's privacy policy applies ({{privacy_url}}).
+This privacy policy covers the Overpriced Cardboard Scanner app (Android, from Google Play or from {{app_url}}, and iPhone, from the App Store) and the account you sign in with in the app and in the web portal. For orders in the card shop, the shop's privacy policy applies ({{privacy_url}}).
 
 ## 1. Controller
 
@@ -13,17 +13,18 @@ The controller is {{seller.name}}, {{seller.address}}, e-mail: {{seller.email}} 
 - **The camera stays on the phone.** The app recognises cards on the device itself. Camera images are not sent to us.
 - **Price data** (card catalogue, prices, recognition model) is downloaded by the app from our server or our download area; the app only sends its device token and app version.
 - **Card images** are loaded by the app from TCGdex (assets.tcgdex.net). Like any web server, TCGdex sees your device's IP address; the app passes on no other data about you.
-- **Recordings** in YouTube mode (screen, camera and microphone) are saved by the app in your device's gallery. They only reach us if you switch on uploading to S3 (section 6).
+- **Recordings** in YouTube mode (screen, camera and microphone) are saved by the app in your device's gallery or photo library. They only reach us if you switch on uploading to S3 (section 6).
 
 ## 3. Account and sign-in
 
-The app needs an account. You can create one or sign in in three ways:
+The app needs an account. You can create one or sign in in four ways:
 
 - **With Google ("Continue with Google"):** Google confirms your e-mail address to us. We store the e-mail address, the ID of your Google account and the time of sign-in. Google learns that you sign in to our app; Google is responsible for this itself (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland; https://policies.google.com/privacy).
+- **With Apple ("Sign in with Apple", on the iPhone):** Apple confirms the ID of your Apple Account to us and, at the first sign-in, your e-mail address – or, if you choose "Hide My Email", a relay address from Apple through which our e-mails reach you. We store the ID, the address, the time of sign-in and, encrypted, a token from Apple with which we revoke the sign-in at Apple when you delete your account. Apple learns that you sign in to our app; Apple is responsible for this itself (Apple Distribution International Ltd., Hollyhill Industrial Estate, Hollyhill, Cork, Ireland; https://www.apple.com/legal/privacy/).
 - **With your e-mail address:** we send you a six-digit code valid for ten minutes. We store the code only in encrypted (hashed) form and delete it after one day.
 - **With a QR code** from the web portal.
 
-If you create the account with Google, we also send you a link to confirm your e-mail address and log in to the web portal. An account from the app that is never confirmed and has no subscription is deleted after 30 days.
+If you create the account with Google or Apple, we also send you a link to confirm your e-mail address and log in to the web portal. An account from the app that is never confirmed and has no subscription is deleted after 30 days.
 
 With the account we store your e-mail address, your language, how and when the account was created and, if you enter it in the portal, your name. For purchases in the shop, see its privacy policy.
 
@@ -43,8 +44,9 @@ What you enter in your collection or your list of missing cards in the app or th
 
 ## 7. Subscription and purchases
 
-- **Creator code:** if you come through a creator's link or code, we store with your account which code it was, when and by which way (link, code typed in, app), and for your first paid subscription the time, where you took it out (website or Google Play), plan, term, country of purchase and whether the discount was used. The website remembers the code from the link for up to 90 days in the cookie "oc_ref"; the app from Google Play receives it when it is installed (install referrer). We use this to give you the discount (Art. 6(1)(b) GDPR) and to pay the creator for subscriptions they brought in (our legitimate interest, Art. 6(1)(f) GDPR). The creator learns nothing about you, only the number of registrations and subscriptions.
+- **Creator code:** if you come through a creator's link or code, we store with your account which code it was, when and by which way (link, code typed in, app), and for your first paid subscription the time, where you took it out (website, Google Play or App Store), plan, term, country of purchase and whether the discount was used. The website remembers the code from the link for up to 90 days in the cookie "oc_ref"; the app from Google Play receives it when it is installed (install referrer). In the App Store the discount is an offer code; if you redeem it, Apple tells us which offer the purchase used, and this is how we attribute the purchase to the creator. We use this to give you the discount (Art. 6(1)(b) GDPR) and to pay the creator for subscriptions they brought in (our legitimate interest, Art. 6(1)(f) GDPR). The creator learns nothing about you, only the number of registrations and subscriptions.
 - **Subscription in Google Play:** payment is handled by Google (Google Commerce Limited or Google Ireland Limited, Dublin, Ireland), which is responsible for it itself. We do not receive payment details. Google tells us about the subscription: the purchase token, the order number, the product, the status, the end of the term, whether it renews, the country of purchase and the random ID of your account that the app passes on with the purchase. We use this to activate the subscription and keep it up to date; Google tells us about every change.
+- **Subscription in the App Store:** payment is handled by Apple (Apple Distribution International Ltd., Cork, Ireland), which is responsible for it itself. We do not receive payment details. Apple tells us about the subscription and about extra devices added in the App Store: the transaction numbers, the product, the status, the end of the term, whether it renews, the country of purchase, an offer used and the random ID of your account that the app passes on with the purchase. We use this to activate the subscription and keep it up to date; Apple tells us about every change.
 - **Subscription and extra devices on the website:** what we process for it is set out in point 13 of the subscription terms ({{license_terms_url}}).
 
 ## 8. Processors and recipients
@@ -53,8 +55,9 @@ What you enter in your collection or your list of missing cards in the app or th
 - Microsoft 365 (Microsoft Ireland Operations Limited, Dublin, Ireland) sends our e-mails, such as sign-in codes and confirmation links.
 - Stripe (Stripe Payments Europe, Ltd., Dublin, Ireland) for subscriptions from the website.
 - Google for signing in with Google and for subscriptions from Google Play (sections 3 and 7), as a controller in its own right.
+- Apple for signing in with Apple and for subscriptions from the App Store (sections 3 and 7), as a controller in its own right.
 
-Microsoft, Stripe and Google may also process data in the USA; they are certified under the EU-US Data Privacy Framework and additionally use standard contractual clauses.
+Microsoft, Stripe, Google and Apple may also process data in the USA; they are certified under the EU-US Data Privacy Framework and additionally use standard contractual clauses.
 
 ## 9. Legal bases
 
@@ -64,9 +67,9 @@ We process the data to provide you with the app, the account and the subscriptio
 
 You can delete your account at any time: in the app, in the web portal or by e-mail. How to do this is explained at {{delete_account_url}}.
 
-- Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google), the S3 credentials, your name and your address; the e-mail address is removed from the account and the app is signed out on all devices. What is left of the account is deleted after 30 days, once no subscription is running any more and nothing remains to be billed.
-- After deleting, a running subscription no longer renews and ends with the paid period.
-- We keep invoices and accounting records for seven years (§ 132 BAO). Google's details of purchases in Google Play and the creator-code details are kept just as long, without your e-mail address, for the accounts with Google and the creators.
+- Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google and Apple; we also revoke a sign-in with Apple at Apple), the S3 credentials, your name and your address; the e-mail address is removed from the account and the app is signed out on all devices. What is left of the account is deleted after 30 days, once no subscription is running any more and nothing remains to be billed.
+- After deleting, a running subscription from the website or from Google Play no longer renews and ends with the paid period. Only you can cancel a subscription from the App Store, in the App Store; deleting does not end it.
+- We keep invoices and accounting records for seven years (§ 132 BAO). Google's and Apple's details of purchases in Google Play and the App Store and the creator-code details are kept just as long, without your e-mail address, for the accounts with Google, Apple and the creators.
 - While your account exists, we keep the data above unless you delete it yourself. When a subscription ends, the account and collection stay; only the app's features are locked.
 
 ## 11. Your rights

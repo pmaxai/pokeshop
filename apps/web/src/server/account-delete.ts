@@ -1,6 +1,7 @@
 import 'server-only';
 import { deleteAccount, type Account } from '@pokeshop/core/accounts';
 import { cancelRequestedRenewals, storeManageUrl, type Store } from '@pokeshop/core/store';
+import { revokeAppleTokens } from '@pokeshop/core/app-signin';
 import {
   deviceSubscriptionOf,
   deviceSubscriptionRunning,
@@ -10,7 +11,7 @@ import {
   websiteSubscription,
 } from '@pokeshop/core/subscriptions';
 import { billing } from './billing';
-import { db, googlePlay } from './config';
+import { apiMasterKey, appleSignInKey, db, googlePlay } from './config';
 
 export type DeleteResult =
   { ok: true; manageUrl: string | null } | { ok: false; reason: 'subscription' };
@@ -20,7 +21,8 @@ export type DeleteResult =
  * (POST /api/app/v1/account/delete) alike. Renewals stop first: a website subscription is set to
  * end with its paid period (Stripe), a Google Play one is cancelled at Google (now, or by the
  * worker if Google does not answer). An App Store subscription can only be cancelled by the
- * person: its manage URL comes back for the app to show.
+ * person: its manage URL comes back for the app to show. Sign in with Apple tokens are revoked
+ * at Apple (now, or by the worker).
  */
 export async function deleteAccountEverywhere(account: Account): Promise<DeleteResult> {
   const web = await websiteSubscription(db(), account.id);
@@ -60,6 +62,15 @@ export async function deleteAccountEverywhere(account: Account): Promise<DeleteR
   const r = await deleteAccount(db(), account.id);
   await cancelRequestedRenewals(db(), googlePlay()).catch((e: Error) =>
     console.error('[account] cancelling store renewals:', e.message),
+  );
+  let masterKey: Buffer | null = null;
+  try {
+    masterKey = apiMasterKey();
+  } catch {
+    // without the key the worker retries
+  }
+  await revokeAppleTokens(db(), appleSignInKey(), masterKey).catch((e: Error) =>
+    console.error('[account] revoking Apple tokens:', e.message),
   );
   const apple = r.cancelInStore[0];
   return {

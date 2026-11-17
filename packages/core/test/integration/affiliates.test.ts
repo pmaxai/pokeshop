@@ -187,6 +187,7 @@ test('registering: the first code counts, only before the first purchase', async
     percent: 20,
     months: 3,
     googleOfferId: 'creator-20-3m',
+    appleOfferCode: null,
   });
   // an inactive link gives no discount (the registration stays)
   await sql`UPDATE affiliate_links SET active = false WHERE id = ${mistyLink}`;
@@ -211,6 +212,7 @@ test('website: the checkout carries the coupon, the first purchase is noted', as
     percent: 20,
     months: 3,
     googleOfferId: 'creator-20-3m',
+    appleOfferCode: null,
   });
   const paid = billing.pay(session.id);
   assert.equal(billing.store.subs.get(paid.subscriptionId)?.affiliateCode, 'MISTY');

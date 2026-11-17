@@ -10,6 +10,15 @@ import {
   parseServiceAccount,
   type GooglePlay,
 } from '@pokeshop/core/store';
+import {
+  APPLE_KEYS_URL,
+  appleBundleId,
+  appleSignInKeyFromEnv,
+  appStoreClient,
+  appStoreKeyFromEnv,
+  type AppleSignInKey,
+  type AppStore,
+} from '@pokeshop/core/apple';
 
 /** Server-side configuration from the environment, read lazily so `next build` works without it. */
 export const config = {
@@ -39,6 +48,10 @@ export const config = {
       !/^https:\/\/(www\.)?overpricedcardboard\.com$/.test(this.baseUrl)
     );
   },
+  /** The iPhone app's bundle id: the audience of Sign in with Apple, the App Store's app. */
+  get appleBundleId(): string {
+    return appleBundleId(process.env);
+  },
   /** The account for Google's and Apple's reviewers: a fixed code, valid only for it. */
   get review(): { email: string; code: string } | null {
     const code = process.env.REVIEW_LOGIN_CODE?.trim() ?? '';
@@ -55,6 +68,13 @@ let googleKeys: KeyLookup | undefined;
 export function googleSigningKeys(): KeyLookup {
   googleKeys ??= remoteKeys(GOOGLE_KEYS_URL);
   return googleKeys;
+}
+
+let appleKeys: KeyLookup | undefined;
+/** Apple's public keys for Sign in with Apple identity tokens. */
+export function appleSigningKeys(): KeyLookup {
+  appleKeys ??= remoteKeys(APPLE_KEYS_URL);
+  return appleKeys;
 }
 
 let masterKey: Buffer | undefined;
@@ -113,4 +133,24 @@ export function pubSubAuth(): { audience: string; email: string | null } {
       `${config.baseUrl}/api/store/google/notifications`,
     email: process.env.GOOGLE_PUBSUB_SERVICE_ACCOUNT?.trim().toLowerCase() || null,
   };
+}
+
+let appStoreApi: AppStore | null | undefined;
+/**
+ * The App Store Server API with the in-app purchase key (APPLE_IAP_*), or null while it isn't set
+ * up. Also checks what Apple signs (transactions, notifications).
+ */
+export function appStore(): AppStore | null {
+  if (appStoreApi === undefined) {
+    const key = appStoreKeyFromEnv(process.env);
+    appStoreApi = key ? appStoreClient(key) : null;
+  }
+  return appStoreApi;
+}
+
+let signInKey: AppleSignInKey | null | undefined;
+/** The Sign in with Apple key (APPLE_TEAM_ID, APPLE_SIGNIN_*), or null while it isn't set up. */
+export function appleSignInKey(): AppleSignInKey | null {
+  if (signInKey === undefined) signInKey = appleSignInKeyFromEnv(process.env);
+  return signInKey;
 }

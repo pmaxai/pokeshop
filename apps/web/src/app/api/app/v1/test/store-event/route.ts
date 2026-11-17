@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 import {
-  activeDeviceAddOns,
   MAX_STORE_DEVICES,
   setTestStoreState,
+  storeDevicesOf,
   type StoreState,
 } from '@pokeshop/core/store';
 import { config, db } from '@/server/config';
@@ -23,8 +23,9 @@ const STATES = [
 
 /**
  * Staging only: POST /api/app/v1/test/store-event { store_ref, state, devices? } moves the
- * account's latest test purchase to a state (renewal, cancel, grace, expiry, refund) without
- * waiting; `devices` (0–4) sets its extra-device add-ons.
+ * account's latest test purchase (Google Play or App Store) to a state (renewal, cancel, grace,
+ * expiry, refund) without waiting; `devices` (0–4) sets its extra devices (Google: add-ons;
+ * App Store: the plan's extra-devices subscription, which follows the state).
  */
 export async function POST(req: NextRequest) {
   if (!config.storeTestHooks) return apiError(404, 'not_found', 'Not found.');
@@ -49,8 +50,9 @@ export async function POST(req: NextRequest) {
   );
   if (!p) return apiError(404, 'not_found', 'No test purchase for this store_ref.');
   return ok({
+    store: p.store,
     state: p.state,
     expires_at: p.expiresAt?.toISOString() ?? null,
-    devices: activeDeviceAddOns(p.deviceAddOns),
+    devices: await storeDevicesOf(db(), p),
   });
 }

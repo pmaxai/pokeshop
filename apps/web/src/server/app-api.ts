@@ -107,7 +107,9 @@ export function deviceFields(
   if (!/^[A-Za-z0-9-]{8,64}$/.test(deviceUuid)) {
     fields.device_id = deviceUuid ? 'invalid' : 'required';
   }
-  if (b?.platform !== undefined && b.platform !== 'android') fields.platform = 'invalid';
+  // the Android app (default) or the iPhone app
+  const platform = b?.platform === undefined || b.platform === null ? 'android' : b.platform;
+  if (platform !== 'android' && platform !== 'ios') fields.platform = 'invalid';
   for (const [k, max] of [
     ['device_name', 80],
     ['app_version', 40],
@@ -127,7 +129,7 @@ export function deviceFields(
       deviceUuid,
       name: (b?.device_name as string | undefined) ?? null,
       appVersion: (b?.app_version as string | undefined) ?? null,
-      platform: 'android',
+      platform: platform as 'android' | 'ios',
     },
   };
 }
