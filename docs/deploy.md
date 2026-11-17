@@ -261,7 +261,7 @@ The app checks the subscription at `https://<host>/api/app/v1/…` (docs/app-acc
 old licence service (`license.<host>`) keeps answering app builds with licence keys until the app
 is switched to account pairing; licences are no longer sold.
 
-## 10. App stores (Google Play)
+## 10. App stores (Google Play, App Store)
 
 The store editions of the scanner app sell Collector and Creator in Google Play
 (docs/app-account-api.md › Sign-in, Buying in Google Play). Set up once, in the company's
@@ -332,11 +332,64 @@ the price import. When the release is made private, set `PACK_GITHUB_TOKEN` (fin
 _Contents: read_ on `pmaxai/TCGdex`) for the worker; both the price import and the mirror use it.
 
 What the server does: every report from the app and every notification reads the subscription
-from Google again and stores it (Admin › Kunden › customer › Käufe in den App-Stores); the
-worker re-reads every subscription that runs out within 2 days twice a day. A purchase on an
-account that already has a paid subscription is not acknowledged, so Google refunds it after 3
-days. Usage services (S3, pipeline) are billed through Stripe and are not billed for store
+from the store (Google or Apple) again and stores it (Admin › Kunden › customer › Käufe in den
+App-Stores); the worker re-reads every subscription that runs out within 2 days twice a day. A
+Google purchase on an account that already has a paid subscription is not acknowledged, so Google
+refunds it after 3 days. Usage services (S3, pipeline) are billed through Stripe and are not billed for store
 subscribers.
+
+### App Store (the iPhone app)
+
+The iPhone app (bundle id `com.overpricedcardboard.app`, set as `APPLE_BUNDLE_ID` if it ever
+differs) sells the same plans in the App Store (docs/app-account-api.md › Sign in with Apple,
+Buying in the App Store). Set up once, in the Apple Developer account of Antalyse GmbH and App
+Store Connect:
+
+1. **Sign in with Apple** – Certificates, Identifiers & Profiles › Identifiers: the App ID with
+   _Sign in with Apple_ on. Keys: a new key with _Sign in with Apple_ for that App ID; download the
+   `.p8` file (once). Set `APPLE_TEAM_ID` (Membership details), `APPLE_SIGNIN_KEY_ID` and
+   `APPLE_SIGNIN_PRIVATE_KEY` (the file's contents in single quotes, or base64 of it). Without them
+   signing in works, but deleting an account can't revoke the sign-in at Apple, which Apple
+   requires; the worker keeps the revocations for 30 days and does them once the key is there.
+2. **E-mails to private relay addresses** – Certificates, Identifiers & Profiles › Services › Sign
+   in with Apple for Email Communication: register the sending domain `overpricedcardboard.com`
+   and the sender addresses of the account e-mails (the shop's and Antalyse GmbH's sender, e.g.
+   `noreply@…`), with SPF passing. Without it, people who chose _Hide my email_ get no
+   confirmation link, codes or receipts.
+3. **Products** – App Store Connect › the app › Subscriptions: one subscription group with
+   Collector and Creator, monthly and yearly (Creator ranked above Collector, so switching up is an
+   upgrade); grace period (Billing Grace Period) on; Family Sharing off. Extra devices: one more
+   group per plan, _Extra devices (Collector)_ and _Extra devices (Creator)_, each with one product
+   per number (1–4) and period, at the plan's device price times the number. Enter all product ids
+   in Admin › Kunden & Abos › App-Stores.
+4. **App Store Server API** – Users and Access › Integrations › In-App Purchase: a key; download the
+   `.p8` file. Set `APPLE_IAP_ISSUER_ID` (shown above the keys), `APPLE_IAP_KEY_ID` and
+   `APPLE_IAP_PRIVATE_KEY`. Web and worker read them; without them `/store/apple` answers `503`.
+5. **Notifications** – App Store Connect › the app › App Information › App Store Server
+   Notifications: **Version 2**, production and sandbox URL
+   `https://overpricedcardboard.com/api/store/apple/notifications` (a staging app build: the staging
+   URL). Apple signs every notification; the server checks the chain up to Apple Root CA - G3
+   (built in) and then reads the subscription from the App Store Server API. App Store Connect can
+   send a test notification (the log shows `[store] Apple notification TEST`).
+6. **Testing** – sandbox testers (Users and Access › Sandbox) buy for free; subscriptions renew
+   every few minutes. App Review buys in the sandbox too, against the production server, so
+   production accepts sandbox purchases (they are marked as test purchases). Staging with
+   `STORE_TEST_HOOKS=1` also accepts `test_…` transactions and `test_apple:<email>`.
+7. **Review account** – the same `REVIEW_LOGIN_CODE` account, in App Store Connect › App Review
+   Information (sign-in required). Privacy policy URL `https://overpricedcardboard.com/app/privacy`;
+   account deletion: in the app, and `https://overpricedcardboard.com/delete-account`.
+8. **Creator codes** – per affiliate link with a discount: Subscriptions › Offer Codes › a custom
+   code for the plans (one-time use per customer, the discount's duration), code = the link's code
+   without hyphens (or any letters and digits), offer identifier = the same word. Enter it as
+   _App-Store-Angebotscode_ in Admin › Affiliates. A purchase with an offer code whose identifier
+   is a link's code also credits that link when the code was redeemed outside the app.
+
+What is different from Google: the shop can neither refuse nor cancel an App Store subscription.
+A second paid subscription on an account counts only once the other has ended (the app tells the
+person to cancel it and ask Apple for a refund); deleting the account leaves an App Store
+subscription running until the person cancels it (the app shows where). Extra devices bought in the
+App Store that no longer count (the subscription ended, or switched plan) keep renewing; the
+worker e-mails the person once per period how to cancel them.
 
 ## 11. Backups and restore test
 

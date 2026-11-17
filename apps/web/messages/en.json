@@ -711,7 +711,7 @@
       "save": "Save",
       "saved": "Saved.",
       "deleteTitle": "Delete account",
-      "deleteText": "This deletes your account with your collection, missing cards, shares and saved address, and signs the app out on all devices. A running subscription – from the website or from Google Play – then stops renewing and ends with the paid period. Your orders and invoices stay with the shop, as the law requires, but are no longer linked to an account.",
+      "deleteText": "This deletes your account with your collection, missing cards, shares and saved address, and signs the app out on all devices. A running subscription – from the website or from Google Play – then stops renewing and ends with the paid period. You cancel a subscription from the App Store yourself on your iPhone. Your orders and invoices stay with the shop, as the law requires, but are no longer linked to an account.",
       "deleteConfirm": "Yes, delete my account",
       "deleteConfirmMissing": "Please tick the box to confirm.",
       "deleteButton": "Delete account",
@@ -1166,12 +1166,12 @@
     "signedInTitle": "Delete your account",
     "signedInText": "You are logged in as {email}.",
     "whatTitle": "What is deleted and what stays",
-    "whatGone": "Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google), your S3 credentials, your name and your saved address. The e-mail address is removed from the account.",
+    "whatGone": "Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google and Apple), your S3 credentials, your name and your saved address. The e-mail address is removed from the account. If you signed in with Apple, we also revoke the sign-in at Apple.",
     "whatDevices": "The app is signed out on all devices at once.",
-    "whatKept": "Orders and invoices stay as long as the law requires (7 years in Austria) but are no longer linked to an account. Google Play purchases stay on record without your e-mail address.",
+    "whatKept": "Orders and invoices stay as long as the law requires (7 years in Austria) but are no longer linked to an account. Google Play and App Store purchases stay on record without your e-mail address.",
     "whatWhen": "What is left of the account is removed for good after 30 days.",
     "subTitle": "Running subscription",
-    "subText": "After deleting, a subscription no longer renews and ends with the paid period: we cancel a website subscription ourselves, and a Google Play one too. Deleting does not refund the current period.",
+    "subText": "A subscription from the website or from Google Play no longer renews after deleting and ends with the paid period: we cancel both ourselves. A subscription from the App Store, and any extra devices with it, can only be cancelled by you: on your iPhone under Settings → your name → Subscriptions. Deleting does not end it. Deleting does not refund the current period.",
     "privacy": "More on what data the app and the account keep is in the <link>app's privacy policy</link>."
   }
 }

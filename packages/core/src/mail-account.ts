@@ -90,6 +90,16 @@ const TEXT = {
     devicesEndedNoRefund: 'Vom letzten Zeitraum war nichts mehr zu erstatten.',
     devicesEndedAgain: (store: string) =>
       `Läuft dein Abo in ${store} wieder, kannst du die Geräte jederzeit neu dazubuchen.`,
+    appleDevicesSubject: 'Deine zusätzlichen Geräte im App Store laufen weiter',
+    appleDevicesNoSub: (devices: string, plan: string) =>
+      `dein ${plan}-Abo aus dem App Store läuft nicht mehr. Die zusätzlichen Geräte, die du dazu im App Store gebucht hast (${devices}), verlängern sich dort aber weiter und zählen ohne das Abo nicht.`,
+    appleDevicesOtherPlan: (devices: string, plan: string, current: string) =>
+      `dein Abo im App Store ist jetzt ${current}. Die zusätzlichen Geräte, die du für ${plan} gebucht hast (${devices}), verlängern sich weiter, zählen für ${current} aber nicht. Für ${current} buchst du die Geräte in der App neu.`,
+    appleDevicesCancel: (d: string) =>
+      `Kündigen kannst nur du sie, nicht wir: auf dem iPhone unter Einstellungen → dein Name → Abos, oder unter apps.apple.com/account/subscriptions. Sonst verlängern sie sich am ${d}.`,
+    appleDevicesRefund:
+      'Für einen schon bezahlten Zeitraum kannst du bei Apple eine Erstattung anfragen: reportaproblem.apple.com.',
+    toAppleSubscriptions: 'Abos im App Store',
     sharedSubject: (who: string) => `${who} zeigt dir eine Kartensammlung`,
     sharedIntro: (who: string) => `${who} hat eine Kartensammlung mit dir geteilt.`,
     sharedTitled: (who: string, title: string) =>
@@ -190,6 +200,16 @@ const TEXT = {
     devicesEndedNoRefund: 'Nothing was left to refund from the last period.',
     devicesEndedAgain: (store: string) =>
       `Once your subscription in ${store} runs again, you can add the devices again at any time.`,
+    appleDevicesSubject: 'Your extra devices in the App Store are still renewing',
+    appleDevicesNoSub: (devices: string, plan: string) =>
+      `your ${plan} subscription from the App Store is no longer running. The extra devices you added to it in the App Store (${devices}) still renew there, but they don’t count without the subscription.`,
+    appleDevicesOtherPlan: (devices: string, plan: string, current: string) =>
+      `your App Store subscription is now ${current}. The extra devices you added for ${plan} (${devices}) still renew, but they don’t count for ${current}. Add the devices for ${current} again in the app.`,
+    appleDevicesCancel: (d: string) =>
+      `Only you can cancel them, not us: on your iPhone under Settings → your name → Subscriptions, or at apps.apple.com/account/subscriptions. Otherwise they renew on ${d}.`,
+    appleDevicesRefund:
+      'For a period you have already paid for, you can ask Apple for a refund: reportaproblem.apple.com.',
+    toAppleSubscriptions: 'Subscriptions in the App Store',
     sharedSubject: (who: string) => `${who} is showing you a card collection`,
     sharedIntro: (who: string) => `${who} shared a card collection with you.`,
     sharedTitled: (who: string, title: string) =>
@@ -405,6 +425,31 @@ export async function renderAccountMail(
       return {
         subject,
         html: layout(L, g, subject, body.join('\n'), 'app'),
+        from: g.sender,
+        replyTo: g.sender,
+      };
+    }
+    case 'store_devices_running': {
+      const plan = (k: unknown) => t.plan[String(k ?? '')] ?? String(k ?? '');
+      const devices = t.devices(Number(payload.devices ?? 1));
+      const subject = t.appleDevicesSubject;
+      const body = [
+        p(esc(t.hello)),
+        p(
+          esc(
+            payload.reason === 'other_plan'
+              ? t.appleDevicesOtherPlan(devices, plan(payload.plan), plan(payload.current_plan))
+              : t.appleDevicesNoSub(devices, plan(payload.plan)),
+          ),
+        ),
+        p(esc(t.appleDevicesCancel(day(new Date(String(payload.renews_at)), L)))),
+        p(esc(t.appleDevicesRefund)),
+        button('https://apps.apple.com/account/subscriptions', t.toAppleSubscriptions),
+      ].join('\n');
+      const g = gmbhContext(ctx);
+      return {
+        subject,
+        html: layout(L, g, subject, body, 'app'),
         from: g.sender,
         replyTo: g.sender,
       };

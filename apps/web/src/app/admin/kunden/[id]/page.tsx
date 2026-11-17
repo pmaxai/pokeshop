@@ -399,7 +399,9 @@ export default async function Customer({
                       <code>{p.productId}</code>
                       {p.plan && (
                         <div className="muted">
-                          {PLAN[p.plan]}
+                          {p.kind === 'devices'
+                            ? `${p.devices ?? 0} zusätzliche(s) Gerät(e) für ${PLAN[p.plan]}`
+                            : PLAN[p.plan]}
                           {p.period ? `, ${p.period === 'yearly' ? 'jährlich' : 'monatlich'}` : ''}
                         </div>
                       )}

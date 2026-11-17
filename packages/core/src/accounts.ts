@@ -435,10 +435,11 @@ export const DELETED_KEEP_DAYS = 30;
 /**
  * Deletes the account: its sign-ins end at once (devices answer unpaired / account_deleted),
  * collection, missing cards, shares, sign-in identities and the S3 settings go, the address and
- * name are removed. A running app-store subscription is marked to stop renewing (the worker
- * tells the store). Orders and invoices stay: they are the shop's records. The scrubbed row is
- * removed after DELETED_KEEP_DAYS. Returns the store subscriptions that must be cancelled by
- * the customer themselves (App Store), if any.
+ * name are removed; Sign in with Apple tokens are queued to be revoked at Apple. A running
+ * Google Play subscription is marked to stop renewing (the worker tells Google). Orders and
+ * invoices stay: they are the shop's records. The scrubbed row is removed after
+ * DELETED_KEEP_DAYS. Returns the store subscriptions that must be cancelled by the customer
+ * themselves (App Store), if any.
  */
 export async function deleteAccount(
   sql: Sql,
@@ -455,6 +456,11 @@ export async function deleteAccount(
     await tx`DELETE FROM account_sessions WHERE account_id = ${accountId}`;
     await tx`DELETE FROM account_login_links WHERE email = ${a.email}`;
     await tx`DELETE FROM app_login_codes WHERE email = ${a.email}`;
+    // Sign in with Apple: the app's tokens are revoked at Apple (worker, until Apple confirms)
+    await tx`
+      INSERT INTO apple_token_revocations (token_enc, test)
+      SELECT refresh_token_enc, subject LIKE 'test:%' FROM account_identities
+       WHERE account_id = ${accountId} AND provider = 'apple' AND refresh_token_enc IS NOT NULL`;
     await tx`DELETE FROM account_identities WHERE account_id = ${accountId}`;
     await tx`DELETE FROM pairing_codes WHERE account_id = ${accountId}`;
     await tx`DELETE FROM collection_shares WHERE account_id = ${accountId}`;
@@ -495,7 +501,7 @@ export async function purgeDeletedAccounts(db: Db, now = new Date()): Promise<nu
                           AND s.current_period_end > ${now})
        AND NOT EXISTS (SELECT 1 FROM store_purchases p
                         WHERE p.account_id = a.id AND p.cancel_requested_at IS NOT NULL
-                          AND p.cancelled_at_store IS NULL
+                          AND p.store = 'google_play' AND p.cancelled_at_store IS NULL
                           AND p.state NOT IN ('expired', 'revoked'))
        AND NOT EXISTS (SELECT 1 FROM device_subscriptions d
                         WHERE d.account_id = a.id AND d.ended_at IS NULL

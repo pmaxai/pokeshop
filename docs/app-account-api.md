@@ -4,7 +4,8 @@ The Overpriced Cardboard Scanner no longer uses licence keys. A customer has an 
 overpricedcardboard.com (login by e-mail link, no password) and a **subscription** sold by
 Antalyse GmbH, on the website or in the app stores. The app is connected to the account by
 **scanning a QR code** from the web portal, or — in the store editions, for buying in the app —
-by **signing in** with the phone's Google account or a code sent by e-mail (see _Sign-in_).
+by **signing in** with the phone's Google account, Sign in with Apple, or a code sent by e-mail
+(see _Sign-in_).
 
 This document is the contract between the shop (server) and the app. Part 1 is the API, part 2
 the requirements for the app, part 3 the usage API for the video pipeline.
@@ -25,7 +26,7 @@ times are ISO 8601 in UTC (`2026-11-15T09:30:00.000Z`), money is integer cents i
 | **Collector** | € 7 / month     | € 4 / month  | Scanner, Trading mode, web portal (collection, prices, missing cards, sharing) |
 | **Creator**   | € 12 / month    | € 7 / month  | Everything in Collector + YouTube mode with recording                          |
 
-Each subscription includes **one device**; extra devices are added in the portal (for a Play
+Each subscription includes **one device**; extra devices are added in the portal (for a store
 subscription also in the app, see _Extra devices_). On request
 (switched on by the shop per customer, billed by usage):
 
@@ -72,7 +73,7 @@ and `status` says `inactive`, so renewing in the portal unlocks the app again wi
 | 404    | `unknown_code` / `not_found` | Pairing code or item does not exist                                                   |
 | 409    | `device_limit`               | All devices of the subscription are in use (pairing)                                  |
 | 410    | `code_expired`               | Pairing code expired or already used                                                  |
-| 400    | `invalid_identity`           | Sign-in: the Google token is invalid, expired or for another app                      |
+| 400    | `invalid_identity`           | Sign-in: the Google or Apple token is invalid, expired or for another app             |
 | 400    | `invalid_email`              | Sign-in: not an e-mail address                                                        |
 | 400    | `wrong_code`                 | Sign-in: the e-mail code doesn't match; `tries_left` says how many remain             |
 | 410    | `code_expired`               | Sign-in: the e-mail code is older than 10 minutes or was used                         |
@@ -135,7 +136,7 @@ and offers to remove a device or add one.
 | `code`        | required; the code from the QR URL or typed                               |
 | `device_id`   | required; a random UUID the app creates once and keeps (survives updates) |
 | `device_name` | optional, ≤ 80 characters; the phone model, shown in the portal           |
-| `platform`    | `android` (others later)                                                  |
+| `platform`    | `android` (the default) or `ios`                                          |
 | `app_version` | optional, ≤ 40 characters                                                 |
 
 `201 Created`:
@@ -202,9 +203,11 @@ send `{ "confirm": true }` (without it: `400 invalid_request`, `fields.confirm: 
   same Google account or e-mail makes a new, empty account.
 - **Renewals stop; the paid period is not refunded.** The server cancels a website subscription
   (Stripe) and a Google Play one itself; both run to the end of the paid period. An App Store
-  subscription can only be cancelled by the person: then `manage_url` is the App Store's
-  subscription page, and the app tells the person to cancel there (the App Store is not live yet,
-  so for now it is always `null`).
+  subscription (and its extra devices) can only be cancelled by the person: then `manage_url` is
+  the App Store's subscription page, and the app tells the person to cancel there. Otherwise it is
+  `null`.
+- **Sign in with Apple** is revoked at Apple (the refresh token from `/login/apple`), as Apple
+  requires; the server retries until Apple confirms.
 - `503 internal`: the website subscription could not be cancelled at Stripe just now; nothing was
   deleted. Try again later.
 
@@ -226,7 +229,7 @@ subscription** (`status: "none"`); with a running subscription its device limit 
 New accounts get an e-mail with a link that confirms the address and logs in to the portal
 (any portal login confirms it, since it goes through an e-mail link). The subscription works
 before it is clicked; until then `account.email_verified` is `false`, and the app can remind the
-person to click it. An account from Google that never gets a subscription and never confirms its
+person to click it. An account from Google or Apple that never buys anything and never confirms its
 address is deleted after 30 days.
 
 All sign-in calls together: 20 per address and 15 minutes.
@@ -262,6 +265,35 @@ account, even if its address changes.
 
 Errors: `400 invalid_identity`, `400 invalid_request` (with `fields`), `409 device_limit`,
 `429 rate_limited`, `503 store_unavailable` (Google's keys could not be fetched; try again).
+
+### `POST /api/app/v1/login/apple` – Sign in with Apple
+
+```json
+{
+  "identity_token": "eyJraWQiOiJXNldjT0tC…",
+  "authorization_code": "c1f2e3d4…",
+  "device_id": "5b0c1d8e-2f4a-4c55-9a11-7f0d3c2b9e61",
+  "device_name": "iPhone 16",
+  "platform": "ios",
+  "app_version": "1.0.0"
+}
+```
+
+`identity_token` and `authorization_code` come from `ASAuthorizationAppleIDCredential` (request
+the `email` scope). The server checks the token against Apple's keys (issuer
+`https://appleid.apple.com`, audience = the app's bundle id `com.overpricedcardboard.app`). The
+account of that Apple ID signs in; at the first sign-in Apple puts the e-mail address in the token
+(a `…@privaterelay.appleid.com` address for _Hide my email_) and the account is found or created
+with it. Later sign-ins find it by the Apple ID, even without an address.
+
+`authorization_code` is optional but should always be sent: the server exchanges it for a refresh
+token (valid 5 minutes, once) and keeps it encrypted, so that deleting the account revokes the
+sign-in at Apple, as Apple requires. Signing in works even when the exchange fails.
+
+Answers like `/login/google`. Errors: `400 invalid_identity` (also when Apple shared no address
+for an Apple ID the server doesn't know: offer _Use another email_), `400 invalid_request`,
+`409 device_limit`, `429 rate_limited`, `503 store_unavailable` (Apple's keys could not be
+fetched).
 
 ### `POST /api/app/v1/login/email` – Use another email
 
@@ -330,10 +362,11 @@ An account that brings a code before its first paid subscription is registered f
 code counts) and gets the code's discount on its first subscription. In the app the discount is a
 Google Play offer, so it works in every country Play sells in.
 
-- **Install referrer:** the website adds `referrer=aff%3DMISTY` to its Play links. At first start,
-  read it with the Play Install Referrer library; `aff=<code>` is the code.
+- **Install referrer (Android):** the website adds `referrer=aff%3DMISTY` to its Play links. At
+  first start, read it with the Play Install Referrer library; `aff=<code>` is the code. The App
+  Store has no install referrer: on the iPhone the code is typed in, or redeemed as an offer code.
 - **Send it** with the first sign-in or pairing: `"affiliate_code": "MISTY"` in the body of
-  `/login/google`, `/login/email/verify` or `/pair`. The answer then also carries
+  `/login/google`, `/login/apple`, `/login/email/verify` or `/pair`. The answer then also carries
   `"affiliate_code": "applied" | "unknown_code" | "already_registered" | "already_customer"` and
   `"affiliate"` (below). The sign-in itself never fails because of the code.
 - **Typed in** ("Have a creator code?" on the paywall): `POST /api/app/v1/affiliate`
@@ -343,14 +376,16 @@ Google Play offer, so it works in every country Play sells in.
 - **The discount:** `/store/offers` returns `affiliate` and, per plan, `google.offer_id`: buy the
   base plan with the offer of that id (`ProductDetails.subscriptionOfferDetails`, `offerId`) instead
   of the base price. The offer exists under every base plan with the same id. `null` (no code, or
-  already a customer): buy as usual.
+  already a customer): buy as usual. In the App Store the discount is an **offer code**:
+  `affiliate.apple_offer_code` (see _Buying in the App Store_).
 
 ```json
 "affiliate": {
   "code": "MISTY",
   "discount_percent": 20,
   "discount_months": 3,
-  "google_offer_id": "creator-20-3m"
+  "google_offer_id": "creator-20-3m",
+  "apple_offer_code": "MISTY20"
 }
 ```
 
@@ -378,7 +413,13 @@ phases are what the person pays. Report the purchase as usual.
         ],
         "offer_id": null
       },
-      "apple": null
+      "apple": {
+        "product_ids": { "monthly": "oc.collector.monthly", "yearly": "oc.collector.yearly" },
+        "device_product_ids": {
+          "monthly": ["oc.collector.devices1.monthly", "oc.collector.devices2.monthly"],
+          "yearly": ["oc.collector.devices1.yearly", "oc.collector.devices2.yearly"]
+        }
+      }
     },
     {
       "plan": "creator",
@@ -397,9 +438,10 @@ phases are what the person pays. Report the purchase as usual.
 }
 ```
 
-`google` is `null` while the shop has not entered the product ids (Admin › App-Stores). The line-up
-can change without an app update. `device_product_ids` may hold fewer than 4 (or none): sell only
-as many extra devices in the app as it lists.
+`google` and `apple` are `null` while the shop has not entered the product ids (Admin ›
+App-Stores). The line-up can change without an app update. `device_product_ids` may hold fewer
+than 4 (or none): sell only as many extra devices in the app as it lists. In `apple`, entry `[i]`
+is the product for `i + 1` extra devices, and an entry can be `null` (that number is not on sale).
 
 ### `POST /api/app/v1/store/google`
 
@@ -431,6 +473,91 @@ Google; the app sees them in `/status`.
 | expired               | `ended`              | off                                         |
 | refunded or revoked   | `ended`              | off at once                                 |
 | payment still pending | `none`               | off                                         |
+
+## Buying in the App Store
+
+The iPhone app sells the subscription with StoreKit 2. As with Google, the server reads every
+subscription from Apple itself (App Store Server API) and Apple tells the server about every change
+(App Store Server Notifications V2); the app only reports what it sees.
+
+1. `GET /store/offers` → `offers[].apple`. Load the products with `Product.products(for:)` and show
+   only those the App Store returns, with its own prices.
+2. Buy with `.appAccountToken(UUID(uuidString: status.account.store_ref))`.
+3. Report **every** transaction before calling `finish()`: `POST /store/apple` with its JWS
+   (`VerificationResult.jwsRepresentation`). Repeat until the answer is not `503`; finish it after
+   any other answer. Also report the updates from `Transaction.updates` (renewals, purchases made
+   on another device, codes redeemed in the App Store).
+4. **Restore purchases** / app start: `AppStore.sync()` if the person asks, then report every
+   `Transaction.currentEntitlements`.
+5. Manage / cancel: `status.subscription.manage_url`, or `showManageSubscriptions(in:)`.
+
+Products in App Store Connect: Collector and Creator, monthly and yearly, in **one subscription
+group** (switching plans is an up- or downgrade there, with the same original transaction).
+Family Sharing off.
+
+### Extra devices (App Store)
+
+An App Store subscription group holds one subscription at a time, so extra devices are their own
+subscriptions: one more group per plan, **Extra devices (Collector)** and **Extra devices
+(Creator)**, with one product per number of devices and period
+(`offers[].apple.device_product_ids.monthly[0]` = 1 extra device, monthly). Changing the number is
+an up- or downgrade inside that group. Sell the period of the subscription
+(`status.subscription.base_plan`).
+
+- They count for a running App Store subscription **of the same plan** (`devices.in_store`), at
+  most 4. After a plan change, the old plan's extra devices no longer count: offer the new plan's
+  ones, and tell the person to cancel the old ones in the App Store (the shop can't).
+- If they keep renewing while they don't count (the subscription ended, or it is another plan
+  now), the server e-mails the person once per period how to cancel them and ask Apple for a
+  refund.
+- Extra devices from the portal (Stripe) add up as for Google (`on_web`).
+
+### Creator codes (App Store)
+
+Apple's promotional offers are only for current or former subscribers, so the discount of a creator
+code is an **offer code** in App Store Connect (a custom code, usually the creator code itself,
+with the offer's identifier set to the same word). `/store/offers` returns it as
+`affiliate.apple_offer_code` (`null`: no discount in the App Store):
+
+- Register the code as usual (`affiliate_code` at sign-in, or `POST /affiliate`), then open Apple's
+  code sheet: `AppStore.presentOfferCodeRedeemSheet(in:)`, with the code shown to copy; or the URL
+  `https://apps.apple.com/redeem?ctx=offercodes&id=<app id>&code=<apple_offer_code>`.
+- A purchase through the code sheet carries **no** `appAccountToken`: the server links it to the
+  account of the device that reports it. Report it as soon as `Transaction.updates` delivers it.
+- A code redeemed in the App Store itself (outside the app) still credits the creator: when such a
+  purchase is an account's first subscription, the server finds the creator by the offer.
+
+### `POST /api/app/v1/store/apple`
+
+`{ "signed_transaction": "eyJhbGciOiJFUzI1NiIsIng1YyI6…" }` → `200` with the `/status` body.
+
+The server checks the JWS (Apple's certificate chain up to Apple Root CA - G3, the bundle id, an
+auto-renewable subscription; production or sandbox), reads the subscription of its
+`originalTransactionId` from the App Store Server API (`GET /inApps/v1/subscriptions/{id}`;
+production first, then the sandbox, where TestFlight and App Review buy), checks that it was bought
+for this account (`appAccountToken` = `store_ref`; without one, the reporting account) and stores
+plan, period and expiry. The same transaction again gives the same answer. Transactions from
+Xcode's StoreKit test environment are not signed by Apple and answer `400 invalid_purchase`: use the
+test hooks (_Testing against staging_).
+
+| HTTP | `error`              | When                                                                                                                                                                                                          |
+| ---- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400  | `invalid_purchase`   | not signed by Apple, another app, not a subscription, unknown to the App Store, or not one of our products                                                                                                    |
+| 409  | `linked_elsewhere`   | bought for another account; `owner` holds its masked e-mail                                                                                                                                                   |
+| 409  | `already_subscribed` | the account already has a running subscription (`source`: `web`, `google_play`, `app_store`). Apple can't be told to refund: show `manage_url` (cancel) and `refund_url` (`https://reportaproblem.apple.com`) |
+| 503  | `store_unavailable`  | Apple didn't answer. Don't finish the transaction; try again                                                                                                                                                  |
+
+A refused subscription is checked again at every report and notification: once the other
+subscription has ended, it counts. The states map like Google's:
+
+| App Store                          | `subscription.state` | Features                      |
+| ---------------------------------- | -------------------- | ----------------------------- |
+| active, auto-renew on              | `active`             | on until `valid_until`        |
+| active, auto-renew off             | `canceled`           | on until `ends_at`            |
+| billing grace period               | `past_due`           | on until the end of the grace |
+| billing retry (after grace)        | `ended`              | off                           |
+| expired                            | `ended`              | off                           |
+| refunded or revoked (family share) | `ended`              | off at once                   |
 
 ## Status
 
@@ -756,13 +883,15 @@ Staging (`https://staging.overpricedcardboard.com`) is password-protected. The a
 it with the header `X-Staging-Access: <secret>` (GitHub secret `ACCOUNT_STAGING_ACCESS`; the shop
 sets the same value as `STAGING_ACCESS` on the server). Staging only, never in production:
 
-| Hook                | How                                                                                                                                                                                                                                                       |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                                                                                                                                                                           |
-| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                                                                                                                                                                     |
-| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production)                                                                                                                                              |
-| Test purchases      | `purchase_token` `test_active`, `test_canceled`, `test_grace`, `test_on_hold`, `test_expired`, `test_refunded` (a suffix such as `test_active-42` is allowed; `-d2` adds 2 device add-ons) is accepted without asking Google, for the reporting account   |
-| Test events         | `POST /api/app/v1/test/store-event` `{ "store_ref": "…", "state": "renewed" }` moves the account's latest test purchase: `active`, `renewed`, `canceled`, `grace`, `on_hold`, `paused`, `expired`, `refunded`; optional `"devices": 0–4` sets its add-ons |
+| Hook                | How                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test Google sign-in | `id_token: "test_google:<email>"` stands for a Google account with that address                                                                                                                                                                                                                                                                                                                                      |
+| Test Apple sign-in  | `identity_token: "test_apple:<email>"` stands for an Apple ID with that address; any `authorization_code` is accepted                                                                                                                                                                                                                                                                                                |
+| Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                                                                                                                                                                                                                                                                                                                                |
+| Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production)                                                                                                                                                                                                                                                                                                         |
+| Test purchases      | `purchase_token` `test_active`, `test_canceled`, `test_grace`, `test_on_hold`, `test_expired`, `test_refunded` (a suffix such as `test_active-42` is allowed; `-d2` adds 2 device add-ons) is accepted without asking Google, for the reporting account                                                                                                                                                              |
+| Test App Store      | `signed_transaction` with the same `test_…` states, and parts after dashes: `yearly`, `creator`, `d1`…`d4` (the plan's extra-devices subscription instead of the plan), `code` or `code<CODE>` (bought through the code sheet: no `appAccountToken`). One purchase per group and account, as at Apple: `test_active` then `test_active-creator` is an upgrade                                                        |
+| Test events         | `POST /api/app/v1/test/store-event` `{ "store_ref": "…", "state": "renewed" }` moves the account's latest test purchase (Google or App Store): `active`, `renewed`, `canceled`, `grace`, `on_hold`, `paused`, `expired`, `refunded`; optional `"devices": 0–4` sets its extra devices (App Store: the extra-devices subscription, which follows the state). The answer has `store`, `state`, `expires_at`, `devices` |
 
 The review account has a free Creator subscription without end, up to 10 devices, and is cleared
 every Monday (collection, missing cards, devices).

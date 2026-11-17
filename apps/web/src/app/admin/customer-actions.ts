@@ -205,7 +205,14 @@ export async function saveStoreProductsAction(form: FormData) {
     apple: Object.fromEntries(
       ['collector', 'creator'].map((plan) => [
         plan,
-        { monthly: a(plan, 'monthly'), yearly: a(plan, 'yearly') },
+        {
+          monthly: a(plan, 'monthly'),
+          yearly: a(plan, 'yearly'),
+          device_product_ids: {
+            monthly: [1, 2, 3, 4].map((i) => a(plan, `devices_monthly_${i}`)),
+            yearly: [1, 2, 3, 4].map((i) => a(plan, `devices_yearly_${i}`)),
+          },
+        },
       ]),
     ),
   };

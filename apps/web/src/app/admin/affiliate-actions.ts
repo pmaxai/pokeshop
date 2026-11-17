@@ -27,6 +27,7 @@ const FIELDS: Record<string, string> = {
   discountPercent: 'Rabatt',
   discountMonths: 'Monate',
   googleOfferId: 'Play-Angebot',
+  appleOfferCode: 'App-Store-Code',
   affiliateId: 'Influencer',
 };
 const explain = (errors: Record<string, string>) =>
@@ -79,6 +80,7 @@ export async function saveAffiliateLinkAction(form: FormData) {
     discountPercent: str(form, 'discount_percent') || '0',
     discountMonths: str(form, 'discount_months'),
     googleOfferId: str(form, 'google_offer_id'),
+    appleOfferCode: str(form, 'apple_offer_code'),
     active: id ? str(form, 'active') === 'on' : true,
   };
   const r = await saveAffiliateLink(db(), input, id);
