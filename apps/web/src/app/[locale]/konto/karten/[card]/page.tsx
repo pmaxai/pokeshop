@@ -63,7 +63,7 @@ export default async function CardPage({ params, searchParams }: Props) {
     href: { pathname: '/konto/karten/[card]', params: { card: cardId } },
     locale,
   });
-  const { account, portal } = await requirePortal(locale, here);
+  const { account, portal, ent } = await requirePortal(locale, here);
   const t = await getTranslations('Portal');
   const tf = await getTranslations('Finishes');
   const tl = await getTranslations('Languages');
@@ -192,7 +192,10 @@ export default async function CardPage({ params, searchParams }: Props) {
               })}
             />
           )}
-          {graded.length > 0 && (
+          {graded.length > 0 && !ent.features.psa_prices && (
+            <p className="small muted">{t('card.psaLocked')}</p>
+          )}
+          {graded.length > 0 && ent.features.psa_prices && (
             <div className="table-scroll">
               <table className="price-table">
                 <caption className="price-table__caption">{t('card.psa')}</caption>

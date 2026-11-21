@@ -24,6 +24,7 @@ export type MailTemplate =
   | 'subscription_ended'
   | 'devices_ended'
   | 'store_devices_running'
+  | 'store_addon_running'
   | 'collection_shared'
   | 'wanted_available'
   | 'wanted_offer';

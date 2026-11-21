@@ -8,6 +8,7 @@ import type { Db, Sql } from './db.ts';
 import { signRs256 } from './jwt.ts';
 import { entitlements, websiteSubscription, type Plan } from './subscriptions.ts';
 import { noteAffiliatePurchase } from './affiliates.ts';
+import { ADDON_IDS, ADDONS, AddonsConfig, EMPTY_ADDONS, type AddonId } from './addon-catalog.ts';
 
 export type Store = 'google_play' | 'app_store';
 
@@ -86,6 +87,8 @@ const ApplePlan = z.object({
 export const StoreProducts = z.object({
   google: z.object({ collector: GooglePlan, creator: GooglePlan }),
   apple: z.object({ collector: ApplePlan, creator: ApplePlan }),
+  // price data add-ons (addon-catalog.ts): the plans they are for and their store products
+  addons: AddonsConfig,
 });
 export type StoreProducts = z.infer<typeof StoreProducts>;
 
@@ -106,6 +109,7 @@ const EMPTY_PRODUCTS: StoreProducts = {
     collector: { monthly: null, yearly: null, device_product_ids: { monthly: [], yearly: [] } },
     creator: { monthly: null, yearly: null, device_product_ids: { monthly: [], yearly: [] } },
   },
+  addons: EMPTY_ADDONS,
 };
 
 export async function storeProducts(db: Db): Promise<StoreProducts> {
@@ -160,6 +164,14 @@ export async function saveStoreProducts(
       apple.add(id);
     }
   }
+  for (const addon of ADDON_IDS) {
+    for (const period of ['monthly', 'yearly'] as const) {
+      const id = v.addons[addon].apple[period];
+      if (!id) continue;
+      if (apple.has(id)) return { ok: false, errors: [`addons.${addon}.apple.${period}`] };
+      apple.add(id);
+    }
+  }
   await db`
     INSERT INTO settings (key, value) VALUES ('store_products', ${db.json(v)})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
@@ -197,9 +209,13 @@ export function googleDevicePlanOf(products: StoreProducts, productId: string): 
 
 export type AppleProduct =
   | { kind: 'plan'; plan: Plan; period: Period }
-  | { kind: 'devices'; plan: Plan; period: Period; devices: number };
+  | { kind: 'devices'; plan: Plan; period: Period; devices: number }
+  | { kind: 'addon'; addon: AddonId; period: Period };
 
-/** What an App Store product is: a plan, or extra devices of a plan; null when not on sale. */
+/**
+ * What an App Store product is: a plan, extra devices of a plan, or an add-on; null when the shop
+ * doesn't know it. An add-on taken off sale is still known (accounts keep it).
+ */
 export function applePlanOf(products: StoreProducts, productId: string): AppleProduct | null {
   for (const plan of ['collector', 'creator'] as const) {
     const a = products.apple[plan];
@@ -209,7 +225,36 @@ export function applePlanOf(products: StoreProducts, productId: string): ApplePr
       if (i >= 0) return { kind: 'devices', plan, period, devices: i + 1 };
     }
   }
+  for (const addon of ADDON_IDS) {
+    for (const period of ['monthly', 'yearly'] as const) {
+      if (products.addons[addon].apple[period] === productId) {
+        return { kind: 'addon', addon, period };
+      }
+    }
+  }
   return null;
+}
+
+/**
+ * GET /store/offers › addons: the add-ons on sale, with the plans they can be added to and their
+ * products (each its own App Store subscription group); `null` per store until entered.
+ */
+export function storeAddonOffers(products: StoreProducts) {
+  return ADDON_IDS.filter((id) => products.addons[id].on_sale).map((id) => {
+    const c = products.addons[id];
+    return {
+      id,
+      name: ADDONS[id].name.en,
+      feature: ADDONS[id].feature,
+      plans: c.plans,
+      // Google Play follows when the Android app sells add-ons
+      google: null,
+      apple:
+        c.apple.monthly || c.apple.yearly
+          ? { product_ids: { monthly: c.apple.monthly, yearly: c.apple.yearly } }
+          : null,
+    };
+  });
 }
 
 /**
@@ -541,9 +586,13 @@ export type StorePurchase = {
   cancelRequestedAt: Date | null;
   /** add-ons that are extra devices (of this purchase's plan) */
   deviceAddOns: DeviceAddOn[];
-  /** plan: the subscription; devices: extra devices of `plan` (App Store, own subscription) */
-  kind: 'plan' | 'devices';
+  /**
+   * plan: the subscription; devices: extra devices of `plan` (App Store, own subscription);
+   * addon: an add-on (its own subscription, beside the plan)
+   */
+  kind: 'plan' | 'devices' | 'addon';
   devices: number | null;
+  addon: AddonId | null;
   createdAt: Date;
   checkedAt: Date;
 };
@@ -573,8 +622,9 @@ export type PurchaseRow = {
   latest_order_id: string | null;
   cancel_requested_at: Date | null;
   device_add_ons: DeviceAddOn[];
-  kind: 'plan' | 'devices';
+  kind: 'plan' | 'devices' | 'addon';
   devices: number | null;
+  addon: AddonId | null;
   created_at: Date;
   checked_at: Date;
 };
@@ -600,6 +650,7 @@ export const toPurchase = (r: PurchaseRow): StorePurchase => ({
   deviceAddOns: r.device_add_ons ?? [],
   kind: r.kind ?? 'plan',
   devices: r.devices ?? null,
+  addon: r.addon ?? null,
   createdAt: r.created_at,
   checkedAt: r.checked_at,
 });
@@ -875,8 +926,10 @@ export async function recheckGooglePurchases(
 }
 
 /** Staging: the original transaction id of a test App Store purchase (one per group, as Apple). */
-export const testAppleId = (storeRef: string, group: 'main' | `devices-${Plan}`) =>
-  `test:${storeRef.toLowerCase()}:${group}`;
+export const testAppleId = (
+  storeRef: string,
+  group: 'main' | `devices-${Plan}` | `addon-${AddonId}`,
+) => `test:${storeRef.toLowerCase()}:${group}`;
 
 /**
  * Staging: moves the account's latest store purchase to a state (POST /test/store-event).

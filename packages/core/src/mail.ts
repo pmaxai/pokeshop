@@ -792,6 +792,7 @@ export async function renderTemplate(
     case 'subscription_ended':
     case 'devices_ended':
     case 'store_devices_running':
+    case 'store_addon_running':
     case 'collection_shared':
     case 'wanted_available':
     case 'wanted_offer':

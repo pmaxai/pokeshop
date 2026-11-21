@@ -15,7 +15,11 @@ import {
   revokeAppleTokens,
 } from '@pokeshop/core/app-signin';
 import { appleSignInKeyFromEnv, appStoreClient, appStoreKeyFromEnv } from '@pokeshop/core/apple';
-import { noticeUncountedAppleDevices, recheckApplePurchases } from '@pokeshop/core/store-apple';
+import {
+  noticeUncountedAppleAddons,
+  noticeUncountedAppleDevices,
+  recheckApplePurchases,
+} from '@pokeshop/core/store-apple';
 import { parseMasterKey } from '@pokeshop/core/secrets';
 import {
   cancelRequestedRenewals,
@@ -327,6 +331,8 @@ async function schedule() {
   try {
     const n = await noticeUncountedAppleDevices(sql);
     if (n) console.log(`[store] ${n} notice(s) about App Store extra devices that don't count`);
+    const m = await noticeUncountedAppleAddons(sql);
+    if (m) console.log(`[store] ${m} notice(s) about App Store add-ons that don't count`);
   } catch (e) {
     console.error('[store] App Store extra devices:', (e as Error).message);
   }

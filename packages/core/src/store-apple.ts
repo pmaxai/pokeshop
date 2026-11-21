@@ -36,6 +36,7 @@ import {
 import { entitlements, subscriptionOf, websiteSubscription } from './subscriptions.ts';
 import { noteAffiliatePurchase, registerFromOfferCode } from './affiliates.ts';
 import { enqueueMail } from './outbox.ts';
+import { isAddonId, type AddonId } from './addon-catalog.ts';
 
 /** Where a refund for an App Store purchase is asked for. */
 export const APPLE_REFUND_URL = 'https://reportaproblem.apple.com';
@@ -45,9 +46,10 @@ export const APPLE_REFUND_URL = 'https://reportaproblem.apple.com';
  * test_expired, test_refunded stand for a purchase in that state, bought for the reporting
  * account. Parts after a dash: yearly (the yearly product), creator (the Creator plan), d1 … d4
  * (the plan's extra-devices subscription with that many devices, instead of the plan), code or
- * code<CODE> (bought through Apple's offer-code sheet: no appAccountToken, offer <CODE>); anything
- * else is ignored (e.g. a number). Like at Apple, an account has one purchase per group:
- * test_active and then test_active-creator is an upgrade of the same subscription.
+ * code<CODE> (bought through Apple's offer-code sheet: no appAccountToken, offer <CODE>), psa (the
+ * PSA prices add-on instead of the plan); anything else is ignored (e.g. a number). Like at Apple,
+ * an account has one purchase per group: test_active and then test_active-creator is an upgrade
+ * of the same subscription.
  */
 export function testAppleSubscription(
   token: string,
@@ -66,6 +68,7 @@ export function testAppleSubscription(
   const period = has('yearly') ? 'yearly' : 'monthly';
   const devices = Number(flags.map((f) => /^d([1-4])$/i.exec(f)?.[1]).find(Boolean) ?? 0);
   const code = flags.map((f) => /^code([A-Za-z0-9]*)$/i.exec(f)).find(Boolean);
+  const addon = has('psa') ? 'psa_prices' : null;
   const day = 86400_000;
   const end =
     state === 'grace'
@@ -75,9 +78,16 @@ export function testAppleSubscription(
             (state === 'expired' || state === 'revoked' || state === 'on_hold' ? -day : 30 * day),
         );
   return {
-    originalTransactionId: testAppleId(storeRef, devices ? `devices-${plan}` : 'main'),
+    originalTransactionId: testAppleId(
+      storeRef,
+      addon ? `addon-${addon}` : devices ? `devices-${plan}` : 'main',
+    ),
     state,
-    productId: devices ? `test_${plan}_${period}_devices_${devices}` : `test_${plan}_${period}`,
+    productId: addon
+      ? `test_${addon}_${period}`
+      : devices
+        ? `test_${plan}_${period}_devices_${devices}`
+        : `test_${plan}_${period}`,
     expiresAt: end,
     autoRenew: state === 'active' || state === 'grace',
     storeRef: code ? null : storeRef.toLowerCase(),
@@ -94,6 +104,7 @@ export function testAppleSubscription(
 function guessTestProduct(productId: string): AppleProduct {
   const plan = /creator/i.test(productId) ? 'creator' : 'collector';
   const period = /year/i.test(productId) ? 'yearly' : 'monthly';
+  if (/psa/i.test(productId)) return { kind: 'addon', addon: 'psa_prices', period };
   const devices = Number(/devices?[_.-]?([1-4])\b/i.exec(productId)?.[1] ?? 0);
   return devices ? { kind: 'devices', plan, period, devices } : { kind: 'plan', plan, period };
 }
@@ -102,9 +113,10 @@ function guessTestProduct(productId: string): AppleProduct {
  * Stores what Apple says about a subscription. `accountId` is the account that reported it (the
  * app), or null for a notification. It belongs to the account whose store_ref is its
  * appAccountToken; without one (offer-code sheet), to the account it was stored for before, else
- * the reporting one. A paid subscription (not its extra devices) is refused while the account has
- * another paid one; Apple can't be told, so it is checked again at every read and counts once the
- * other one has ended.
+ * the reporting one. A paid subscription (not its extra devices or an add-on) is refused while the
+ * account has another paid one; Apple can't be told, so it is checked again at every read and
+ * counts once the other one has ended. An add-on is stored as the account's add-on, never
+ * refused, also without a running plan.
  */
 export async function applyApplePurchase(
   sql: Sql,
@@ -168,13 +180,15 @@ export async function applyApplePurchase(
         ? (existing?.refused ?? null)
         : null;
     const devices = product.kind === 'devices' ? product.devices : null;
+    const addon = product.kind === 'addon' ? product.addon : null;
+    const plan = product.kind === 'addon' ? null : product.plan;
     const [row] = await tx<PurchaseRow[]>`
       INSERT INTO store_purchases (store, account_id, store_ref, purchase_token, product_id, plan,
                                    period, state, expires_at, auto_renew, acknowledged, test,
-                                   latest_order_id, refused, kind, devices, raw, checked_at)
+                                   latest_order_id, refused, kind, devices, addon, raw, checked_at)
       VALUES ('app_store', ${accountId}, ${s.storeRef}::uuid, ${token}, ${s.productId},
-              ${product.plan}, ${product.period}, ${s.state}, ${s.expiresAt}, ${s.autoRenew}, true,
-              ${s.test}, ${s.latestOrderId}, ${refused}, ${product.kind}, ${devices},
+              ${plan}, ${product.period}, ${s.state}, ${s.expiresAt}, ${s.autoRenew}, true,
+              ${s.test}, ${s.latestOrderId}, ${refused}, ${product.kind}, ${devices}, ${addon},
               ${tx.json(s.raw as never)}, ${now})
       ON CONFLICT (store, purchase_token) DO UPDATE SET
         account_id = coalesce(store_purchases.account_id, EXCLUDED.account_id),
@@ -184,7 +198,7 @@ export async function applyApplePurchase(
         state = EXCLUDED.state, expires_at = EXCLUDED.expires_at, auto_renew = EXCLUDED.auto_renew,
         test = EXCLUDED.test, latest_order_id = EXCLUDED.latest_order_id,
         refused = EXCLUDED.refused, kind = EXCLUDED.kind, devices = EXCLUDED.devices,
-        raw = EXCLUDED.raw, checked_at = EXCLUDED.checked_at
+        addon = EXCLUDED.addon, raw = EXCLUDED.raw, checked_at = EXCLUDED.checked_at
       RETURNING *`;
     const purchase = toPurchase(row!);
     if (refusedBy) return { ok: false, problem: 'already_subscribed', source: refusedBy, purchase };
@@ -386,6 +400,57 @@ export async function noticeUncountedAppleDevices(sql: Sql, now = new Date()): P
         renews_at: r.expires_at.toISOString(),
       },
       dedupeKey: `store_devices_running:${r.id}:${r.expires_at.toISOString()}`,
+    });
+    await sql`UPDATE store_purchases SET devices_notice_for = ${r.expires_at} WHERE id = ${r.id}`;
+    sent++;
+  }
+  return sent;
+}
+
+/**
+ * Add-ons bought in the App Store that renew while they don't count – the account's plan has
+ * ended, or it runs a plan the add-on isn't for – can't be cancelled by the shop either. The
+ * person is told once per paid period (worker), an hour after the purchase at the earliest.
+ */
+export async function noticeUncountedAppleAddons(sql: Sql, now = new Date()): Promise<number> {
+  const rows = await sql<
+    {
+      id: number;
+      account_id: number;
+      addon: AddonId;
+      expires_at: Date;
+      email: string;
+      locale: 'de' | 'en';
+    }[]
+  >`
+    SELECT p.id, p.account_id, p.addon, p.expires_at, a.email, a.locale
+      FROM store_purchases p JOIN accounts a ON a.id = p.account_id AND a.deleted_at IS NULL
+     WHERE p.store = 'app_store' AND p.kind = 'addon' AND p.auto_renew
+       AND p.refused IS NULL AND p.replaced_by IS NULL
+       AND p.state IN ('active', 'grace') AND p.expires_at > ${now}
+       AND p.created_at < ${now}::timestamptz - interval '1 hour'
+       AND (p.devices_notice_for IS NULL OR p.devices_notice_for < p.expires_at)`;
+  if (!rows.length) return 0;
+  const products = await storeProducts(sql);
+  let sent = 0;
+  for (const r of rows) {
+    if (!isAddonId(r.addon)) continue;
+    const sub = await subscriptionOf(sql, Number(r.account_id), now);
+    const ent = entitlements(sub, { webshopHost: null }, now);
+    const runs = ent.active && ent.plan !== null;
+    if (runs && products.addons[r.addon].plans.includes(ent.plan!)) continue;
+    await enqueueMail(sql, {
+      template: 'store_addon_running',
+      to: r.email,
+      locale: r.locale,
+      payload: {
+        account_id: Number(r.account_id),
+        addon: r.addon,
+        reason: runs ? 'other_plan' : 'no_subscription',
+        current_plan: runs ? ent.plan : null,
+        renews_at: r.expires_at.toISOString(),
+      },
+      dedupeKey: `store_addon_running:${r.id}:${r.expires_at.toISOString()}`,
     });
     await sql`UPDATE store_purchases SET devices_notice_for = ${r.expires_at} WHERE id = ${r.id}`;
     sent++;
