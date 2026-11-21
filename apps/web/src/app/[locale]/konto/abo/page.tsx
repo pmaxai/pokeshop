@@ -20,9 +20,11 @@ import { db } from '@/server/config';
 import { requireAccount } from '@/server/account';
 import { billing } from '@/server/billing';
 import { billingPeriodStart, usageSince } from '@pokeshop/core/usage';
-import { MAX_STORE_DEVICES, storeManageUrl } from '@pokeshop/core/store';
+import { MAX_STORE_DEVICES, storeManageUrl, storeProducts } from '@pokeshop/core/store';
 import { maxWebDevices } from '@pokeshop/core/device-subscriptions';
 import { accountAffiliate, affiliateDiscount } from '@pokeshop/core/affiliates';
+import { accountAddons, withAddons } from '@pokeshop/core/addons';
+import { ADDONS } from '@pokeshop/core/addon-catalog';
 import { cookieAffiliate } from '@/server/affiliate';
 import { AccountShell } from '@/components/account/AccountShell';
 import { SubscribeForm, type PlanPrices } from '@/components/account/SubscribeForm';
@@ -100,13 +102,15 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
       console.error('[subscription] sync after checkout:', (e as Error).message);
     }
   }
-  const [sub, services, prices, seller] = await Promise.all([
+  const [sub, services, prices, seller, addons, products] = await Promise.all([
     subscriptionOf(db(), account.id),
     accountServices(db(), account.id),
     subscriptionPrices(db()),
     licenseSeller(db()),
+    accountAddons(db(), account.id),
+    storeProducts(db()),
   ]);
-  const ent = entitlements(sub, account, new Date(), services);
+  const ent = withAddons(entitlements(sub, account, new Date(), services), addons, products.addons);
   const eur = (c: number) => formatEuro(c, locale);
   const date = (d: Date) =>
     new Intl.DateTimeFormat(locale === 'de' ? 'de-AT' : 'en-GB', {
@@ -263,6 +267,59 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
             </p>
           )}
         </section>
+
+        {addons.length > 0 && (
+          <section className="account-panel" id="addons" aria-labelledby="sub-addons">
+            <h2 id="sub-addons">{t('addons.title')}</h2>
+            <p className="muted">{t('addons.intro')}</p>
+            <ul className="plain">
+              {addons.map((a) => {
+                const store = a.source === 'app_store' ? 'App Store' : 'Google Play';
+                const counts = ent.features[ADDONS[a.id].feature];
+                return (
+                  <li key={a.id}>
+                    <strong>{ADDONS[a.id].name[locale]}</strong>: {t(`addons.state.${a.state}`)}
+                    {a.renewsAt && (
+                      <>
+                        {' · '}
+                        {t('renewsOn')} {date(a.renewsAt)}
+                      </>
+                    )}
+                    {!a.renewsAt && a.endsAt && a.runs && (
+                      <>
+                        {' · '}
+                        {t('endsOn')} {date(a.endsAt)}
+                      </>
+                    )}
+                    {a.runs && (
+                      <>
+                        {' · '}
+                        {counts
+                          ? t('addons.counts')
+                          : t('addons.notCounting', {
+                              plans: products.addons[a.id].plans
+                                .map((p) => t(`plans.${p}.name`))
+                                .join(', '),
+                            })}
+                      </>
+                    )}
+                    <div className="small muted">
+                      {a.source === 'web' ? t('addons.gift') : t('addons.fromStore', { store })}
+                    </div>
+                    {a.runs && a.source !== 'web' && !counts && (
+                      <div className="small">{t('addons.storeKeepsBilling', { store })}</div>
+                    )}
+                    {a.runs && a.manageUrl && (
+                      <div className="small">
+                        <a href={a.manageUrl}>{t('addons.manage', { store })}</a>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {inStore && (
           <section className="account-panel" id="devices" aria-labelledby="sub-extra-devices">

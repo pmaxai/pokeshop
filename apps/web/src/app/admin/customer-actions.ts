@@ -13,6 +13,8 @@ import {
 } from '@pokeshop/core/subscriptions';
 import { saveS3Config, setService, type UsageService } from '@pokeshop/core/usage';
 import { saveStoreProducts } from '@pokeshop/core/store';
+import { endAddon, grantAddon } from '@pokeshop/core/addons';
+import { ADDON_IDS, ADDONS, isAddonId, type AddonId } from '@pokeshop/core/addon-catalog';
 import { apiMasterKey, db } from '@/server/config';
 import { audit, requireAdmin } from '@/server/admin-auth';
 import { billing } from '@/server/billing';
@@ -58,6 +60,37 @@ export async function endComplimentaryAction(form: FormData) {
   await endComplimentary(db(), id);
   await audit(user, 'subscription.complimentary_end', 'account', id, null, null);
   back(page(id), 'Gratis-Abo beendet.');
+}
+
+/** An add-on as a gift, with or without an end (replaces a running gift of it). */
+export async function grantAddonAction(form: FormData) {
+  const user = await requireAdmin('owner');
+  const id = idOf(form);
+  const addon = str(form, 'addon');
+  if (!isAddonId(addon)) back(`${page(id)}#zusatzpakete`, 'Unbekanntes Zusatzpaket.', true);
+  const input = { addon: addon as AddonId, until: str(form, 'until'), note: str(form, 'note') };
+  const r = await grantAddon(db(), id, input, user.email);
+  if (!r.ok) {
+    back(
+      `${page(id)}#zusatzpakete`,
+      r.errors.includes('until')
+        ? 'Nicht gespeichert: das Ende muss in der Zukunft liegen.'
+        : `Nicht gespeichert, bitte prüfen: ${r.errors.join(', ')}`,
+      true,
+    );
+  }
+  await audit(user, 'addon.complimentary', 'account', id, null, input);
+  back(`${page(id)}#zusatzpakete`, `${ADDONS[input.addon].name.de} geschenkt.`);
+}
+
+export async function endAddonAction(form: FormData) {
+  const user = await requireAdmin('owner');
+  const id = idOf(form);
+  const addon = str(form, 'addon');
+  if (!isAddonId(addon)) back(`${page(id)}#zusatzpakete`, 'Unbekanntes Zusatzpaket.', true);
+  await endAddon(db(), id, addon as AddonId);
+  await audit(user, 'addon.complimentary_end', 'account', id, null, { addon });
+  back(`${page(id)}#zusatzpakete`, `${ADDONS[addon as AddonId].name.de} beendet.`);
 }
 
 /** Paid subscription: cancel at the end of the paid month (or take that back). */
@@ -211,6 +244,19 @@ export async function saveStoreProductsAction(form: FormData) {
           device_product_ids: {
             monthly: [1, 2, 3, 4].map((i) => a(plan, `devices_monthly_${i}`)),
             yearly: [1, 2, 3, 4].map((i) => a(plan, `devices_yearly_${i}`)),
+          },
+        },
+      ]),
+    ),
+    addons: Object.fromEntries(
+      ADDON_IDS.map((id) => [
+        id,
+        {
+          on_sale: form.get(`addons.${id}.on_sale`) === 'on',
+          plans: form.getAll(`addons.${id}.plans`).map(String),
+          apple: {
+            monthly: str(form, `addons.${id}.apple.monthly`),
+            yearly: str(form, `addons.${id}.apple.yearly`),
           },
         },
       ]),

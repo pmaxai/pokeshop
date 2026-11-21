@@ -421,7 +421,7 @@
       },
       "prices": {
         "title": "Preise",
-        "text": "Cardmarket-Trend, 30-Tage-Schnitt und Tiefstpreis für jede Variante (normal, holo, reverse holo, 1. Edition), TCGplayer als zweite Meinung und PSA 10, 9 und 8 für gegradete Karten. Gibt es eine wertvollere Variante derselben Karte, sagt dir die App das."
+        "text": "Cardmarket-Trend, 30-Tage-Schnitt und Tiefstpreis für jede Variante (normal, holo, reverse holo, 1. Edition), TCGplayer als zweite Meinung und, mit dem Zusatzpaket PSA-Preise, PSA 10, 9 und 8 für gegradete Karten. Gibt es eine wertvollere Variante derselben Karte, sagt dir die App das."
       },
       "history": {
         "title": "Preisverlauf",
@@ -902,6 +902,23 @@
         "already_active": "Du hast hier schon Geräte gebucht. Ändere die Anzahl unten.",
         "no_store_subscription": "Dafür brauchst du ein laufendes Abo aus {store}."
       }
+    },
+    "addons": {
+      "title": "Zusatzpakete",
+      "intro": "Preisdaten neben deinem Abo. Ein Zusatzpaket zählt, solange dein Abo läuft.",
+      "counts": "zählt",
+      "notCounting": "zählt gerade nicht: es braucht ein laufendes Abo ({plans})",
+      "gift": "von uns geschenkt",
+      "fromStore": "gebucht im {store}; dort verlängerst und kündigst du es",
+      "storeKeepsBilling": "Es endet nicht mit deinem Abo: Kündige es im {store}, wenn du es nicht mehr brauchst.",
+      "manage": "Im {store} verwalten",
+      "state": {
+        "active": "läuft",
+        "past_due": "Zahlung offen",
+        "canceled": "gekündigt",
+        "complimentary": "läuft",
+        "ended": "beendet"
+      }
     }
   },
   "Devices": {
@@ -981,7 +998,8 @@
       "addTitle": "Zur Sammlung hinzufügen",
       "add": "Zur Sammlung",
       "added": "Hinzugefügt.",
-      "toCollection": "Zur Sammlung"
+      "toCollection": "Zur Sammlung",
+      "psaLocked": "PSA 10 · 9 · 8: die Verkaufspreise gibt es mit dem Zusatzpaket PSA-Preise."
     },
     "item": {
       "language": "Sprache",

@@ -421,7 +421,7 @@
       },
       "prices": {
         "title": "Prices",
-        "text": "Cardmarket trend, 30-day average and lowest price for each printing (normal, holo, reverse holo, 1st edition), TCGplayer as a second opinion and PSA 10, 9 and 8 for graded cards. If a more valuable printing of the same card exists, the app tells you."
+        "text": "Cardmarket trend, 30-day average and lowest price for each printing (normal, holo, reverse holo, 1st edition), TCGplayer as a second opinion and, with the PSA prices add-on, PSA 10, 9 and 8 for graded cards. If a more valuable printing of the same card exists, the app tells you."
       },
       "history": {
         "title": "Price history",
@@ -902,6 +902,23 @@
         "already_active": "You have already added devices here. Change the number below.",
         "no_store_subscription": "For this you need a running subscription from {store}."
       }
+    },
+    "addons": {
+      "title": "Add-ons",
+      "intro": "Price data beside your subscription. An add-on counts while your subscription runs.",
+      "counts": "counts",
+      "notCounting": "doesn’t count right now: it needs a running subscription ({plans})",
+      "gift": "a gift from us",
+      "fromStore": "bought in the {store}; you renew and cancel it there",
+      "storeKeepsBilling": "It doesn’t end with your subscription: cancel it in the {store} when you no longer need it.",
+      "manage": "Manage in the {store}",
+      "state": {
+        "active": "running",
+        "past_due": "payment open",
+        "canceled": "cancelled",
+        "complimentary": "running",
+        "ended": "ended"
+      }
     }
   },
   "Devices": {
@@ -981,7 +998,8 @@
       "addTitle": "Add to your collection",
       "add": "Add to collection",
       "added": "Added.",
-      "toCollection": "Go to your collection"
+      "toCollection": "Go to your collection",
+      "psaLocked": "PSA 10 · 9 · 8: the sold prices come with the PSA prices add-on."
     },
     "item": {
       "language": "Language",

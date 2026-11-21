@@ -1,4 +1,5 @@
 import { storeProducts } from '@pokeshop/core/store';
+import { ADDON_IDS, ADDONS } from '@pokeshop/core/addon-catalog';
 import { appleSignInKey, appStore, config, db, googlePlay, pubSubAuth } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
@@ -151,6 +152,54 @@ export default async function Stores({
               ))}
             </fieldset>
           ))}
+        </div>
+
+        <h2 id="addons">Zusatzpakete</h2>
+        <p className="muted">
+          Preisdaten neben dem Abo, monatlich oder jährlich. Im App Store ist jedes Zusatzpaket eine
+          eigene Abo-Gruppe und läuft neben dem Abo. Es zählt nur, solange ein Abo mit einem der
+          gewählten Pläne läuft; endet das Abo, verlängert es sich im App Store trotzdem weiter (die
+          Kundin bekommt dann eine E-Mail). Google Play folgt mit der Android-App. Nicht im Verkauf:
+          die App bietet es nicht mehr an, wer es hat, behält es.
+        </p>
+        <div className="store-plans">
+          {ADDON_IDS.map((id) => {
+            const c = p.addons[id];
+            return (
+              <fieldset key={id}>
+                <legend>
+                  {ADDONS[id].name.de} <code className="small">{ADDONS[id].feature}</code>
+                </legend>
+                <p className="small muted">{ADDONS[id].about.de}</p>
+                <label className="check">
+                  <input type="checkbox" name={`addons.${id}.on_sale`} defaultChecked={c.on_sale} />{' '}
+                  Im Verkauf
+                </label>
+                <p className="small">Für die Pläne</p>
+                {(['collector', 'creator'] as const).map((plan) => (
+                  <label className="check" key={plan}>
+                    <input
+                      type="checkbox"
+                      name={`addons.${id}.plans`}
+                      value={plan}
+                      defaultChecked={c.plans.includes(plan)}
+                    />{' '}
+                    {plan === 'collector' ? 'Collector' : 'Creator'}
+                  </label>
+                ))}
+                {input(
+                  `addons.${id}.apple.monthly`,
+                  'App Store: Produkt-ID monatlich',
+                  c.apple.monthly,
+                )}
+                {input(
+                  `addons.${id}.apple.yearly`,
+                  'App Store: Produkt-ID jährlich',
+                  c.apple.yearly,
+                )}
+              </fieldset>
+            );
+          })}
         </div>
         <button className="btn" type="submit">
           Speichern

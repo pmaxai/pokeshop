@@ -378,7 +378,11 @@ Store Connect:
 7. **Review account** – the same `REVIEW_LOGIN_CODE` account, in App Store Connect › App Review
    Information (sign-in required). Privacy policy URL `https://overpricedcardboard.com/app/privacy`;
    account deletion: in the app, and `https://overpricedcardboard.com/delete-account`.
-8. **Creator codes** – per affiliate link with a discount: Subscriptions › Offer Codes › a custom
+8. **Add-ons** – each add-on is one more subscription group (_PSA prices_: `oc_psa_monthly` at
+   € 2.99, `oc_psa_yearly` at € 32, base country Austria), Family Sharing off. Enter the ids in
+   Admin › App-Stores › Zusatzpakete, with the plans the add-on is for. It counts only while a plan
+   runs; the shop can give it away on a customer's page.
+9. **Creator codes** – per affiliate link with a discount: Subscriptions › Offer Codes › a custom
    code for the plans (one-time use per customer, the discount's duration), code = the link's code
    without hyphens (or any letters and digits), offer identifier = the same word. Enter it as
    _App-Store-Angebotscode_ in Admin › Affiliates. A purchase with an offer code whose identifier

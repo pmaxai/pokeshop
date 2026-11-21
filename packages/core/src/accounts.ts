@@ -462,6 +462,8 @@ export async function deleteAccount(
       SELECT refresh_token_enc, subject LIKE 'test:%' FROM account_identities
        WHERE account_id = ${accountId} AND provider = 'apple' AND refresh_token_enc IS NOT NULL`;
     await tx`DELETE FROM account_identities WHERE account_id = ${accountId}`;
+    // add-ons the shop gave (store add-ons stay with the purchase records, like the plan)
+    await tx`DELETE FROM account_addons WHERE account_id = ${accountId}`;
     await tx`DELETE FROM pairing_codes WHERE account_id = ${accountId}`;
     await tx`DELETE FROM collection_shares WHERE account_id = ${accountId}`;
     await tx`DELETE FROM collection_items WHERE account_id = ${accountId}`;

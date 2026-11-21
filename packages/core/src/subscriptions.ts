@@ -14,6 +14,8 @@ import { enqueueMail } from './outbox.ts';
 import { affiliateDiscount, noteAffiliatePurchase } from './affiliates.ts';
 import { isEuCountry, HOME_COUNTRY, STANDARD_VAT_RATES } from './vat.ts';
 import { parseTaxId, type TaxId, type ViesChecker } from './tax-id.ts';
+import { accountAddons, withAddons } from './addons.ts';
+import { storeProducts } from './store.ts';
 
 export { PLANS, type Plan };
 
@@ -385,6 +387,8 @@ export type Features = {
   webshop: boolean;
   collection: boolean;
   wanted: boolean;
+  /** add-on: PSA sold prices (addons.ts sets it) */
+  psa_prices: boolean;
 };
 
 export type Services = { s3: boolean; pipeline: boolean };
@@ -421,6 +425,7 @@ const NO_FEATURES: Features = {
   webshop: false,
   collection: false,
   wanted: false,
+  psa_prices: false,
 };
 
 const RUNNING = new Set(['active', 'trialing', 'past_due']);
@@ -509,6 +514,8 @@ export function entitlements(
       webshop: Boolean(account.webshopHost),
       collection: true,
       wanted: true,
+      // add-ons: withAddons()
+      psa_prices: false,
     },
     services: svc,
     webshopHost: account.webshopHost,
@@ -520,11 +527,13 @@ export async function accountEntitlements(
   account: Pick<Account, 'id' | 'webshopHost'>,
   now = new Date(),
 ): Promise<Entitlements> {
-  const [sub, services] = await Promise.all([
+  const [sub, services, addons, products] = await Promise.all([
     subscriptionOf(db, account.id),
     accountServices(db, account.id),
+    accountAddons(db, account.id, now),
+    storeProducts(db),
   ]);
-  return entitlements(sub, account, now, services);
+  return withAddons(entitlements(sub, account, now, services), addons, products.addons);
 }
 
 /** Usage services the shop switched on for the customer (S3 storage, video pipeline). */

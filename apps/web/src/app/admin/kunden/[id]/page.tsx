@@ -21,7 +21,9 @@ import {
   adminCancelAction,
   adminNoteAction,
   adminRemoveDeviceAction,
+  endAddonAction,
   endComplimentaryAction,
+  grantAddonAction,
   grantComplimentaryAction,
   s3ConfigAction,
   serviceAction,
@@ -37,6 +39,8 @@ import {
 import { apiMasterKey } from '@/server/config';
 import { activeDeviceAddOns, storeManageUrl, storePurchasesOf } from '@pokeshop/core/store';
 import { accountAffiliate } from '@pokeshop/core/affiliates';
+import { addonRecords } from '@pokeshop/core/addons';
+import { ADDON_IDS, ADDONS } from '@pokeshop/core/addon-catalog';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Kunde' };
@@ -84,9 +88,10 @@ export default async function Customer({
     recentUsage(db(), id, 10),
   ]);
   const usage = await usageSince(db(), id, period);
-  const [purchases, affiliate] = await Promise.all([
+  const [purchases, affiliate, addons] = await Promise.all([
     storePurchasesOf(db(), id),
     accountAffiliate(db(), id),
+    addonRecords(db(), id),
   ]);
   const deviceSubs = await db()<
     {
@@ -327,6 +332,113 @@ export default async function Customer({
         </>
       )}
 
+      <h2 id="zusatzpakete">Zusatzpakete</h2>
+      <p className="muted small">
+        Zählen nur, solange ein Abo mit einem passenden Plan läuft (App-Stores › Zusatzpakete).
+        {ent.active
+          ? ` Jetzt: ${ADDON_IDS.map((a) => `${ADDONS[a].name.de} ${ent.features[ADDONS[a].feature] ? 'an' : 'aus'}`).join(', ')}.`
+          : ' Jetzt läuft kein Abo.'}
+      </p>
+      {addons.length === 0 ? (
+        <p className="muted">Keine Zusatzpakete.</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Zusatzpaket</th>
+                <th>Woher</th>
+                <th>Stand</th>
+                <th>Verlängert / endet</th>
+              </tr>
+            </thead>
+            <tbody>
+              {addons.map((a) => (
+                <tr key={`${a.kind}-${a.recordId}`}>
+                  <td>
+                    {ADDONS[a.id].name.de}
+                    {a.note && <div className="muted small">{a.note}</div>}
+                  </td>
+                  <td>
+                    {a.kind === 'complimentary'
+                      ? `geschenkt (${a.grantedBy ?? '–'})`
+                      : a.source === 'app_store'
+                        ? 'App Store'
+                        : 'Google Play'}
+                    {a.basePlan && (
+                      <div className="muted small">
+                        {a.basePlan === 'yearly' ? 'jährlich' : 'monatlich'}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    {
+                      {
+                        active: 'läuft',
+                        past_due: 'Zahlung offen (Kulanzzeit)',
+                        canceled: 'gekündigt, läuft bis zum Ende',
+                        complimentary: 'läuft (geschenkt)',
+                        ended: 'beendet',
+                      }[a.state]
+                    }
+                  </td>
+                  <td>
+                    {a.renewsAt
+                      ? `verlängert ${a.renewsAt.toLocaleDateString('de-AT')}`
+                      : a.endsAt
+                        ? `${a.runs ? 'endet' : 'endete'} ${a.endsAt.toLocaleDateString('de-AT')}`
+                        : a.runs
+                          ? 'ohne Ende'
+                          : '–'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {owner && (
+        <>
+          <form action={grantAddonAction} className="form-grid">
+            <input type="hidden" name="id" value={id} />
+            <label className="field">
+              <span>Zusatzpaket schenken</span>
+              <select name="addon" defaultValue={ADDON_IDS[0]}>
+                {ADDON_IDS.map((a) => (
+                  <option key={a} value={a}>
+                    {ADDONS[a].name.de}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Bis einschließlich (leer = ohne Ende)</span>
+              <input name="until" type="date" />
+            </label>
+            <label className="field">
+              <span>Notiz (z. B. Anlass)</span>
+              <input name="note" maxLength={500} />
+            </label>
+            <div className="inline-form">
+              <button className="btn" type="submit">
+                Schenken
+              </button>
+            </div>
+          </form>
+          {addons
+            .filter((a) => a.kind === 'complimentary' && a.runs)
+            .map((a) => (
+              <form action={endAddonAction} className="inline-form" key={a.recordId}>
+                <input type="hidden" name="id" value={id} />
+                <input type="hidden" name="addon" value={a.id} />
+                <button className="btn btn--quiet" type="submit">
+                  {`Geschenktes Zusatzpaket ${ADDONS[a.id].name.de} jetzt beenden`}
+                </button>
+              </form>
+            ))}
+        </>
+      )}
+
       <h2>Geräte</h2>
       {devices.length === 0 ? (
         <p className="muted">Keine Geräte verbunden.</p>
@@ -397,11 +509,15 @@ export default async function Customer({
                     </td>
                     <td>
                       <code>{p.productId}</code>
-                      {p.plan && (
+                      {(p.plan || p.addon) && (
                         <div className="muted">
-                          {p.kind === 'devices'
-                            ? `${p.devices ?? 0} zusätzliche(s) Gerät(e) für ${PLAN[p.plan]}`
-                            : PLAN[p.plan]}
+                          {p.kind === 'addon' && p.addon
+                            ? `Zusatzpaket ${ADDONS[p.addon]?.name.de ?? p.addon}`
+                            : p.kind === 'devices' && p.plan
+                              ? `${p.devices ?? 0} zusätzliche(s) Gerät(e) für ${PLAN[p.plan]}`
+                              : p.plan
+                                ? PLAN[p.plan]
+                                : ''}
                           {p.period ? `, ${p.period === 'yearly' ? 'jährlich' : 'monatlich'}` : ''}
                         </div>
                       )}

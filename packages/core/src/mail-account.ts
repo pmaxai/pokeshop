@@ -17,6 +17,7 @@ import {
   type Rendered,
 } from './mail.ts';
 import type { OutboxMail } from './outbox.ts';
+import { ADDONS, isAddonId } from './addon-catalog.ts';
 
 const TEXT = {
   de: {
@@ -100,6 +101,13 @@ const TEXT = {
     appleDevicesRefund:
       'Für einen schon bezahlten Zeitraum kannst du bei Apple eine Erstattung anfragen: reportaproblem.apple.com.',
     toAppleSubscriptions: 'Abos im App Store',
+    appleAddonSubject: (name: string) => `Dein Zusatzpaket ${name} im App Store läuft weiter`,
+    appleAddonNoSub: (name: string) =>
+      `dein Abo läuft nicht mehr. Das Zusatzpaket ${name}, das du im App Store gebucht hast, verlängert sich dort aber weiter und zählt ohne Abo nicht.`,
+    appleAddonOtherPlan: (name: string, current: string) =>
+      `dein Abo ist jetzt ${current}. Das Zusatzpaket ${name}, das du im App Store gebucht hast, verlängert sich weiter, zählt für ${current} aber nicht.`,
+    appleAddonCancel: (d: string) =>
+      `Kündigen kannst nur du es, nicht wir: auf dem iPhone unter Einstellungen → dein Name → Abos, oder unter apps.apple.com/account/subscriptions. Sonst verlängert es sich am ${d}.`,
     sharedSubject: (who: string) => `${who} zeigt dir eine Kartensammlung`,
     sharedIntro: (who: string) => `${who} hat eine Kartensammlung mit dir geteilt.`,
     sharedTitled: (who: string, title: string) =>
@@ -210,6 +218,13 @@ const TEXT = {
     appleDevicesRefund:
       'For a period you have already paid for, you can ask Apple for a refund: reportaproblem.apple.com.',
     toAppleSubscriptions: 'Subscriptions in the App Store',
+    appleAddonSubject: (name: string) => `Your ${name} add-on in the App Store is still renewing`,
+    appleAddonNoSub: (name: string) =>
+      `your subscription is no longer running. The ${name} add-on you bought in the App Store still renews there, but it doesn’t count without a subscription.`,
+    appleAddonOtherPlan: (name: string, current: string) =>
+      `your subscription is now ${current}. The ${name} add-on you bought in the App Store still renews, but it doesn’t count for ${current}.`,
+    appleAddonCancel: (d: string) =>
+      `Only you can cancel it, not us: on your iPhone under Settings → your name → Subscriptions, or at apps.apple.com/account/subscriptions. Otherwise it renews on ${d}.`,
     sharedSubject: (who: string) => `${who} is showing you a card collection`,
     sharedIntro: (who: string) => `${who} shared a card collection with you.`,
     sharedTitled: (who: string, title: string) =>
@@ -443,6 +458,31 @@ export async function renderAccountMail(
           ),
         ),
         p(esc(t.appleDevicesCancel(day(new Date(String(payload.renews_at)), L)))),
+        p(esc(t.appleDevicesRefund)),
+        button('https://apps.apple.com/account/subscriptions', t.toAppleSubscriptions),
+      ].join('\n');
+      const g = gmbhContext(ctx);
+      return {
+        subject,
+        html: layout(L, g, subject, body, 'app'),
+        from: g.sender,
+        replyTo: g.sender,
+      };
+    }
+    case 'store_addon_running': {
+      const plan = (k: unknown) => t.plan[String(k ?? '')] ?? String(k ?? '');
+      const name = isAddonId(payload.addon) ? ADDONS[payload.addon].name[L] : String(payload.addon);
+      const subject = t.appleAddonSubject(name);
+      const body = [
+        p(esc(t.hello)),
+        p(
+          esc(
+            payload.reason === 'other_plan'
+              ? t.appleAddonOtherPlan(name, plan(payload.current_plan))
+              : t.appleAddonNoSub(name),
+          ),
+        ),
+        p(esc(t.appleAddonCancel(day(new Date(String(payload.renews_at)), L)))),
         p(esc(t.appleDevicesRefund)),
         button('https://apps.apple.com/account/subscriptions', t.toAppleSubscriptions),
       ].join('\n');

@@ -6,7 +6,8 @@ import { randomInt } from 'node:crypto';
 import QRCode from 'qrcode';
 import { accountById, newPublicId, newToken, tokenHash, type Account } from './accounts.ts';
 import type { Db, Sql } from './db.ts';
-import { storeManageUrl } from './store.ts';
+import { storeManageUrl, storeProducts } from './store.ts';
+import { accountAddons, addonJson, withAddons } from './addons.ts';
 import {
   accountEntitlements,
   entitlements,
@@ -373,6 +374,8 @@ export type AppStatus = {
     /** extra = in_store (add-ons bought in the app) + on_web (bought in the portal) */
     devices: { included: number; extra: number; in_store: number; on_web: number; in_use: number };
   };
+  /** the account's add-ons (price data beside the plan); empty: none */
+  addons: ReturnType<typeof addonJson>[];
   features: Entitlements['features'];
   webshop: { host: string } | null;
   services: { s3: { enabled: boolean }; pipeline: { enabled: boolean } };
@@ -386,14 +389,16 @@ export async function appStatus(
   opts: { baseUrl: string; now?: Date },
 ): Promise<AppStatus> {
   const now = opts.now ?? new Date();
-  const [sub, services, inUse] = await Promise.all([
+  const [sub, services, inUse, addons, products] = await Promise.all([
     subscriptionOf(db, account.id),
     accountServices(db, account.id),
     db<
       { n: number }[]
     >`SELECT count(*)::int AS n FROM devices WHERE account_id = ${account.id} AND ended_at IS NULL`,
+    accountAddons(db, account.id, now),
+    storeProducts(db),
   ]);
-  const ent = entitlements(sub, account, now, services);
+  const ent = withAddons(entitlements(sub, account, now, services), addons, products.addons);
   const iso = (d: Date | null) => (d ? d.toISOString() : null);
   const portal = `${opts.baseUrl}${account.locale === 'de' ? '/de/konto' : '/account'}`;
   const manage = subscriptionManagement(sub, {
@@ -431,6 +436,7 @@ export async function appStatus(
         in_use: inUse[0]?.n ?? 0,
       },
     },
+    addons: addons.map(addonJson),
     features: ent.features,
     webshop: ent.features.webshop && ent.webshopHost ? { host: ent.webshopHost } : null,
     services: { s3: { enabled: ent.services.s3 }, pipeline: { enabled: ent.services.pipeline } },

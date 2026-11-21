@@ -34,6 +34,11 @@ subscription also in the app, see _Extra devices_). On request
 - **Automatic Content Processing** (video pipeline, per video minute) – Creator only
 - **Webshop as a Service**: Webshop mode appears once a webshop is connected to the account
 
+**Add-ons** (price data, monthly or yearly, beside a plan): **PSA prices** – what PSA 10, 9 and 8
+copies sold for on eBay – € 2.99 / month or € 32 / year, for Collector and Creator. Cardmarket and
+TCGplayer prices are in every plan. More add-ons (eBay listings, other price data) follow. For
+now the add-on is sold in the App Store only; the shop can also give it away (Admin › customer).
+
 The server decides what is unlocked; the app only reads `features` (below) and never derives
 features from the plan name.
 
@@ -443,6 +448,25 @@ App-Stores). The line-up can change without an app update. `device_product_ids` 
 than 4 (or none): sell only as many extra devices in the app as it lists. In `apple`, entry `[i]`
 is the product for `i + 1` extra devices, and an entry can be `null` (that number is not on sale).
 
+`addons`: the add-ons on sale, `{ "id", "name", "feature", "plans", "google", "apple" }`.
+`plans` are the plans it can be added to; `apple.product_ids` = `{ "monthly", "yearly" }`
+(`oc_psa_monthly`, `oc_psa_yearly`), `null` until entered. Each add-on is its own App Store
+subscription group, so it runs beside the plan. `google` is `null` until Google Play sells add-ons.
+An add-on taken off sale is left out; accounts that have it keep it.
+
+```json
+"addons": [
+  {
+    "id": "psa_prices",
+    "name": "PSA prices",
+    "feature": "psa_prices",
+    "plans": ["collector", "creator"],
+    "google": null,
+    "apple": { "product_ids": { "monthly": "oc_psa_monthly", "yearly": "oc_psa_yearly" } }
+  }
+]
+```
+
 ### `POST /api/app/v1/store/google`
 
 `{ "product_id": "oc_creator", "purchase_token": "…" }` → `200` with the `/status` body (now
@@ -559,6 +583,14 @@ subscription has ended, it counts. The states map like Google's:
 | expired                            | `ended`              | off                           |
 | refunded or revoked (family share) | `ended`              | off at once                   |
 
+An add-on's product is stored as the account's add-on (not its plan): no `already_subscribed`,
+and it is stored even without a running plan. `features.<add-on>` is `true` while the plan runs,
+is in the add-on's `plans`, and the add-on runs (`active`, `canceled` until `ends_at`, `past_due`,
+`complimentary`). Notifications update it like a plan. A second subscription of the same add-on
+(another Apple ID) is stored too; the add-on counts while either runs. When the plan ends first,
+the add-on keeps billing in the App Store (the shop can't cancel it): `addons` still lists it as
+running, the app tells the person to cancel it there, and the server e-mails them once a period.
+
 ## Status
 
 ### `GET /api/app/v1/status`
@@ -594,6 +626,17 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
     "ends_at": null,
     "devices": { "included": 1, "extra": 1, "in_store": 0, "on_web": 1, "in_use": 2 }
   },
+  "addons": [
+    {
+      "id": "psa_prices",
+      "state": "active",
+      "source": "app_store",
+      "base_plan": "yearly",
+      "renews_at": "2027-11-21T10:00:00.000Z",
+      "ends_at": null,
+      "manage_url": "https://apps.apple.com/account/subscriptions"
+    }
+  ],
   "features": {
     "scanner": true,
     "trading": true,
@@ -603,7 +646,8 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
     "pipeline": false,
     "webshop": false,
     "collection": true,
-    "wanted": true
+    "wanted": true,
+    "psa_prices": true
   },
   "webshop": null,
   "services": {
@@ -634,6 +678,8 @@ user taps something like "Check again"). It is cheap; offline the app keeps work
 | `features.webshop`        | Webshop mode; `webshop.host` is the connected shop                                                                                                                                                                                                                                            |
 | `features.collection`     | "Add to collection" and the collection endpoints                                                                                                                                                                                                                                              |
 | `features.wanted`         | "Add to missing cards" and the missing-card endpoints                                                                                                                                                                                                                                         |
+| `features.psa_prices`     | PSA sold prices (add-on): the plan runs, is Collector or Creator, and the add-on runs                                                                                                                                                                                                         |
+| `addons`                  | the account's add-ons, one per add-on: `{ "id", "state", "source", "base_plan", "renews_at", "ends_at", "manage_url" }` (empty: none). The fields mean what they mean in `subscription`. Listed while the App Store bills them, also without a plan; an ended one stays listed as `ended`     |
 | `webshop`                 | `{ "host": "shop.example.com" }` when a webshop is connected, else `null`. The API key for it is still set up in ⚙ → Webshop as today                                                                                                                                                         |
 | `services.s3.enabled`     | the shop set up S3 storage for this customer; settings via `/services/s3`                                                                                                                                                                                                                     |
 | `account.store_ref`       | a UUID fixed per account; the app passes it with every store purchase (Google: `obfuscatedAccountId`, Apple: `appAccountToken`)                                                                                                                                                               |
@@ -932,7 +978,7 @@ sets the same value as `STAGING_ACCESS` on the server). Staging only, never in p
 | Test e-mail codes   | addresses `…@test.overpricedcardboard.com` get no e-mail and accept the code `000000`                                                                                                                                                                                                                                                                                                                                |
 | Review account      | `review@overpricedcardboard.com` with the fixed code the shop gives the store reviewers (also in production)                                                                                                                                                                                                                                                                                                         |
 | Test purchases      | `purchase_token` `test_active`, `test_canceled`, `test_grace`, `test_on_hold`, `test_expired`, `test_refunded` (a suffix such as `test_active-42` is allowed; `-d2` adds 2 device add-ons) is accepted without asking Google, for the reporting account                                                                                                                                                              |
-| Test App Store      | `signed_transaction` with the same `test_…` states, and parts after dashes: `yearly`, `creator`, `d1`…`d4` (the plan's extra-devices subscription instead of the plan), `code` or `code<CODE>` (bought through the code sheet: no `appAccountToken`). One purchase per group and account, as at Apple: `test_active` then `test_active-creator` is an upgrade                                                        |
+| Test App Store      | `signed_transaction` with the same `test_…` states, and parts after dashes: `yearly`, `creator`, `d1`…`d4` (the plan's extra-devices subscription instead of the plan), `code` or `code<CODE>` (bought through the code sheet: no `appAccountToken`), `psa` (the PSA prices add-on instead of the plan). One purchase per group and account, as at Apple: `test_active` then `test_active-creator` is an upgrade     |
 | Test events         | `POST /api/app/v1/test/store-event` `{ "store_ref": "…", "state": "renewed" }` moves the account's latest test purchase (Google or App Store): `active`, `renewed`, `canceled`, `grace`, `on_hold`, `paused`, `expired`, `refunded`; optional `"devices": 0–4` sets its extra devices (App Store: the extra-devices subscription, which follows the state). The answer has `store`, `state`, `expires_at`, `devices` |
 
 The review account has a free Creator subscription without end, up to 10 devices, and is cleared
