@@ -706,6 +706,60 @@ export async function revokeShare(db: Db, accountId: number, id: number): Promis
   await db`UPDATE collection_shares SET revoked_at = now() WHERE id = ${id} AND account_id = ${accountId}`;
 }
 
+// The app's link (the Share button in the scanner app): the account's newest active public share
+// of the whole collection with prices. Other public shares (some binders, or without prices) are
+// made in the portal and only counted.
+
+export type AppShare = { share: Share | null; otherPublic: number };
+
+/** The app's link, if there is one, and how many other public links are on. */
+export async function appShare(db: Db, accountId: number): Promise<AppShare> {
+  const rows = await db<ShareRow[]>`
+    SELECT * FROM collection_shares
+     WHERE account_id = ${accountId} AND kind = 'public' AND revoked_at IS NULL
+       AND (expires_at IS NULL OR expires_at > now())
+     ORDER BY created_at DESC, id DESC`;
+  const app = rows.find((r) => r.binder_ids.length === 0 && r.show_prices);
+  return { share: app ? toShare(app) : null, otherPublic: rows.length - (app ? 1 : 0) };
+}
+
+/**
+ * The app's link, made now if there is none (no binders, with prices, no title). Under a lock on
+ * the account, so two quick taps can't make two links.
+ */
+export async function ensureAppShare(
+  sql: Sql,
+  accountId: number,
+): Promise<AppShare & { share: Share; created: boolean }> {
+  return sql.begin(async (tx) => {
+    await tx`SELECT pg_advisory_xact_lock(hashtext(${`collection_share:${accountId}`}))`;
+    const cur = await appShare(tx, accountId);
+    if (cur.share) return { share: cur.share, otherPublic: cur.otherPublic, created: false };
+    const [row] = await tx<ShareRow[]>`
+      INSERT INTO collection_shares (account_id, token, kind, binder_ids, show_prices)
+      VALUES (${accountId}, ${randomBytes(18).toString('base64url')}, 'public', '{}', true)
+      RETURNING *`;
+    return { share: toShare(row!), otherPublic: cur.otherPublic, created: true };
+  });
+}
+
+/** Make private: every public share of the account stops at once; personal ones keep running. */
+export async function revokePublicShares(db: Db, accountId: number): Promise<number> {
+  const r = await db`
+    UPDATE collection_shares SET revoked_at = now()
+     WHERE account_id = ${accountId} AND kind = 'public' AND revoked_at IS NULL`;
+  return r.count;
+}
+
+/** A share as the app API answers it. */
+export const shareJson = (s: Share, baseUrl: string, locale: 'de' | 'en') => ({
+  id: s.id,
+  url: shareUrl(baseUrl, s.token, locale),
+  show_prices: s.showPrices,
+  views: s.views,
+  created_at: s.createdAt.toISOString(),
+});
+
 /** A share by its token, if it is still valid; counts the view. */
 export async function openShare(
   db: Db,

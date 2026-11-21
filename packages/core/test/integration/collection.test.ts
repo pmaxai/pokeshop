@@ -10,13 +10,18 @@ import { importPack } from '../../src/pricepack.ts';
 import { redeemLoginLink, requestLoginLink, type Account } from '../../src/accounts.ts';
 import {
   addItem,
+  appShare,
   collectionView,
   createBinder,
   createShare,
   deleteItem,
+  ensureAppShare,
+  itemJson,
   itemsOfCard,
   openShare,
+  revokePublicShares,
   revokeShare,
+  shareJson,
   syncItems,
   syncShopPurchases,
   updateItem,
@@ -188,6 +193,126 @@ test('shares: a personal link is mailed and expires after 7 days, a public one u
   assert.ok((await openShare(sql, pub.share.token, later)).ok);
   await revokeShare(sql, a.id, pub.share.id);
   assert.deepEqual(await openShare(sql, pub.share.token), { ok: false, problem: 'unknown' });
+});
+
+async function newAccount(email: string): Promise<Account> {
+  await requestLoginLink(sql, { email, locale: 'de', baseUrl: BASE });
+  const [m] = await sql<{ payload: { url: string } }[]>`
+    SELECT payload FROM outbox WHERE to_address = ${email} ORDER BY id DESC LIMIT 1`;
+  const r = await redeemLoginLink(sql, new URL(m!.payload.url).searchParams.get('t')!);
+  assert.ok(r.ok);
+  return r.account;
+}
+
+test('the app’s link: made once, found again, counted next to other public links', async () => {
+  const bo = await newAccount('bo@example.com');
+  const owner = { id: bo.id, name: null, email: bo.email, locale: 'de' as const };
+  // never shared
+  assert.deepEqual(await appShare(sql, bo.id), { share: null, otherPublic: 0 });
+  // made now (no binders, with prices), then the same one again
+  const made = await ensureAppShare(sql, bo.id);
+  assert.equal(made.created, true);
+  assert.deepEqual(made.share.binderIds, []);
+  assert.equal(made.share.showPrices, true);
+  assert.equal(made.share.kind, 'public');
+  assert.equal(made.share.title, null);
+  const again = await ensureAppShare(sql, bo.id);
+  assert.equal(again.created, false);
+  assert.equal(again.share.id, made.share.id);
+  assert.equal((await appShare(sql, bo.id)).share?.id, made.share.id);
+  // as the app gets it: the address in the account's language
+  assert.deepEqual(shareJson(made.share, BASE, 'de'), {
+    id: made.share.id,
+    url: `${BASE}/de/c/${made.share.token}`,
+    show_prices: true,
+    views: 0,
+    created_at: made.share.createdAt.toISOString(),
+  });
+
+  // two quick taps at once still make one link
+  const cy = await newAccount('cy@example.com');
+  const both = await Promise.all([ensureAppShare(sql, cy.id), ensureAppShare(sql, cy.id)]);
+  assert.equal(both[0].share.id, both[1].share.id);
+  assert.deepEqual(both.map((x) => x.created).sort(), [false, true]);
+  const [{ n }] = await sql<[{ n: number }]>`
+    SELECT count(*)::int AS n FROM collection_shares WHERE account_id = ${cy.id}`;
+  assert.equal(n, 1);
+
+  // a portal link of one binder is another public link, not the app's
+  const dee = await newAccount('dee@example.com');
+  const deeOwner = { id: dee.id, name: null, email: dee.email, locale: 'de' as const };
+  const binder = await createBinder(sql, dee.id, 'Tausch');
+  assert.ok(binder);
+  const one = await createShare(
+    sql,
+    deeOwner,
+    { kind: 'public', binderIds: [binder.id] },
+    { baseUrl: BASE },
+  );
+  assert.ok(one.ok);
+  assert.deepEqual(await appShare(sql, dee.id), { share: null, otherPublic: 1 });
+  const deeApp = await ensureAppShare(sql, dee.id);
+  assert.equal(deeApp.created, true);
+  assert.equal(deeApp.otherPublic, 1);
+  assert.equal((await appShare(sql, dee.id)).otherPublic, 1);
+  // …and so is one without prices
+  assert.ok(
+    (await createShare(sql, deeOwner, { kind: 'public', showPrices: false }, { baseUrl: BASE })).ok,
+  );
+  assert.equal((await appShare(sql, dee.id)).otherPublic, 2);
+
+  // a portal link of the whole collection with prices is the app's link
+  const eli = await newAccount('eli@example.com');
+  const eliOwner = { id: eli.id, name: null, email: eli.email, locale: 'de' as const };
+  const portal = await createShare(sql, eliOwner, { kind: 'public' }, { baseUrl: BASE });
+  assert.ok(portal.ok);
+  const eliApp = await ensureAppShare(sql, eli.id);
+  assert.equal(eliApp.created, false);
+  assert.equal(eliApp.share.id, portal.share.id);
+  // revoked in the portal: the app sees the collection as private
+  await revokeShare(sql, eli.id, portal.share.id);
+  assert.equal((await appShare(sql, eli.id)).share, null);
+
+  // Make private: every public link stops, personal ones keep running
+  const personal = await createShare(
+    sql,
+    owner,
+    { kind: 'personal', recipientEmail: 'friend@example.com' },
+    { baseUrl: BASE },
+  );
+  assert.ok(personal.ok);
+  const binders = await createShare(
+    sql,
+    owner,
+    { kind: 'public', showPrices: false },
+    { baseUrl: BASE },
+  );
+  assert.ok(binders.ok);
+  assert.equal((await appShare(sql, bo.id)).otherPublic, 1);
+  assert.equal(await revokePublicShares(sql, bo.id), 2);
+  assert.deepEqual(await appShare(sql, bo.id), { share: null, otherPublic: 0 });
+  assert.deepEqual(await openShare(sql, made.share.token), { ok: false, problem: 'unknown' });
+  assert.deepEqual(await openShare(sql, binders.share.token), { ok: false, problem: 'unknown' });
+  assert.ok((await openShare(sql, personal.share.token)).ok);
+  // nothing public any more: still fine
+  assert.equal(await revokePublicShares(sql, bo.id), 0);
+  // sharing again makes a new link
+  const fresh = await ensureAppShare(sql, bo.id);
+  assert.equal(fresh.created, true);
+  assert.notEqual(fresh.share.token, made.share.token);
+});
+
+test('an edited item comes back whole, as the app shows it', async () => {
+  const added = await addItem(sql, a.id, { ...charizard, merge: false }, { source: 'app' });
+  assert.ok(added.ok);
+  const up = await updateItem(sql, a.id, added.item.id, { quantity: 2 }, 'de');
+  assert.ok(up && up.ok);
+  const j = itemJson(up.item);
+  assert.equal(j.quantity, 2);
+  assert.equal(j.card_id, 'base1-4');
+  for (const k of ['name', 'set_name', 'number', 'image_url', 'value_cents'] as const) {
+    assert.ok(j[k] !== null && j[k] !== undefined, `${k} is there`);
+  }
 });
 
 test('cards bought in the shop join the collection once and leave it after a refund', async () => {

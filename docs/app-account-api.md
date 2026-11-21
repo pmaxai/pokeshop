@@ -820,7 +820,8 @@ result panel. `{ "items": [Item, …] }`.
 ### `PATCH /api/app/v1/collection/items/{id}`
 
 Any of `quantity`, `language`, `finish`, `condition`, `grading`, `purchase_price_cents`, `note`,
-`binder_id`; `null` clears an optional field. `200` with the item, `404 not_found`.
+`binder_id`; `null` clears an optional field. `200` with the whole item (with `name`, `set_name`,
+`number`, `image_url` and `value_cents`, as in the list), `404 not_found`.
 
 ### `DELETE /api/app/v1/collection/items/{id}`
 
@@ -830,6 +831,47 @@ Any of `quantity`, `language`, `finish`, `condition`, `grading`, `purchase_price
 
 `{ "binders": [ { "id": 12, "name": "Trade binder" } ] }` – the customer's binders (made in the
 portal). Items without `binder_id` are in the main collection.
+
+### Sharing the collection
+
+The app's link: the account's newest active public share (`/c/<token>`) of the whole collection
+with prices. Other public shares (some binders, or without prices) are made in the portal.
+
+#### `GET /api/app/v1/collection/share`
+
+`{ "public": Share | null, "other_public": 0 }` – `public` is the app's link,
+`other_public` the number of other active public shares.
+Share: `{ "id", "url", "show_prices", "views", "created_at" }`; `url` as the portal shows it.
+
+```json
+{
+  "public": {
+    "id": 31,
+    "url": "https://overpricedcardboard.com/de/c/AbC9xQ7kLm2Zp9Rt4VwXy1",
+    "show_prices": true,
+    "views": 12,
+    "created_at": "2026-11-21T12:00:00.000Z"
+  },
+  "other_public": 0
+}
+```
+
+`url` is in the account's language (German under `/de`). A link made in the portal for the whole
+collection with prices counts as the app's link too; revoking it in the portal makes `public`
+`null` again.
+
+#### `POST /api/app/v1/collection/share`
+
+Body `{ "show_prices": true }`. Returns the app's link, made if there is none: `201` new,
+`200` existing (same body as `GET`). Never makes a second one. `show_prices: false` answers
+`400 invalid_request` (links without prices are made in the portal).
+
+#### `DELETE /api/app/v1/collection/share`
+
+Revokes every public share of the account; personal shares stay. `204`, also when none was public.
+A revoked link's page says the link no longer works.
+
+All three need `features.collection`, else `402 subscription_required`.
 
 ## Missing cards
 
@@ -964,6 +1006,10 @@ no longer included falls back to Scanner.
    on a `400` (show why) or when the user deletes it.
 5. Trading mode: when a cart is marked **Paid**, offer "Add the N cards to your collection"
    (one `POST` per line, purchase price = the line's price per copy).
+6. Collection page: **Share** shows the public link (`GET /collection/share`), makes it
+   (`POST`) and sends it with the system share sheet; **Make private** (asked first) calls
+   `DELETE /collection/share`. Rows can be edited (`PATCH /collection/items/{id}`, only the
+   changed fields) and deleted (`DELETE /collection/items/{id}`, asked first).
 
 ## Strings
 
