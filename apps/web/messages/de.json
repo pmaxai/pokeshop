@@ -218,8 +218,8 @@
     "chamber": "Mitglied der",
     "authority": "Gewerbebehörde",
     "contact": "Kontakt",
-    "licenses": "Verkauf der App-Lizenzen (Overpriced Cardboard Scanner)",
-    "licensesIntro": "Die Lizenzen für die App Overpriced Cardboard Scanner verkauft und verrechnet:"
+    "app": "App Overpriced Cardboard",
+    "appIntro": "Anbieterin der App Overpriced Cardboard und Verkäuferin ihrer Abos auf dieser Website:"
   },
   "Privacy": {
     "title": "Datenschutz",
@@ -401,52 +401,112 @@
     "until": "bis"
   },
   "App": {
-    "metaTitle": "Overpriced Cardboard Scanner – Pokémon-Karten scannen, Preise sehen",
-    "metaDescription": "Die Android-App von Overpriced Cardboard: Karte scannen und den Cardmarket-Preis der richtigen Variante sehen, auch ohne Empfang. Abo ab 7 € im Monat, mit Web-Portal für deine Sammlung.",
-    "beta": "Android-Beta",
-    "tagline": "Karte scannen und aktuelle Preise prüfen. Auch ohne Empfang.",
-    "lead": "Der Overpriced Cardboard Scanner erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort den Cardmarket-Preis der richtigen Variante. Gebaut für Flohmärkte, Card Shows und Openings.",
-    "price": "ab {price} pro Monat",
-    "priceNote": "Collector, inkl. USt., monatlich kündbar",
-    "buy": "Abo wählen",
-    "seeFeatures": "Was die App kann",
-    "platformApk": "Aktuell nur für Android (ab Android 8). Der Overpriced Cardboard Scanner ist noch nicht im Play Store: Du bekommst die App als APK-Datei.",
-    "platformStore": "Aktuell nur für Android (ab Android 8), im Google Play Store.",
+    "metaTitle": "Overpriced Cardboard: die App – Pokémon-Karten scannen, Preise sehen",
+    "metaDescription": "Die App von Overpriced Cardboard: Karte scannen und die Preise der richtigen Version sehen, auch ohne Empfang. Gratis bei Google Play, Abo ab {price} im Monat. Fürs iPhone bald im App Store.",
+    "platforms": "Android-App, fürs iPhone bald",
+    "platformsBoth": "Für Android und iPhone",
+    "title": "Karte scannen, Preis sehen. Auch ohne Empfang.",
+    "lead": "Die App erkennt Pokémon-Karten mit der Handykamera und zeigt dir sofort die Preise der richtigen Version: Cardmarket, TCGplayer und ihren Verlauf. Für Flohmärkte, Card Shows, Openings und deine Sammlung.",
+    "play": "Bei Google Play laden",
+    "appStore": "Im App Store laden",
+    "appStoreSoon": "iPhone: bald im App Store",
+    "freeLine": "Gratis laden. Ohne Konto scannst du mit der Gratis-Version, alles andere gibt es im Abo ab {price} im Monat.",
+    "comparePlans": "Gratis und Abos vergleichen",
     "screenshotAlt": "Scan in der App: Die Karte Altaria aus Silver Tempest liegt im grünen Rahmen, darunter Name, Set, Nummer, Cardmarket-Trend und der Preisverlauf der letzten 90 Tage.",
-    "featuresTitle": "Was der Overpriced Cardboard Scanner kann",
+    "featuresTitle": "Was die App kann",
+    "screens": {
+      "search": {
+        "caption": "Jede Karte mit allen Preisen",
+        "alt": "Kartenseite in der App: Glurak-ex aus 151, Spezial-Illustration, 313,78 € Cardmarket-Trend der Holo-Version."
+      },
+      "prices": {
+        "caption": "Cardmarket, TCGplayer und der Verlauf",
+        "alt": "Preistabelle: Cardmarket mit Trend, 30-Tage-Schnitt, Durchschnittsverkauf und günstigstem Angebot, TCGplayer mit Market-Preis, darunter der Verlauf der letzten 90 Tage."
+      },
+      "cart": {
+        "caption": "Am Stand: Preis prüfen, verhandeln",
+        "alt": "In den Warenkorb: Zustand EX, Marktwert 266,71 €, der Händler will 30 €, Urteil „Great deal“."
+      },
+      "free": {
+        "caption": "Gratis: 10 Preise pro Stunde",
+        "alt": "Gratis-Version: erkannte Karte mit dem Knopf „Reveal the price“, noch 7 von 10 in dieser Stunde."
+      }
+    },
     "features": {
       "recognise": {
         "title": "Erkennen",
-        "text": "Karte in den Rahmen halten: Wird er grün, ist sich die App sicher. Sie liest Sprache und Kartennummer mit und findet so das richtige Set, auf Englisch, Deutsch, Französisch, Spanisch, Italienisch, Portugiesisch und Japanisch. Unsichere Karten nimmst du per Doppeltipp, alles andere findest du über die Suche."
+        "text": "Karte in den Rahmen halten: Wird er grün, ist sich die App sicher. Sie liest Sprache und Kartennummer mit und findet so die richtige Karte im richtigen Set, auf Englisch, Deutsch, Französisch, Spanisch, Italienisch, Portugiesisch, Japanisch und Chinesisch. Unsichere Karten nimmst du per Doppeltipp."
       },
       "prices": {
         "title": "Preise",
-        "text": "Cardmarket-Trend, 30-Tage-Schnitt und Tiefstpreis für jede Variante (normal, holo, reverse holo, 1. Edition), TCGplayer als zweite Meinung und, mit dem Zusatzpaket PSA-Preise, PSA 10, 9 und 8 für gegradete Karten. Gibt es eine wertvollere Variante derselben Karte, sagt dir die App das."
+        "text": "Cardmarket (Trend, 30-Tage-Schnitt, Durchschnittsverkauf, günstigstes Angebot) und TCGplayer für jede Version: normal, Holo, Reverse Holo, 1. Edition. Welcher Preis groß steht, stellst du ein. Gibt es eine wertvollere Version derselben Karte, sagt dir die App das. PSA 10, 9 und 8 gibt es als Zusatzpaket."
       },
       "history": {
         "title": "Preisverlauf",
         "text": "Unter dem Preis siehst du die letzten 90 Tage; ein Tipp öffnet das Diagramm über bis zu ein Jahr."
       },
+      "search": {
+        "title": "Suche",
+        "text": "Jede Karte nachschlagen, auch ohne sie in der Hand: mit allen Preisen, dem Verlauf, deiner Sammlung und deinen fehlenden Karten."
+      },
       "offline": {
         "title": "Offline",
-        "text": "Erkennung und Preise laufen ohne Internet, auch in Messehallen ohne Empfang. Jede Nacht gibt es frische Preise per App-Update."
+        "text": "Erkennung und Preise laufen ohne Internet, auch in Messehallen ohne Empfang. Die neuen Preise lädt die App jede Nacht."
       },
       "alert": {
         "title": "Preisalarm",
         "text": "Leg eine Grenze fest, etwa 5 €. Das Handy vibriert, sobald eine Karte darüber auftaucht. So gehst du eine ganze Kiste durch und hältst nur an, wenn es summt."
       },
       "trading": {
-        "title": "Trading-Modus",
-        "text": "Für Card Shows: Marktwert nach Zustand, ein Urteil zum Preis des Händlers mit Gegenangebot und Schmerzgrenze, ein Warenkorb pro Stand, Bundles, Tausch mit Bilanz, Tagesbudget und deine Deals als CSV."
+        "title": "Card Shows",
+        "text": "„In den Warenkorb“ direkt aus dem Scanner: Ich bekomme oder Ich gebe, Zustand, Preis des Händlers und ein Urteil mit Gegenangebot und Schmerzgrenze. Ein Warenkorb pro Stand, Bundles, Tausch mit Bilanz, ein Budget für die Show und deine Deals als CSV."
+      },
+      "collection": {
+        "title": "Sammlung",
+        "text": "Mit „+ Sammlung“ landet die Karte in deiner Sammlung, mit Zustand, Menge, Kaufpreis und Ordner; ihr Wert bleibt aktuell. Fehlende Karten merkst du dir mit ☆, und wir melden uns, wenn eine davon im Shop ist. Teilen geht per Link, und dieselbe Sammlung hast du im Kundenkonto."
       },
       "youtube": {
         "title": "YouTube-Modus",
-        "text": "Ein aufgeräumter Bildschirm für Opening-Videos: großer Preis, der hochzählt, ein Hit-Effekt über deiner Alarmgrenze und die Summe des Packs als CSV. Im Aufnahme-Modus nimmt die App dein Opening gleich selbst auf; mit unserem Automatic Content Processing wird daraus ein fertiges Video (siehe unten)."
+        "text": "Für Opening-Videos, im Abo Creator: ein großer Preis, der hochzählt, ein Hit-Effekt über deiner Alarmgrenze und die Summe des Packs. Die App nimmt Bildschirm und Kamera selbst auf; mit unserem Automatic Content Processing wird daraus ein fertiges Video (siehe unten)."
       },
       "webshop": {
         "title": "Webshop-Modus",
         "text": "Für Händler: Karte scannen, Sprache, Zustand, Preis und Lagerbox wählen, und sie ist samt Bild im eigenen Webshop eingebucht. Am Stand verkaufst du direkt aus dem Lager. Dazu passt unser Webshop as a Service (siehe unten)."
       }
+    },
+    "plansTitle": "Gratis oder mit Abo",
+    "plansIntro": "Die App lädst du gratis. Ein Abo schließt du in der App über Google Play ab, monatlich oder jährlich, oder hier auf der Website, monatlich. Kündbar zum Ende des bezahlten Zeitraums; Preise inkl. USt.",
+    "free": {
+      "name": "Gratis",
+      "price": "€ 0",
+      "points": [
+        "Scanner: Karten erkennen",
+        "Preise für 10 Karten pro Stunde",
+        "Sammlung auf dem Handy, bis 50 Karten",
+        "Ohne Konto"
+      ]
+    },
+    "planCta": "{plan} wählen",
+    "plansNote": "Auf der Website meldest du dich mit deiner E-Mail-Adresse an, das Konto wird dabei angelegt; in der App meldest du dich mit derselben Adresse an. Unternehmen in der EU außerhalb Österreichs zahlen auf der Website mit UID-Nummer netto (ab {net}). Verkäuferin: {seller}.",
+    "howTitle": "So legst du los",
+    "steps": {
+      "install": "Lade die App gratis bei Google Play. Fürs iPhone kommt sie bald in den App Store.",
+      "installBoth": "Lade die App gratis bei Google Play oder im App Store.",
+      "free": "Scanne gleich los: Die Gratis-Version braucht kein Konto.",
+      "subscribe": "Für alles andere meldest du dich in der App an, mit Google oder einem Code per E-Mail, und wählst ein Abo. Schon ein Abo von der Website? Dann meldest du dich mit derselben E-Mail-Adresse an."
+    },
+    "notesTitle": "Gut zu wissen",
+    "notes": {
+      "recognition": "Die Erkennung trifft meistens, aber nicht immer, vor allem wenn Karten sich berühren oder in Ordnern stecken. Dann zeigt dir die App die wahrscheinlichsten Treffer zur Auswahl.",
+      "prices": "Preise kommen aus öffentlichen Daten und können bei einzelnen Karten fehlen oder danebenliegen. Die App warnt bei unsicheren Preisen; prüf wertvolle Karten vor dem Kauf.",
+      "english": "Die App ist auf Englisch. Die Karten erkennt sie in allen oben genannten Sprachen.",
+      "feedback": "Rückmeldungen an <mail>{email}</mail> helfen uns, die App besser zu machen."
+    },
+    "needsTitle": "Was du brauchst",
+    "needs": {
+      "android": "Ein Android-Handy mit Android 8 oder neuer und Kamera",
+      "space": "Platz für die App und ihre Kartendatenbank",
+      "internet": "Internet zum Anmelden, für Kartenbilder und die neuen Preise; mit Abo läuft die App bis zu 35 Tage offline"
     },
     "services": {
       "title": "Dazu buchbar",
@@ -474,62 +534,9 @@
       "ask": "Anfragen",
       "askSubject": "Anfrage: {service}"
     },
-    "betaTitle": "Was Beta heißt",
-    "betaIntro": "Der Overpriced Cardboard Scanner wird schon im Alltag benutzt, ist aber noch nicht fertig. Für dich heißt das:",
-    "betaPoints": {
-      "recognition": "Die Erkennung trifft meistens, aber nicht immer, vor allem wenn Karten sich berühren oder in Ordnern stecken. Dann zeigt dir die App die wahrscheinlichsten Treffer zur Auswahl.",
-      "prices": "Preise kommen aus öffentlichen Daten und können bei einzelnen Karten fehlen oder danebenliegen. Die App warnt bei unsicheren Preisen; prüf wertvolle Karten vor dem Kauf.",
-      "english": "Die App ist derzeit auf Englisch.",
-      "updates": "Updates kommen laufend. Rückmeldungen an <mail>{email}</mail> helfen uns dabei."
-    },
-    "licenceTitle": "Das Abo",
-    "howTitle": "So kommst du zur App",
-    "steps": {
-      "subscribe": "Mit deiner E-Mail-Adresse anmelden (ohne Passwort) und ein Abo abschließen.",
-      "download": "Die App in deinem Konto unter „Geräte“ herunterladen und die APK-Datei auf dem Handy öffnen. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben.",
-      "installStore": "Den Overpriced Cardboard Scanner aus dem Google Play Store installieren.",
-      "connect": "In deinem Konto „Gerät verbinden“ wählen und den QR-Code mit der App scannen, fertig."
-    },
-    "storeTarget": "Wir wollen den Overpriced Cardboard Scanner bis Ende November 2026 in den Google Play Store bringen. Bis dahin installierst du die App als APK-Datei; neue Versionen meldet die App selbst.",
-    "needsTitle": "Was du brauchst",
-    "needs": {
-      "android": "Ein Android-Handy mit Android 8 oder neuer und Kamera",
-      "space": "Rund {size} für den Download und etwa 80 MB für die Kartendatenbank",
-      "spaceUnknown": "Etwa 80 MB Platz für die Kartendatenbank, dazu die App selbst",
-      "internet": "Internet zum Verbinden, für Kartenbilder und Updates; offline läuft die App bis zu 35 Tage"
-    },
-    "thanks": {
-      "title": "Danke! Deine Lizenz ist unterwegs.",
-      "text": "Wir schicken Lizenzschlüssel und QR-Code an {email}. Die E-Mail kommt in ein paar Minuten; schau auch im Spam-Ordner nach.",
-      "pendingTitle": "Zahlung wird bestätigt …",
-      "pendingText": "Das dauert meist nur Sekunden. Lade die Seite gleich noch einmal.",
-      "reload": "Neu laden",
-      "unpaidTitle": "Diese Bestellung ist nicht bezahlt.",
-      "unpaidText": "Die Zahlung wurde abgebrochen oder ist abgelaufen. Du kannst es jederzeit noch einmal versuchen.",
-      "refundedTitle": "Diese Bestellung wurde erstattet.",
-      "refundedText": "Die Lizenz ist damit gesperrt.",
-      "back": "Zurück zur App-Seite",
-      "facts": "Bestellung {number} · {count, plural, one {# Lizenz} other {# Lizenzen}} · {total}",
-      "download": "Overpriced Cardboard Scanner herunterladen",
-      "downloadMeta": "APK, Version {version}, {size}",
-      "store": "Overpriced Cardboard Scanner im Play Store",
-      "installHint": "Öffne die Datei auf deinem Android-Handy. Android fragt einmal, ob dein Browser Apps installieren darf: erlauben. Dann die App starten und den QR-Code aus der E-Mail scannen."
-    },
-    "priceBusiness": "Für Unternehmen in der EU außerhalb Österreichs mit UID-Nummer: ab {net} netto",
-    "subPoints": {
-      "monthly": "Ab {price} im Monat, jederzeit zum Monatsende kündbar.",
-      "portal": "Mit Web-Portal: deine Sammlung mit aktuellen Preisen, fehlende Karten und Teilen.",
-      "device": "Ein Gerät ist inklusive, weitere buchst du dazu. Neues Handy? Ein QR-Code aus der App überträgt es.",
-      "online": "Die App fragt online nach deinem Abo, läuft dazwischen aber bis zu 35 Tage offline."
-    },
-    "plansTitle": "Die Abos",
-    "plansIntro": "Monatlich, jederzeit zum Monatsende kündbar. Preise inkl. USt.",
-    "planCta": "{plan} wählen",
-    "plansNote": "Zum Abschließen meldest du dich mit deiner E-Mail-Adresse an, das Konto wird dabei angelegt. Unternehmen in der EU außerhalb Österreichs zahlen mit UID-Nummer netto (ab {net}). Verkäuferin: {seller}.",
     "affiliate": {
       "discount": "Mit dem Code {code} zahlst du {percent} % weniger{months, plural, =0 {} one { im ersten Monat} other { in den ersten # Monaten}} – für dein erstes Abo, hier auf der Website oder in der App.",
-      "noDiscount": "Du kommst mit dem Code {code}. Er gilt für dein erstes Abo, hier auf der Website oder in der App.",
-      "play": "App in Google Play öffnen"
+      "noDiscount": "Du kommst mit dem Code {code}. Er gilt für dein erstes Abo, hier auf der Website oder in der App."
     }
   },
   "Codes": {
@@ -539,13 +546,11 @@
     "not_yet": "Dieser Code gilt noch nicht.",
     "used_up": "Dieser Code ist schon aufgebraucht.",
     "already_used": "Diesen Code hast du schon einmal verwendet.",
-    "not_for_cards": "Dieser Code gilt nur für App-Lizenzen.",
-    "not_for_licenses": "Dieser Code gilt nur für Karten.",
+    "not_for_cards": "Dieser Code war für App-Lizenzen, die es nicht mehr gibt.",
     "min_goods": "Dieser Code gilt ab einem Kartenwert von {min}.",
     "empty": "Auf diesem Gutschein ist nichts mehr drauf.",
     "blocked": "Dieser Gutschein ist gesperrt. Bei Fragen antworte auf die Bestell-E-Mail oder schreib uns.",
-    "too_many": "Mehr als fünf Gutscheine gehen in einer Bestellung nicht.",
-    "voucher_for_licenses": "Gutscheine gelten für Karten, nicht für App-Lizenzen."
+    "too_many": "Mehr als fünf Gutscheine gehen in einer Bestellung nicht."
   },
   "Vouchers": {
     "metaTitle": "Geschenkgutscheine",
@@ -586,7 +591,7 @@
     "how1": "Karten in den Warenkorb legen.",
     "how2": "Im Warenkorb unter „Gutschein oder Rabattcode“ den Code eingeben.",
     "how3": "Der Betrag wird abgezogen. Reicht er nicht, zahlt man den Rest wie gewohnt.",
-    "howNote": "Gutscheine gelten für Karten, nicht für App-Lizenzen. Sie werden nicht bar ausbezahlt. Mehrere Gutscheine lassen sich in einer Bestellung kombinieren.",
+    "howNote": "Gutscheine gelten für Karten, nicht für App-Abos. Sie werden nicht bar ausbezahlt. Mehrere Gutscheine lassen sich in einer Bestellung kombinieren.",
     "errors": {
       "required": "Bitte ausfüllen.",
       "too_long": "Das ist zu lang.",
@@ -654,7 +659,7 @@
     "overview": {
       "title": "Dein Konto",
       "appTitle": "App-Abo",
-      "appText": "Mit Collector oder Creator bekommst du den Overpriced Cardboard Scanner und dieses Portal: deine Sammlung mit aktuellen Preisen, fehlende Karten und Teilen.",
+      "appText": "Mit Collector oder Creator bekommst du die ganze App und dieses Portal: deine Sammlung mit aktuellen Preisen, fehlende Karten und Teilen.",
       "appLink": "Zu den Abos",
       "ordersTitle": "Letzte Bestellungen",
       "allOrders": "Alle Bestellungen",
@@ -674,8 +679,7 @@
       "intro": "Deine Bestellungen im Shop, auch die, die du mit dieser E-Mail-Adresse vor deinem Konto aufgegeben hast.",
       "empty": "Noch keine Bestellungen.",
       "cards": "{count, plural, one {# Karte} other {# Karten}}",
-      "voucher": "Geschenkgutschein",
-      "license": "App-Lizenz"
+      "voucher": "Geschenkgutschein"
     },
     "orderStatus": {
       "awaiting_payment": "Zahlung offen",
@@ -736,12 +740,12 @@
     "plans": {
       "collector": {
         "name": "Collector",
-        "short": "Scanner und Trading-Modus, mit dem Web-Portal für deine Sammlung.",
+        "short": "Scanner, Suche und Card Shows, mit deiner Sammlung in der App und im Kundenkonto.",
         "points": [
-          "Scanner: Karten erkennen, Preise auch offline",
-          "Trading-Modus für Card Shows",
-          "Web-Portal: deine Sammlung mit aktuellen Preisen",
-          "Fehlende Karten: wir melden uns, wenn eine im Shop ist",
+          "Scanner und Suche: alle Preise, auch offline",
+          "Card Shows: Warenkorb, Urteil, Tausch",
+          "Sammlung und fehlende Karten, in der App und im Kundenkonto",
+          "Wir melden uns, wenn eine fehlende Karte im Shop ist",
           "Sammlung teilen",
           "1 Gerät inklusive"
         ]
@@ -927,18 +931,14 @@
     "needsSubscription": "Für die App und das Verbinden von Geräten brauchst du ein Abo.",
     "toSubscription": "Zu den Abos",
     "playStore": "Bei Google Play laden",
-    "apkText": "Der Overpriced Cardboard Scanner für Android.",
-    "apk": "App herunterladen (Version {version})",
-    "apkHint": "Öffne die heruntergeladene Datei auf dem Handy. Android fragt einmal, ob Installationen aus dem Browser erlaubt sind.",
-    "apkSoon": "Der Download kommt in Kürze.",
     "connectTitle": "Gerät verbinden",
     "connectText": "{free} von {seats} Geräten frei. Zeig hier einen QR-Code an und scanne ihn mit der App.",
     "connect": "QR-Code anzeigen",
     "full": "Alle {seats} Geräte deines Abos sind belegt.",
     "addDevice": "Gerät dazubuchen",
     "qrLabel": "QR-Code zum Verbinden der App",
-    "step1": "Öffne den Overpriced Cardboard Scanner auf dem Handy.",
-    "step2": "Tippe auf „QR-Code scannen“ (beim Verbinden oder unter ⚙ → Konto).",
+    "step1": "Öffne die App Overpriced Cardboard auf dem Handy.",
+    "step2": "Tippe unter Settings › Account auf „Have a QR code from the portal? Connect with it“.",
     "step3": "Halte die Kamera auf diesen Code. Die App ist sofort verbunden.",
     "typed": "Oder tippe den Code ein:",
     "validUntil": "Der Code gilt einmal, bis {time} Uhr.",
@@ -952,14 +952,19 @@
     "remove": "Entfernen",
     "removeText": "Die App auf diesem Gerät sperrt sich bei ihrer nächsten Prüfung. Der Platz ist sofort frei.",
     "removeConfirm": "Gerät entfernen",
-    "removed": "Gerät entfernt."
+    "removed": "Gerät entfernt.",
+    "appText": "Overpriced Cardboard gibt es bei Google Play und im App Store.",
+    "appTextSoon": "Overpriced Cardboard gibt es für Android bei Google Play; fürs iPhone kommt die App bald in den App Store.",
+    "appStore": "Im App Store laden",
+    "signIn": "In der App meldest du dich unter Settings › Account mit {email} an, oder du verbindest sie unten mit einem QR-Code.",
+    "freeHint": "Ohne Abo läuft die App als Gratis-Version."
   },
   "Pair": {
     "title": "App verbinden",
-    "text": "Dieser Code verbindet den Overpriced Cardboard Scanner mit einem Konto. Scanne ihn in der App, nicht mit der Handy-Kamera.",
-    "step1": "Öffne den Overpriced Cardboard Scanner.",
-    "step2": "Tippe auf „QR-Code scannen“ und halte die Kamera auf den Code am Computer-Bildschirm.",
-    "noApp": "Noch keine App? Sie gehört zum Abo Collector oder Creator.",
+    "text": "Dieser Code verbindet die App Overpriced Cardboard mit einem Konto. Scanne ihn in der App, nicht mit der Handy-Kamera.",
+    "step1": "Öffne die App Overpriced Cardboard.",
+    "step2": "Tippe unter Settings › Account auf „Have a QR code from the portal? Connect with it“ und halte die Kamera auf den Code am Computer-Bildschirm.",
+    "noApp": "Noch keine App? Du bekommst sie gratis bei Google Play.",
     "toApp": "Zur App"
   },
   "Portal": {
@@ -1170,12 +1175,12 @@
     "empty": "Hier sind noch keine Karten.",
     "expired": "Dieser Link ist abgelaufen. Bitte die Person um einen neuen.",
     "unknown": "Dieser Link funktioniert nicht (mehr).",
-    "note": "Werte aus den Daten des Overpriced Cardboard Scanner (Cardmarket und TCGplayer), nur Richtwerte."
+    "note": "Werte aus den Preisdaten der App Overpriced Cardboard (Cardmarket und TCGplayer), nur Richtwerte."
   },
   "DeleteAccount": {
     "title": "Konto löschen",
     "done": "Dein Konto ist gelöscht. Die App ist auf allen Geräten abgemeldet.",
-    "intro": "Hier steht, wie du dein Konto bei Overpriced Cardboard löschst – das Konto, mit dem du dich in der Scanner-App und im Kundenportal anmeldest.",
+    "intro": "Hier steht, wie du dein Konto bei Overpriced Cardboard löschst – das Konto, mit dem du dich in der App und im Kundenportal anmeldest.",
     "howTitle": "So löschst du dein Konto",
     "inApp": "In der App: mit der Schaltfläche „Konto löschen“ im Konto-Bereich.",
     "online": "Hier auf der Website: <link>melde dich an</link> und lösch das Konto auf dieser Seite.",

@@ -1,4 +1,5 @@
-// Subscriptions on the Stripe account of Antalyse GmbH (STRIPE_LICENSE_*): Stripe Checkout in
+// Subscriptions on the Stripe account of Antalyse GmbH (STRIPE_LICENSE_*, a name kept from the
+// app licences it sold first): Stripe Checkout in
 // subscription mode, Stripe Tax, Stripe's invoices, the Billing customer portal for payment
 // methods and invoices. A local stand-in plays Stripe on localhost and in tests.
 //
@@ -228,8 +229,8 @@ export function parseLookupKey(
 }
 
 const PRODUCT_NAMES: Record<PriceItem, string> = {
-  collector: 'Overpriced Cardboard Scanner – Collector',
-  creator: 'Overpriced Cardboard Scanner – Creator',
+  collector: 'Overpriced Cardboard – Collector',
+  creator: 'Overpriced Cardboard – Creator',
   collector_device: 'Zusätzliches Gerät (Collector) / Extra device (Collector)',
   creator_device: 'Zusätzliches Gerät (Creator) / Extra device (Creator)',
 };

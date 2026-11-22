@@ -1,4 +1,4 @@
-// App subscriptions: Collector (Scanner, Trading mode, web portal) and Creator (+ YouTube mode
+// App subscriptions: Collector (Scanner, card shows, collection, web portal) and Creator (+ YouTube mode
 // with recording), each with one device and extra devices on top. Sold by Antalyse GmbH through
 // its Stripe account (billing.ts); the shop can also give one away (complimentary).
 //
@@ -8,7 +8,7 @@ import type { Account } from './accounts.ts';
 import type { BillingProvider, BillingSubscription, Plan, TaxBehavior } from './billing.ts';
 import { PLANS } from './billing.ts';
 import type { Db, Sql } from './db.ts';
-import { licenseSeller, type LicenseSeller } from './licenses.ts';
+import { gmbhSeller, type GmbhSeller } from './app.ts';
 import { validPostcode } from './orders.ts';
 import { enqueueMail } from './outbox.ts';
 import { affiliateDiscount, noteAffiliatePurchase } from './affiliates.ts';
@@ -656,7 +656,7 @@ export async function checkSubscriber(
 
 /** Footer of the GmbH's subscription invoices. */
 export function subscriptionInvoiceFooter(
-  seller: LicenseSeller,
+  seller: GmbhSeller,
   regime: Regime,
   locale: 'de' | 'en',
 ): string {
@@ -709,7 +709,7 @@ export async function saveBillingCustomer(
   const { account, form, tax } = input;
   const [row] = await sql<{ stripe_customer_id: string | null }[]>`
     SELECT stripe_customer_id FROM accounts WHERE id = ${account.id}`;
-  const seller = await licenseSeller(sql);
+  const seller = await gmbhSeller(sql);
   const customerId = await billing.saveCustomer(
     {
       accountId: account.id,

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   allocate,
   asVoucherCode,
-  licenseDiscount,
   newDiscountCode,
   newVoucherCode,
   priceCards,
@@ -19,9 +18,8 @@ const code = (over: Partial<DiscountCodeRow>): DiscountCodeRow => ({
   kind: 'percent',
   percent_bp: 2000,
   amount_cents: null,
-  applies_to: 'both',
+  applies_to: 'cards',
   min_goods_cents: 0,
-  max_licenses: null,
   max_uses: null,
   once_per_customer: false,
   valid_from: null,
@@ -115,17 +113,4 @@ test('pricing: Stripe’s € 0.50 minimum is left to pay rather than a few cent
   assert.equal(promo.due, 50);
   assert.equal(promo.discount, 960);
   assert.deepEqual(promo.lineDiscounts, [960]);
-});
-
-test('licences: percent on at most N licences, never a few cents left', () => {
-  assert.equal(licenseDiscount(code({ percent_bp: 10_000, max_licenses: 1 }), 13900, 3), 13900);
-  assert.equal(licenseDiscount(code({ percent_bp: 2000 }), 13900, 2), 5560);
-  assert.equal(
-    licenseDiscount(code({ kind: 'amount', percent_bp: null, amount_cents: 13880 }), 13900, 1),
-    13850,
-  );
-  assert.equal(
-    licenseDiscount(code({ kind: 'amount', percent_bp: null, amount_cents: 99_999 }), 13900, 1),
-    13900,
-  );
 });

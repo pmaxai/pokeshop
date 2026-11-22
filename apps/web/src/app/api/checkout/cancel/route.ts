@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
   const locale = req.nextUrl.searchParams.get('l') === 'de' ? 'de' : 'en';
   const token = req.nextUrl.searchParams.get('o') ?? '';
   const order = await orderByToken(db(), token);
-  // Card orders are paid to the shop's account, licences to the GmbH's.
   const provider = order ? await paymentsForOrder(order.id) : null;
   if (order && order.status === 'checkout') {
     const [row] = await db()<{ stripe_session_id: string | null }[]>`
@@ -29,16 +28,10 @@ export async function GET(req: NextRequest) {
     if (closed === 'expired')
       await releaseOrder(db(), { id: order.id }, 'cancelled', 'buyer_cancelled');
   }
-  // A gift voucher goes back to its page, a licence purchase to the app page, cards to the cart.
+  // A gift voucher goes back to its page, cards to the cart.
   if (req.nextUrl.searchParams.get('voucher') === '1') {
     return NextResponse.redirect(
       `${config.baseUrl}${getPathname({ href: '/gutscheine', locale })}?cancelled=1#kaufen`,
-      303,
-    );
-  }
-  if (req.nextUrl.searchParams.get('app') === '1') {
-    return NextResponse.redirect(
-      `${config.baseUrl}${getPathname({ href: '/app', locale })}?cancelled=1#kaufen`,
       303,
     );
   }

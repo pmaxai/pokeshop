@@ -1,8 +1,9 @@
 // Payment provider: Stripe Checkout in production, a local stand-in for development and tests.
 // The shop only talks to this interface, so order logic is tested without the network.
 //
-// Two sellers, two Stripe accounts: the shop (cards, sole trader) and Antalyse GmbH (app
-// licences). The GmbH's account computes VAT with Stripe Tax and issues invoices and credit
+// Two sellers, two Stripe accounts: the shop (cards, sole trader) and Antalyse GmbH (the app's
+// subscriptions, billing.ts; its keys are STRIPE_LICENSE_*, named after the app licences it
+// sold first). The GmbH's account computes VAT with Stripe Tax and issues invoices and credit
 // notes itself.
 import { randomBytes } from 'node:crypto';
 import PDFDocument from 'pdfkit';

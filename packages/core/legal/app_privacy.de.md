@@ -1,8 +1,8 @@
-# Datenschutzerklärung der App Overpriced Cardboard Scanner
+# Datenschutzerklärung der App Overpriced Cardboard
 
 Stand: November 2026
 
-Diese Datenschutzerklärung gilt für die App Overpriced Cardboard Scanner (Android, aus Google Play oder von {{app_url}}, und iPhone, aus dem App Store) und das Konto, mit dem Sie sich in der App und im Web-Portal anmelden. Für Bestellungen im Kartenshop gilt die Datenschutzerklärung des Shops ({{privacy_url}}).
+Diese Datenschutzerklärung gilt für die App Overpriced Cardboard (Android, aus Google Play, und iPhone, aus dem App Store) und das Konto, mit dem Sie sich in der App und im Web-Portal anmelden. Für Bestellungen im Kartenshop gilt die Datenschutzerklärung des Shops ({{privacy_url}}).
 
 ## 1. Verantwortlicher
 
@@ -70,7 +70,7 @@ Sie können Ihr Konto jederzeit löschen: in der App, im Web-Portal oder per E-M
 - Sofort gelöscht werden Ihre Sammlung, Ihre fehlenden Karten, Ihre Freigaben, Ihre Anmeldungen (auch mit Google und Apple; eine Anmeldung mit Apple widerrufen wir auch bei Apple), die S3-Zugangsdaten, Ihr Name und Ihre Adresse; die E-Mail-Adresse wird aus dem Konto entfernt und die App auf allen Geräten abgemeldet. Der Rest des Kontos wird nach 30 Tagen gelöscht, wenn bis dahin kein Abo mehr läuft und nichts mehr abzurechnen ist.
 - Ein laufendes Abo von der Website oder aus Google Play verlängert sich nach dem Löschen nicht mehr und endet mit dem bezahlten Zeitraum. Ein Abo aus dem App Store können nur Sie im App Store kündigen; das Löschen beendet es nicht.
 - Rechnungen und Buchhaltungsunterlagen bewahren wir sieben Jahre auf (§ 132 BAO). Die Angaben von Google und Apple zu Käufen in Google Play und im App Store und die Angaben zum Creator-Code bewahren wir ohne Ihre E-Mail-Adresse ebenso lange auf, für die Abrechnung mit Google, Apple und den Creatorn.
-- Solange Ihr Konto besteht, speichern wir die Daten oben, solange Sie sie nicht selbst löschen. Endet ein Abo, bleiben Konto und Sammlung erhalten; nur die Funktionen der App sind dann gesperrt.
+- Solange Ihr Konto besteht, speichern wir die Daten oben, solange Sie sie nicht selbst löschen. Endet ein Abo, bleiben Konto und Sammlung erhalten; die App läuft dann als Gratis-Version.
 
 ## 11. Ihre Rechte
 

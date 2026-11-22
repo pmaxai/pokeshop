@@ -233,9 +233,6 @@ account with Stripe Billing. In that account (test mode for staging):
 - `checkout.session.completed`
 - `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
 - `invoice.paid`, `invoice.payment_failed`
-- for the old licence orders still: `checkout.session.async_payment_succeeded`,
-  `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`,
-  `charge.dispute.created`
 
 Business customers' EU VAT ids are checked live against VIES
 (`ec.europa.eu/taxation_customs/vies`); the server must be able to reach it. The subscription
@@ -257,9 +254,9 @@ Stripe meters (`oc_s3_mb`, `oc_pipeline_seconds`, created by the shop on first u
 metered price to the customer's subscription the first time, so Stripe bills the month's usage
 with the next invoice. Usage of a free (complimentary) subscription is recorded but not billed.
 
-The app checks the subscription at `https://<host>/api/app/v1/…` (docs/app-account-api.md). The
-old licence service (`license.<host>`) keeps answering app builds with licence keys until the app
-is switched to account pairing; licences are no longer sold.
+The app checks the subscription at `https://<host>/api/app/v1/…` (docs/app-account-api.md). App
+licences (one-off keys and their licence service) are switched off since 22 Nov 2026: Admin › App
+only keeps the store links and the GmbH's sender address.
 
 ## 10. App stores (Google Play, App Store)
 

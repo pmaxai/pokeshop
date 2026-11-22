@@ -391,7 +391,7 @@ export type AccountOrder = {
   number: string;
   token: string;
   status: string;
-  kind: 'cards' | 'license' | 'voucher';
+  kind: 'cards' | 'voucher';
   createdAt: Date;
   totalCents: number;
   items: number;
@@ -417,6 +417,7 @@ export async function accountOrders(
            coalesce((SELECT sum(quantity)::int FROM order_items i WHERE i.order_id = o.id), 0) AS items
       FROM orders o
      WHERE o.account_id = ${accountId} AND o.status NOT IN ('checkout', 'expired', 'payment_failed')
+       AND o.kind <> 'license'
      ORDER BY o.created_at DESC LIMIT ${limit}`;
   return rows.map((r) => ({
     number: r.number,

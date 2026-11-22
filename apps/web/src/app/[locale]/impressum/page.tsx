@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Fragment } from 'react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { licenseSeller } from '@pokeshop/core/licenses';
+import { gmbhSeller } from '@pokeshop/core/app';
 import { SMALL_BUSINESS_NOTE } from '@pokeshop/core/vat';
 import type { Locale } from '@/i18n/routing';
 import { db, getSetting } from '@/server/config';
@@ -21,15 +21,15 @@ export async function generateMetadata({
 }
 
 /**
- * The only shop page that names the operator (§ 5 ECG, § 25 MedienG) – and the seller of the
- * app licences, Antalyse GmbH (§ 14 UGB).
+ * The only shop page that names the operator (§ 5 ECG, § 25 MedienG) – and Antalyse GmbH, provider
+ * of the app and seller of its subscriptions (§ 14 UGB).
  */
 export default async function Imprint({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('Imprint');
   const c = await getCompany();
-  const g = await licenseSeller(db());
+  const g = await gmbhSeller(db());
   const smallBusiness = await getSetting<boolean>('small_business', false);
   const region = new Intl.DisplayNames([locale === 'de' ? 'de-AT' : 'en'], { type: 'region' });
   const country = region.of(c.country);
@@ -94,8 +94,8 @@ export default async function Imprint({ params }: { params: Promise<{ locale: Lo
       </dl>
       {g.name && (
         <>
-          <h2>{t('licenses')}</h2>
-          <p>{t('licensesIntro')}</p>
+          <h2>{t('app')}</h2>
+          <p>{t('appIntro')}</p>
           <p>
             {g.name}
             <br />

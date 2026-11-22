@@ -10,7 +10,7 @@ const g = globalThis as unknown as {
 
 /**
  * Stripe in production; the local stand-in on localhost; null if neither is possible.
- * 'shop' is the shop's account (cards), 'gmbh' the account of Antalyse GmbH (app licences).
+ * 'shop' is the shop's account (cards), 'gmbh' the account of Antalyse GmbH (app subscriptions).
  */
 export function payments(seller: Seller = 'shop'): Provider | null {
   const all = (g.__pokeshopPayments ??= {});
@@ -25,7 +25,7 @@ export async function paymentsForOrder(orderId: number): Promise<Provider | null
 }
 
 let vies: ViesChecker | undefined;
-/** EU VAT id check for business buyers of licences (VIES; a stand-in with VIES_FAKE=1 locally). */
+/** EU VAT id check for business subscribers (VIES; a stand-in with VIES_FAKE=1 locally). */
 export function viesCheck(): ViesChecker {
   vies ??= viesFromEnv();
   return vies;

@@ -70,10 +70,10 @@ Beschwerden richten Sie bitte an {{company.email}}; wir antworten so schnell wie
 1. Es gilt österreichisches Recht unter Ausschluss des UN-Kaufrechts und der Verweisungsnormen des internationalen Privatrechts. Für Verbraucher gilt diese Rechtswahl nur, soweit ihnen dadurch nicht der Schutz entzogen wird, den ihnen die zwingenden Bestimmungen des Rechts des Staates gewähren, in dem sie ihren gewöhnlichen Aufenthalt haben.
 2. Für Klagen gegen Verbraucher mit Wohnsitz oder gewöhnlichem Aufenthalt in Österreich ist das Gericht zuständig, in dessen Sprengel der Verbraucher wohnt oder sich gewöhnlich aufhält (§ 14 KSchG). Für Unternehmer ist Gerichtsstand das für 2440 Moosbrunn sachlich zuständige Gericht.
 
-## 13. Kundenkonto und App-Abo (Overpriced Cardboard Scanner)
+## 13. Kundenkonto und App-Abo (Overpriced Cardboard)
 
 1. Ein Kundenkonto ist kostenlos und freiwillig; Sie können auch ohne Konto bestellen. Mit Konto füllt die Kasse Ihre gespeicherte Lieferadresse aus, und Ihre Bestellungen, auch frühere mit derselben E-Mail-Adresse, stehen im Konto.
-2. Das Abo für die App Overpriced Cardboard Scanner mit dem Web-Portal ({{app_url}}) verkaufen nicht wir, sondern die {{seller.name}}. Dafür gelten ausschließlich deren Abo-Bedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
+2. Das Abo für die App Overpriced Cardboard mit dem Web-Portal ({{app_url}}) verkaufen nicht wir, sondern die {{seller.name}}. Dafür gelten ausschließlich deren Abo-Bedingungen ({{license_terms_url}}), auch zum Widerrufsrecht; diese AGB gelten dafür nicht.
 
 ## 14. Gutscheine und Rabattcodes
 

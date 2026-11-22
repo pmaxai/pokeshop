@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatCode, listDevices, pairUrl, qrSvg } from '@pokeshop/core/devices';
-import { currentRelease } from '@pokeshop/core/licenses';
+import { appStores } from '@pokeshop/core/app';
 import { accountEntitlements } from '@pokeshop/core/subscriptions';
 import { getPathname, Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { config, db, getSetting } from '@/server/config';
+import { config, db } from '@/server/config';
 import { PAIR_COOKIE, requireAccount } from '@/server/account';
 import { AccountShell } from '@/components/account/AccountShell';
 import { connectDeviceAction, removeDeviceAction } from '../../account-actions';
@@ -30,11 +30,10 @@ export default async function DevicesPage({ params, searchParams }: Props) {
   const account = await requireAccount(locale, getPathname({ href: '/konto/geraete', locale }));
   const t = await getTranslations('Devices');
   const q = await searchParams;
-  const [ent, devices, release, store] = await Promise.all([
+  const [ent, devices, stores] = await Promise.all([
     accountEntitlements(db(), account),
     listDevices(db(), account.id),
-    currentRelease(db()),
-    getSetting<string | null>('app_play_store_url', null),
+    appStores(db()),
   ]);
   const when = (d: Date) =>
     new Intl.DateTimeFormat(locale === 'de' ? 'de-AT' : 'en-GB', {
@@ -62,7 +61,6 @@ export default async function DevicesPage({ params, searchParams }: Props) {
     };
   }
   const full = ent.active && devices.length >= ent.seats;
-  const playStore = typeof store === 'string' && store.startsWith('https://') ? store : null;
 
   return (
     <AccountShell account={account} active="devices" title={t('title')} locale={locale}>
@@ -73,29 +71,30 @@ export default async function DevicesPage({ params, searchParams }: Props) {
       )}
       <section className="account-panel" aria-labelledby="dev-app">
         <h2 id="dev-app">{t('appTitle')}</h2>
-        {!ent.active ? (
-          <p>
-            {t('needsSubscription')} <Link href="/konto/abo">{t('toSubscription')}</Link>
-          </p>
-        ) : playStore ? (
-          <p>
-            <a className="btn" href={playStore}>
-              {t('playStore')}
-            </a>
-          </p>
-        ) : release ? (
-          <>
-            <p>{t('apkText')}</p>
-            <p>
-              <a className="btn" href="/api/app/apk">
-                {t('apk', { version: release.version })}
+        <p>{stores.apple ? t('appText') : t('appTextSoon')}</p>
+        {(stores.play || stores.apple) && (
+          <p className="account-panel__actions">
+            {stores.play && (
+              <a className="btn" href={stores.play} rel="noopener noreferrer">
+                {t('playStore')}
               </a>
-            </p>
-            <p className="small muted">{t('apkHint')}</p>
-          </>
-        ) : (
-          <p className="muted">{t('apkSoon')}</p>
+            )}
+            {stores.apple && (
+              <a className="btn" href={stores.apple} rel="noopener noreferrer">
+                {t('appStore')}
+              </a>
+            )}
+          </p>
         )}
+        <p className="small muted">
+          {ent.active ? (
+            t('signIn', { email: account.email })
+          ) : (
+            <>
+              {t('freeHint')} <Link href="/konto/abo">{t('toSubscription')}</Link>
+            </>
+          )}
+        </p>
       </section>
 
       <section className="account-panel" id="connect" aria-labelledby="dev-connect">

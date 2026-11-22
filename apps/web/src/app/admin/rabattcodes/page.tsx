@@ -3,7 +3,7 @@ import { formatPercent, listDiscountCodes } from '@pokeshop/core/vouchers';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../AdminShell';
-import { CODE_SCOPE, dateTime } from '../labels';
+import { dateTime } from '../labels';
 import { createDiscountCodesAction, toggleDiscountCodeAction } from '../voucher-actions';
 
 export const dynamic = 'force-dynamic';
@@ -26,8 +26,8 @@ export default async function Codes({ searchParams }: { searchParams: Promise<SP
       <h1>Rabattcodes</h1>
       <p style={{ maxWidth: '70ch' }}>
         Ein Code wie „CHRISTMAS“ für eine Aktion, oder viele Einmal-Codes für Freunde und Flyer.
-        Rabattcodes senken den Preis – für Karten (Shop), App-Lizenzen (GmbH) oder beides. Pro
-        Bestellung gilt einer; Gutscheine lassen sich dazu einlösen.
+        Rabattcodes senken den Preis der Karten. Pro Bestellung gilt einer; Gutscheine lassen sich
+        dazu einlösen. Rabatte auf App-Abos laufen über die Creator-Codes (Affiliates).
       </p>
 
       {owner && (
@@ -81,27 +81,8 @@ export default async function Codes({ searchParams }: { searchParams: Promise<SP
               <input name="amount" inputMode="decimal" placeholder="z. B. 5" />
             </label>
             <label className="field">
-              <span>Gilt für</span>
-              <select name="applies_to" defaultValue="cards">
-                <option value="cards">Karten</option>
-                <option value="licenses">App-Lizenzen</option>
-                <option value="both">Karten und Lizenzen</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Karten: Mindestwert (€)</span>
+              <span>Mindestwert der Karten (€)</span>
               <input name="min_goods" inputMode="decimal" placeholder="optional" />
-            </label>
-            <label className="field">
-              <span>Lizenzen: höchstens so viele rabattiert</span>
-              <input
-                name="max_licenses"
-                type="number"
-                min={1}
-                max={50}
-                placeholder="optional, z. B. 1"
-              />
-              <small className="muted">„100 %“ und „1“ = eine Lizenz gratis.</small>
             </label>
             <label className="field">
               <span>Wie oft insgesamt einlösbar</span>
@@ -197,7 +178,6 @@ export default async function Codes({ searchParams }: { searchParams: Promise<SP
               <tr>
                 <th>Code</th>
                 <th>Rabatt</th>
-                <th>Gilt für</th>
                 <th>Eingelöst</th>
                 <th>Gültig</th>
                 <th>Status</th>
@@ -210,6 +190,9 @@ export default async function Codes({ searchParams }: { searchParams: Promise<SP
                   <td>
                     <a href={`/admin/rabattcodes/${c.id}`}>
                       <code>{c.code}</code>
+                      {c.applies_to === 'licenses' && (
+                        <small className="muted"> (für App-Lizenzen, eingestellt)</small>
+                      )}
                     </a>
                     {c.campaign && (
                       <>
@@ -222,14 +205,10 @@ export default async function Codes({ searchParams }: { searchParams: Promise<SP
                     {c.kind === 'percent'
                       ? formatPercent(c.percent_bp!, 'de')
                       : formatEuro(c.amount_cents!)}
-                    {c.max_licenses && (
-                      <small className="muted"> auf höchstens {c.max_licenses} Lizenz(en)</small>
-                    )}
                     {c.min_goods_cents > 0 && (
                       <small className="muted"> ab {formatEuro(c.min_goods_cents)}</small>
                     )}
                   </td>
-                  <td>{CODE_SCOPE[c.applies_to]}</td>
                   <td>
                     {c.used}
                     {c.max_uses ? ` / ${c.max_uses}` : ''}

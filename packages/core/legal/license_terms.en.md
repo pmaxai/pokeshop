@@ -1,10 +1,10 @@
-# Subscription terms for the Overpriced Cardboard Scanner
+# Subscription terms for the Overpriced Cardboard app
 
 Last updated: November 2026
 
 ## 1. Scope and contracting party
 
-1. These subscription terms apply to the Collector and Creator subscriptions for the Android app Overpriced Cardboard Scanner with the web portal in the customer account on overpricedcardboard.com ({{app_url}}), to extra devices and to the usage-based services on request (point 4.5).
+1. These subscription terms apply to the Collector and Creator subscriptions for the Overpriced Cardboard app with the web portal in the customer account on overpricedcardboard.com ({{app_url}}), to extra devices and to the usage-based services on request (point 4.5).
 2. Your contracting party is {{seller.name}}, {{seller.address}}, {{seller.register}}, VAT ID {{seller.vat_id}}, e-mail: {{seller.email}} ("we", "us"). Further details are in the legal notice: {{imprint_url}}.
 3. The cards in the shop are not sold by {{seller.name}} but by the operator of {{company.public_name}}. Card orders are governed by its terms and conditions ({{terms_url}}); the subscription is governed only by these subscription terms.
 4. A consumer is anyone who does not subscribe for their business (§ 1 KSchG). Provisions that apply to consumers only are marked as such. Customers' own terms apply only if we expressly agree to them in writing.
@@ -23,10 +23,10 @@ Last updated: November 2026
 
 ## 4. Services
 
-1. **Collector:** the app with the scanner (card recognition, prices, search) and Trading mode, and the web portal with your collection and its current prices, the card search, the list of missing cards and sharing of the collection.
+1. **Collector:** the app with the scanner (card recognition, prices, search), the card-show features (cart, price verdict, trades) and the collection, and the web portal with your collection and its current prices, the card search, the list of missing cards and sharing of the collection.
 2. **Creator:** everything in Collector, plus the app's YouTube mode with recording of screen and camera. Storing the recordings with us and processing them are not included (point 4.5).
-3. **Devices:** Each subscription includes one device; you can add more. You connect a device by scanning a QR code from your account with the app. At most as many devices as the subscription includes are connected at the same time; you remove devices in your account, and a new phone takes the old one's place with a QR code from the app.
-4. **Characteristics:** The app is in a test phase (beta). Card recognition and prices can be incomplete or inaccurate; the prices come from publicly available third-party data (among others Cardmarket and TCGplayer via TCGdex, and with the PSA prices add-on also PSA sale prices) and are non-binding guide values. The app and the portal use the same price data, updated daily. The app is currently available only for Android (version 8 or newer) and in English; until it is in the Google Play Store it is available in the account as an installation file (APK). The app needs an internet connection to connect, for card pictures and for updates; it checks the subscription online and works without a connection for up to 35 days in between. These properties are part of the agreed characteristics. Updates are included.
+3. **Devices:** Each subscription includes one device; you can add more. You connect a device by signing in to your account in the app or by scanning a QR code from your account with the app. At most as many devices as the subscription includes are connected at the same time; you remove devices in your account, and a new phone takes the old one's place with a QR code from the app.
+4. **Characteristics:** Card recognition and prices can be incomplete or inaccurate; the prices come from publicly available third-party data (among others Cardmarket and TCGplayer via TCGdex, and with the PSA prices add-on also PSA sale prices) and are non-binding guide values. The app and the portal use the same price data, updated daily. The app is currently available for Android (version 8 or newer) through Google Play and in English. The app needs an internet connection to sign in, for card pictures and for new prices; it checks the subscription online and works without a connection for up to 35 days in between. These properties are part of the agreed characteristics. Updates are included.
 5. **Services on request:** For Creator we offer, on request, storage for recordings (S3) and automatic processing of the recordings (Automatic Content Processing); the app's Webshop mode comes with our Webshop as a Service. These services are agreed separately. Storage and processing are billed by use (per gigabyte uploaded and per minute of finished video) at the prices we state when they are agreed, with the next monthly invoice.
 6. You may not modify, reverse-engineer or pass on the app unless the law expressly allows it (§§ 40d and 40e UrhG). Businesses may let their employees use the app and the portal, within the devices booked.
 7. **Add-ons:** beside the subscription, price data is available as an add-on, monthly or yearly: **PSA prices**, what PSA 10, 9 and 8 graded cards sold for on eBay. Cardmarket and TCGplayer prices are included in every subscription. An add-on only applies together with a running subscription (Collector or Creator) and is currently only available in the App Store (point 8.9). We can also grant an add-on free of charge, with or without an end date.
@@ -34,7 +34,7 @@ Last updated: November 2026
 ## 5. Term, changes and cancellation
 
 1. The subscription runs monthly from the day you subscribe and renews for one month at a time until you cancel it.
-2. You can cancel at any time to the end of the current month, in your account under "Subscription" or by e-mail to {{seller.email}}. Until then everything keeps working. After that the app's modes are locked and the portal only shows the account, orders and shipping address; your collection stays saved until you delete the account.
+2. You can cancel at any time to the end of the current month, in your account under "Subscription" or by e-mail to {{seller.email}}. Until then everything keeps working. After that the app only runs as the free version and the portal only shows the account, orders and shipping address; your collection stays saved until you delete the account.
 3. Changing to Creator or adding devices takes effect right away; we charge the difference pro rata for the rest of the month. Changing to Collector or removing devices also takes effect right away; we credit the difference pro rata on the next invoice.
 4. We can cancel the subscription with one month's notice to the end of a month, for example if we stop offering the app; amounts paid in advance for the time after that are refunded. The right to terminate for good cause is not affected.
 

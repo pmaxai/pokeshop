@@ -70,10 +70,10 @@ Please send complaints to {{company.email}}; we will reply as quickly as we can.
 1. Austrian law applies, excluding the UN Convention on Contracts for the International Sale of Goods and the conflict-of-law rules. For consumers, this choice of law applies only insofar as it does not deprive them of the protection afforded by the mandatory provisions of the law of the country in which they have their habitual residence.
 2. Actions against consumers resident or habitually staying in Austria must be brought before the court in whose district the consumer lives or habitually stays (§ 14 KSchG). For businesses, the place of jurisdiction is the court with subject-matter jurisdiction for 2440 Moosbrunn.
 
-## 13. Customer account and app subscription (Overpriced Cardboard Scanner)
+## 13. Customer account and app subscription (Overpriced Cardboard)
 
 1. A customer account is free and optional; you can also order without one. With an account, checkout fills in your saved shipping address, and your orders, including earlier ones with the same e-mail address, are listed in the account.
-2. The subscription for the app Overpriced Cardboard Scanner with the web portal ({{app_url}}) is not sold by us but by {{seller.name}}. It is governed only by its subscription terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to it.
+2. The subscription for the Overpriced Cardboard app with the web portal ({{app_url}}) is not sold by us but by {{seller.name}}. It is governed only by its subscription terms ({{license_terms_url}}), including the right of withdrawal; these terms do not apply to it.
 
 ## 14. Vouchers and discount codes
 

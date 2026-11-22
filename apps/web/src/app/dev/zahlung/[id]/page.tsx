@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 type Fake = ReturnType<typeof fakeProvider>;
 
-/** The stand-in that opened this session: the shop's, or the GmbH's (licences). */
+/** The stand-in that opened this session: the shop's, or the GmbH's. */
 function fake(id: string): Fake {
   for (const seller of ['shop', 'gmbh'] as const) {
     const p = payments(seller);

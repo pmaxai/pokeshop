@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { currentLegal, legalHtml, type LegalKind } from '@pokeshop/core/legal';
-import { licenseSeller } from '@pokeshop/core/licenses';
+import { gmbhSeller } from '@pokeshop/core/app';
 import type { Locale } from '@/i18n/routing';
 import { config, db } from '@/server/config';
 import { getCompany } from '@/server/shop';
@@ -10,7 +10,7 @@ export async function legalTitle(kind: LegalKind, locale: Locale): Promise<strin
 }
 
 /**
- * Terms, withdrawal instructions, privacy policy or the GmbH's licence terms, from the version
+ * Terms, withdrawal instructions, privacy policy or the GmbH's subscription terms, from the version
  * stored at migrate.
  */
 export async function LegalPage({ kind, locale }: { kind: LegalKind; locale: Locale }) {
@@ -24,7 +24,7 @@ export async function LegalPage({ kind, locale }: { kind: LegalKind; locale: Loc
       </div>
     );
   }
-  const seller = (await licenseSeller(db())) as unknown as Record<string, unknown>;
+  const seller = (await gmbhSeller(db())) as unknown as Record<string, unknown>;
   const html = legalHtml(text.body_md, { company, seller, baseUrl: config.baseUrl, locale });
   return (
     <article className="wrap prose legal">

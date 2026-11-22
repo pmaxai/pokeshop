@@ -4,7 +4,7 @@ import { discountCodeUses, formatPercent } from '@pokeshop/core/vouchers';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
-import { CODE_SCOPE, dateTime } from '../../labels';
+import { dateTime } from '../../labels';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Rabattcode' };
@@ -42,7 +42,8 @@ export default async function CodePage({ params }: { params: Promise<{ id: strin
       </h1>
       <p>
         {c.kind === 'percent' ? formatPercent(c.percent_bp!, 'de') : formatEuro(c.amount_cents!)} ·{' '}
-        {CODE_SCOPE[c.applies_to]} · {c.active ? 'aktiv' : 'deaktiviert'}
+        {c.applies_to === 'licenses' ? 'für App-Lizenzen (eingestellt)' : 'für Karten'} ·{' '}
+        {c.active ? 'aktiv' : 'deaktiviert'}
         {c.campaign ? ` · Aktion ${c.campaign}` : ''}
       </p>
       <p className="muted">
@@ -71,7 +72,7 @@ export default async function CodePage({ params }: { params: Promise<{ id: strin
                     <a href={`/admin/bestellungen/${u.order_id}`}>{u.number}</a>
                     {u.status === 'held' && <small className="muted"> (Zahlung offen)</small>}
                   </td>
-                  <td>{u.kind === 'license' ? 'App-Lizenz' : 'Karten'}</td>
+                  <td>{u.kind === 'license' ? 'App-Lizenz (eingestellt)' : 'Karten'}</td>
                   <td>{u.email}</td>
                   <td style={{ textAlign: 'right' }}>−{formatEuro(u.discount_cents)}</td>
                   <td>{dateTime(u.created_at)}</td>

@@ -2,9 +2,6 @@
 // Commission's VAT Information Exchange System).
 import { isEuCountry } from './vat.ts';
 
-/** Licences are sold in the EU only, to private persons and businesses alike. */
-export const licenseCountryAllowed = (country: string): boolean => isEuCountry(country);
-
 /** VIES and VAT ids use EL for Greece. */
 export const vatPrefix = (country: string) => (country === 'GR' ? 'EL' : country);
 

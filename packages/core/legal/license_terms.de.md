@@ -1,10 +1,10 @@
-# Abo-Bedingungen für den Overpriced Cardboard Scanner
+# Abo-Bedingungen für die App Overpriced Cardboard
 
 Stand: November 2026
 
 ## 1. Geltungsbereich und Vertragspartner
 
-1. Diese Abo-Bedingungen gelten für die Abos Collector und Creator für die Android-App Overpriced Cardboard Scanner mit dem dazugehörigen Web-Portal im Kundenkonto auf overpricedcardboard.com ({{app_url}}), für zusätzliche Geräte und für die nutzungsabhängigen Dienste auf Anfrage (Punkt 4.5).
+1. Diese Abo-Bedingungen gelten für die Abos Collector und Creator für die App Overpriced Cardboard mit dem dazugehörigen Web-Portal im Kundenkonto auf overpricedcardboard.com ({{app_url}}), für zusätzliche Geräte und für die nutzungsabhängigen Dienste auf Anfrage (Punkt 4.5).
 2. Ihr Vertragspartner ist die {{seller.name}}, {{seller.address}}, {{seller.register}}, UID {{seller.vat_id}}, E-Mail: {{seller.email}} („wir“, „uns“). Weitere Angaben finden Sie im Impressum: {{imprint_url}}.
 3. Die Karten im Shop verkauft nicht die {{seller.name}}, sondern der Betreiber von {{company.public_name}}. Für Kartenbestellungen gelten dessen AGB ({{terms_url}}); für das Abo gelten ausschließlich diese Abo-Bedingungen.
 4. Verbraucher ist, wer das Abo nicht für sein Unternehmen abschließt (§ 1 KSchG). Bestimmungen, die nur für Verbraucher gelten, sind als solche gekennzeichnet. Abweichende Bedingungen von Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich zustimmen.
@@ -23,10 +23,10 @@ Stand: November 2026
 
 ## 4. Leistungen
 
-1. **Collector:** die App mit Scanner (Kartenerkennung, Preise, Suche) und Trading-Modus sowie das Web-Portal mit Ihrer Sammlung und deren aktuellen Preisen, der Kartensuche, der Liste fehlender Karten und dem Teilen der Sammlung.
+1. **Collector:** die App mit Scanner (Kartenerkennung, Preise, Suche), den Funktionen für Card Shows (Warenkorb, Preisurteil, Tausch) und der Sammlung sowie das Web-Portal mit Ihrer Sammlung und deren aktuellen Preisen, der Kartensuche, der Liste fehlender Karten und dem Teilen der Sammlung.
 2. **Creator:** alles aus Collector und dazu den YouTube-Modus der App mit Aufnahme von Bildschirm und Kamera. Speicherung der Aufnahmen bei uns und deren Bearbeitung sind nicht enthalten (Punkt 4.5).
-3. **Geräte:** Jedes Abo enthält ein Gerät; weitere Geräte buchen Sie dazu. Ein Gerät verbinden Sie, indem Sie mit der App einen QR-Code aus Ihrem Konto scannen. Es sind höchstens so viele Geräte gleichzeitig verbunden, wie das Abo umfasst; Geräte entfernen Sie im Konto, ein neues Handy übernimmt den Platz des alten über einen QR-Code aus der App.
-4. **Eigenschaften:** Die App befindet sich in einer Testphase (Beta). Kartenerkennung und Preise können unvollständig oder ungenau sein; die Preise stammen aus öffentlich verfügbaren Daten Dritter (unter anderem Cardmarket und TCGplayer über TCGdex, mit dem Zusatzpaket PSA-Preise auch PSA-Verkaufspreise) und sind unverbindliche Richtwerte. App und Portal verwenden dieselben, täglich aktualisierten Preisdaten. Die App gibt es derzeit nur für Android (ab Version 8) und auf Englisch; bis zur Aufnahme in den Google Play Store steht sie im Konto als Installationsdatei (APK) bereit. Für das Verbinden, Kartenbilder und Updates braucht die App eine Internetverbindung; sie prüft das Abo online und funktioniert dazwischen bis zu 35 Tage ohne Verbindung. Diese Eigenschaften sind Teil der vereinbarten Beschaffenheit. Updates sind enthalten.
+3. **Geräte:** Jedes Abo enthält ein Gerät; weitere Geräte buchen Sie dazu. Ein Gerät verbinden Sie, indem Sie sich in der App mit Ihrem Konto anmelden oder mit der App einen QR-Code aus Ihrem Konto scannen. Es sind höchstens so viele Geräte gleichzeitig verbunden, wie das Abo umfasst; Geräte entfernen Sie im Konto, ein neues Handy übernimmt den Platz des alten über einen QR-Code aus der App.
+4. **Eigenschaften:** Kartenerkennung und Preise können unvollständig oder ungenau sein; die Preise stammen aus öffentlich verfügbaren Daten Dritter (unter anderem Cardmarket und TCGplayer über TCGdex, mit dem Zusatzpaket PSA-Preise auch PSA-Verkaufspreise) und sind unverbindliche Richtwerte. App und Portal verwenden dieselben, täglich aktualisierten Preisdaten. Die App gibt es derzeit für Android (ab Version 8) über Google Play und auf Englisch. Für die Anmeldung, Kartenbilder und neue Preise braucht die App eine Internetverbindung; sie prüft das Abo online und funktioniert dazwischen bis zu 35 Tage ohne Verbindung. Diese Eigenschaften sind Teil der vereinbarten Beschaffenheit. Updates sind enthalten.
 5. **Dienste auf Anfrage:** Für Creator bieten wir auf Anfrage Speicherplatz für Aufnahmen (S3) und die automatische Bearbeitung der Aufnahmen (Automatic Content Processing) an; den Webshop-Modus der App gibt es mit unserem Webshop as a Service. Diese Dienste vereinbaren wir gesondert. Speicher und Bearbeitung rechnen wir nach Nutzung ab (je hochgeladenem Gigabyte und je fertiger Videominute) zu den Preisen, die wir Ihnen bei der Vereinbarung nennen, mit der nächsten Monatsrechnung.
 6. Sie dürfen die App nicht verändern, zurückentwickeln oder weitergeben, soweit das Gesetz es nicht ausdrücklich erlaubt (§§ 40d und 40e UrhG). Unternehmen dürfen App und Portal durch ihre Mitarbeiter nutzen lassen, im Rahmen der gebuchten Geräte.
 7. **Zusatzpakete:** Zusätzlich zum Abo gibt es Preisdaten als Zusatzpaket, monatlich oder jährlich: **PSA-Preise**, wofür PSA 10, 9 und 8 gegradete Karten auf eBay verkauft wurden. Cardmarket- und TCGplayer-Preise sind in jedem Abo enthalten. Ein Zusatzpaket gilt nur zusammen mit einem laufenden Abo (Collector oder Creator) und ist derzeit nur im App Store erhältlich (Punkt 8.9). Wir können ein Zusatzpaket auch kostenlos gewähren, mit oder ohne Enddatum.
@@ -34,7 +34,7 @@ Stand: November 2026
 ## 5. Laufzeit, Änderung und Kündigung
 
 1. Das Abo läuft monatlich ab dem Tag des Abschlusses und verlängert sich jeweils um einen Monat, solange Sie es nicht kündigen.
-2. Sie können jederzeit zum Ende des laufenden Monats kündigen, im Konto unter „Abo“ oder per E-Mail an {{seller.email}}. Bis dahin funktioniert alles weiter. Danach sind die Modi der App gesperrt und das Portal zeigt nur noch Konto, Bestellungen und Lieferadresse; Ihre Sammlung bleibt gespeichert, bis Sie das Konto löschen.
+2. Sie können jederzeit zum Ende des laufenden Monats kündigen, im Konto unter „Abo“ oder per E-Mail an {{seller.email}}. Bis dahin funktioniert alles weiter. Danach läuft die App nur noch als Gratis-Version und das Portal zeigt nur noch Konto, Bestellungen und Lieferadresse; Ihre Sammlung bleibt gespeichert, bis Sie das Konto löschen.
 3. Ein Wechsel zu Creator oder mehr Geräte gelten sofort; den Unterschied berechnen wir anteilig für den Rest des Monats. Ein Wechsel zu Collector oder weniger Geräte gelten ebenfalls sofort; den Unterschied schreiben wir anteilig auf der nächsten Rechnung gut.
 4. Wir können das Abo mit einer Frist von einem Monat zum Monatsende kündigen, etwa wenn wir die App nicht mehr anbieten; im Voraus bezahlte Beträge für die Zeit danach erstatten wir. Das Recht zur Kündigung aus wichtigem Grund bleibt unberührt.
 
