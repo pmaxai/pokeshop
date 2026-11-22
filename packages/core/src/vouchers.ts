@@ -2,11 +2,12 @@
  * Gift vouchers and discount codes.
  *
  * - Vouchers (XXXX-XXXX-XXXX) are worth an amount and can be used for cards only (the shop's
- *   sale, not the GmbH's licences). A bought voucher ('sold') is a means of payment: it pays part
+ *   sale, not the GmbH's app subscriptions). A bought voucher ('sold') is a means of payment: it pays part
  *   of the invoice total. A voucher the shop gave away ('promo') was never paid for: it lowers
  *   the price, like a discount. What is left stays on the voucher.
- * - Discount codes (CHRISTMAS, FREUND-7KQ4M …) take a percentage or an amount off cards, licences
- *   or both. One per order; any number of vouchers can be added.
+ * - Discount codes (CHRISTMAS, FREUND-7KQ4M …) take a percentage or an amount off cards. One per
+ *   order; any number of vouchers can be added. (Codes for app licences, which are no longer
+ *   sold, are switched off.)
  *
  * Order of application on a card order: the code on the cards' value, promotional vouchers on
  * what is left including shipping, then bought vouchers pay the rest. Stripe collects what
@@ -75,9 +76,9 @@ export type DiscountCodeRow = {
   kind: 'percent' | 'amount';
   percent_bp: number | null;
   amount_cents: number | null;
-  applies_to: 'cards' | 'licenses' | 'both';
+  /** 'cards'; 'licenses': a code for app licences, no longer sold (switched off) */
+  applies_to: 'cards' | 'licenses';
   min_goods_cents: number;
-  max_licenses: number | null;
   max_uses: number | null;
   once_per_customer: boolean;
   valid_from: Date | null;
@@ -87,7 +88,7 @@ export type DiscountCodeRow = {
 
 const VOUCHER_COLS = 'id, code, origin, value_cents, balance_cents, status, expires_at';
 const CODE_COLS = `id, code, campaign, kind, percent_bp, amount_cents, applies_to, min_goods_cents,
-  max_licenses, max_uses, once_per_customer, valid_from, valid_until, active`;
+  max_uses, once_per_customer, valid_from, valid_until, active`;
 
 export type CodeProblem =
   | 'unknown'
@@ -97,12 +98,10 @@ export type CodeProblem =
   | 'used_up'
   | 'already_used'
   | 'not_for_cards'
-  | 'not_for_licenses'
   | 'min_goods'
   | 'empty'
   | 'blocked'
-  | 'too_many'
-  | 'voucher_for_licenses';
+  | 'too_many';
 
 export type FoundCode =
   | { kind: 'voucher'; voucher: VoucherRow }
@@ -117,7 +116,6 @@ export async function findCode(
   db: Db,
   raw: string,
   input: {
-    scope: 'cards' | 'licenses';
     email?: string | null;
     goodsCents?: number;
     now?: Date;
@@ -139,7 +137,6 @@ export async function findCode(
           VoucherRow[]
         >`SELECT ${db.unsafe(VOUCHER_COLS)} FROM vouchers WHERE code = ${voucherCode}`;
     if (v) {
-      if (input.scope === 'licenses') return { kind: 'invalid', problem: 'voucher_for_licenses' };
       if (v.status !== 'active') return { kind: 'invalid', problem: 'blocked' };
       if (v.expires_at && v.expires_at <= now) return { kind: 'invalid', problem: 'expired' };
       if (v.balance_cents <= 0) return { kind: 'invalid', problem: 'empty' };
@@ -156,12 +153,7 @@ export async function findCode(
   if (!c.active) return { kind: 'invalid', problem: 'inactive' };
   if (c.valid_from && c.valid_from > now) return { kind: 'invalid', problem: 'not_yet' };
   if (c.valid_until && c.valid_until <= now) return { kind: 'invalid', problem: 'expired' };
-  if (input.scope === 'cards' && c.applies_to === 'licenses') {
-    return { kind: 'invalid', problem: 'not_for_cards' };
-  }
-  if (input.scope === 'licenses' && c.applies_to === 'cards') {
-    return { kind: 'invalid', problem: 'not_for_licenses' };
-  }
+  if (c.applies_to === 'licenses') return { kind: 'invalid', problem: 'not_for_cards' };
   const except = input.exceptOrderId ?? null;
   if (c.max_uses !== null) {
     const [u] = await db<{ n: number }[]>`
@@ -177,11 +169,7 @@ export async function findCode(
          AND (${except}::bigint IS NULL OR order_id <> ${except}::bigint)`;
     if (u!.n > 0) return { kind: 'invalid', problem: 'already_used' };
   }
-  if (
-    input.scope === 'cards' &&
-    input.goodsCents !== undefined &&
-    input.goodsCents < c.min_goods_cents
-  ) {
+  if (input.goodsCents !== undefined && input.goodsCents < c.min_goods_cents) {
     return { kind: 'invalid', problem: 'min_goods', minGoodsCents: c.min_goods_cents };
   }
   return { kind: 'discount', code: c };
@@ -339,24 +327,6 @@ export function priceCards(input: {
   };
 }
 
-/** Discount of a code on a licence order (net or gross unit price, as on the payment page). */
-export function licenseDiscount(
-  code: DiscountCodeRow,
-  unitCents: number,
-  quantity: number,
-): number {
-  const total = unitCents * quantity;
-  const n = Math.min(quantity, code.max_licenses ?? quantity);
-  let d =
-    code.kind === 'percent'
-      ? Math.round((unitCents * n * code.percent_bp!) / 10_000)
-      : Math.min(code.amount_cents!, unitCents * n);
-  d = Math.min(d, total);
-  const due = total - d;
-  if (due > 0 && due < STRIPE_MINIMUM_CENTS) d = total - STRIPE_MINIMUM_CENTS;
-  return Math.max(0, d);
-}
-
 // ---------------------------------------------------------------------------
 // Codes in the cart
 // ---------------------------------------------------------------------------
@@ -386,7 +356,7 @@ export async function addCartCode(
   | { ok: false; problem: CodeProblem; minGoodsCents?: number }
 > {
   if (!raw.trim()) return { ok: false, problem: 'unknown' };
-  const found = await findCode(db, raw, { scope: 'cards', goodsCents });
+  const found = await findCode(db, raw, { goodsCents });
   if (found.kind === 'invalid') {
     return found.minGoodsCents === undefined
       ? { ok: false, problem: found.problem }
@@ -452,7 +422,6 @@ export async function priceCartCodes(
   const found: { code: string; f: FoundCode }[] = [];
   for (const c of input.codes) {
     const f = await findCode(db, c, {
-      scope: 'cards',
       email: input.email,
       goodsCents: goods,
       lock: input.lock,
@@ -674,9 +643,7 @@ export const DiscountCodeInput = z
     kind: z.enum(['percent', 'amount']),
     percentBp: z.number().int().min(1).max(10_000).optional(),
     amountCents: z.number().int().min(1).max(100_000).optional(),
-    appliesTo: z.enum(['cards', 'licenses', 'both']),
     minGoodsCents: z.number().int().min(0).max(1_000_000).default(0),
-    maxLicenses: z.number().int().min(1).max(50).nullable().default(null),
     maxUses: z.number().int().min(1).max(1_000_000).nullable().default(null),
     oncePerCustomer: z.boolean().default(true),
     validFrom: z.date().nullable().default(null),
@@ -710,12 +677,12 @@ export async function createDiscountCodes(
         }
         const [row] = await tx<{ id: number }[]>`
           INSERT INTO discount_codes (code, campaign, kind, percent_bp, amount_cents, applies_to,
-                                      min_goods_cents, max_licenses, max_uses, once_per_customer,
+                                      min_goods_cents, max_uses, once_per_customer,
                                       valid_from, valid_until, note, created_by)
           VALUES (${code}, ${v.campaign || null}, ${v.kind},
                   ${v.kind === 'percent' ? v.percentBp! : null},
-                  ${v.kind === 'amount' ? v.amountCents! : null}, ${v.appliesTo}, ${v.minGoodsCents},
-                  ${v.maxLicenses}, ${batch ? 1 : v.maxUses}, ${v.oncePerCustomer}, ${v.validFrom},
+                  ${v.kind === 'amount' ? v.amountCents! : null}, 'cards', ${v.minGoodsCents},
+                  ${batch ? 1 : v.maxUses}, ${v.oncePerCustomer}, ${v.validFrom},
                   ${v.validUntil}, ${v.note || null}, ${actor})
           RETURNING id`;
         out.push({ id: row!.id, code });
@@ -899,7 +866,7 @@ export async function listDiscountCodes(
       AND (${campaign}::text IS NULL OR d.campaign = ${campaign}::text)`;
   const rows = await db<DiscountCodeListRow[]>`
     SELECT d.id, d.code, d.campaign, d.kind, d.percent_bp, d.amount_cents, d.applies_to,
-           d.min_goods_cents, d.max_licenses, d.max_uses, d.once_per_customer, d.valid_from,
+           d.min_goods_cents, d.max_uses, d.once_per_customer, d.valid_from,
            d.valid_until, d.active, d.note, d.created_at,
            count(u.id) FILTER (WHERE u.status = 'used')::int AS used,
            count(u.id) FILTER (WHERE u.status = 'held')::int AS held,

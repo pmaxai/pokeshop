@@ -15,7 +15,7 @@ export const SHIPPING_LABELS: Record<string, string> = {
   standard: 'Standard',
   insured: 'Versichert',
   tracked: 'Nachverfolgt (ohne Versicherung)',
-  none: 'Kein Versand (App-Lizenz oder Gutschein)',
+  none: 'Kein Versand (Gutschein)',
 };
 
 export const EVENT_LABELS: Record<string, string> = {
@@ -59,12 +59,6 @@ export const VOUCHER_MOVEMENT: Record<string, string> = {
   released: 'Zurück (Bestellung nicht bezahlt)',
   restored: 'Zurückgebucht (Erstattung)',
   cancelled: 'Storniert',
-};
-
-export const CODE_SCOPE: Record<string, string> = {
-  cards: 'Karten',
-  licenses: 'App-Lizenzen',
-  both: 'Karten und Lizenzen',
 };
 
 export const MAIL_LABELS: Record<string, string> = {

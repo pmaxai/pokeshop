@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro } from '@pokeshop/core';
-import { APP_NAME, currentRelease, licenseSeller } from '@pokeshop/core/licenses';
+import { APP_NAME, appStores, gmbhSeller, playWithReferrer } from '@pokeshop/core/app';
 import { netPrice, subscriptionPrices } from '@pokeshop/core/subscriptions';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { db, getSetting } from '@/server/config';
+import { db } from '@/server/config';
 import { cookieAffiliate } from '@/server/affiliate';
 import { getCompany } from '@/server/shop';
 import { pageAlternates } from '@/server/seo';
@@ -17,20 +17,25 @@ type Props = { params: Promise<{ locale: Locale }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'App' });
+  const prices = await subscriptionPrices(db());
   return {
     title: { absolute: t('metaTitle') },
-    description: t('metaDescription'),
+    description: t('metaDescription', { price: formatEuro(prices.collector, locale) }),
     alternates: pageAlternates('/app', locale),
   };
 }
+
+const SCREENS = ['search', 'prices', 'cart', 'free'] as const;
 
 const FEATURES = [
   'recognise',
   'prices',
   'history',
+  'search',
   'offline',
   'alert',
   'trading',
+  'collection',
   'youtube',
   'webshop',
 ] as const;
@@ -38,51 +43,65 @@ const FEATURES = [
 const ACP_POINTS = ['cut', 'voice', 'music', 'out'] as const;
 const WAAS_POINTS = ['domain', 'mail', 'stripe'] as const;
 
-function megabytes(bytes: number, locale: Locale): string {
-  return `${new Intl.NumberFormat(locale === 'de' ? 'de-AT' : 'en-GB', {
-    maximumFractionDigits: 0,
-  }).format(bytes / 1_000_000)} MB`;
-}
-
 export default async function AppPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('App');
   const tSub = await getTranslations('Subscription');
-  const [prices, seller, { email }, release, playStore] = await Promise.all([
+  const [prices, seller, { email }, stores, affiliate] = await Promise.all([
     subscriptionPrices(db()),
-    licenseSeller(db()),
+    gmbhSeller(db()),
     getCompany(),
-    currentRelease(db()),
-    getSetting<string | null>('app_play_store_url', null),
+    appStores(db()),
+    // came through an influencer's link (/r/<code>): their code goes with the install
+    cookieAffiliate(),
   ]);
   const eur = (c: number) => formatEuro(c, locale);
   const price = eur(prices.collector);
   const netFrom = eur(netPrice(prices.collector));
-  const sales = {
-    release,
-    playStoreUrl:
-      typeof playStore === 'string' && playStore.startsWith('https://') ? playStore : null,
-  };
-  const store = sales.playStoreUrl !== null;
-  // came through an influencer's link (/r/<code>): their code and discount
-  const affiliate = await cookieAffiliate();
-  const playWithReferrer =
-    affiliate && sales.playStoreUrl
-      ? `${sales.playStoreUrl}${sales.playStoreUrl.includes('?') ? '&' : '?'}referrer=${encodeURIComponent(`aff=${affiliate.code}`)}`
-      : null;
+  const play =
+    stores.play && affiliate ? playWithReferrer(stores.play, affiliate.code) : stores.play;
   // The services are the GmbH's; enquiries go to its mailbox.
   const ask = (service: string) =>
     `mailto:${seller.email || email}?subject=${encodeURIComponent(t('services.askSubject', { service }))}`;
+
+  const storeButtons = (primary: boolean) => (
+    <p className="app-stores">
+      {play && (
+        <a className={primary ? 'btn btn--accent' : 'btn'} href={play} rel="noopener noreferrer">
+          {t('play')}
+        </a>
+      )}
+      {stores.apple ? (
+        <a className="btn" href={stores.apple} rel="noopener noreferrer">
+          {t('appStore')}
+        </a>
+      ) : (
+        <span className="app-store-soon">{t('appStoreSoon')}</span>
+      )}
+    </p>
+  );
 
   return (
     <div className="wrap app-page">
       <section className="app-hero" aria-labelledby="app-title">
         <div className="app-hero__text">
+          <p className="app-id">
+            <img
+              src="/images/app-icon-128.webp"
+              srcSet="/images/app-icon-128.webp 2x, /images/app-icon-192.webp 3x"
+              width={56}
+              height={56}
+              alt=""
+            />
+            <span>
+              <strong>{APP_NAME}</strong>
+              <span>{stores.apple ? t('platformsBoth') : t('platforms')}</span>
+            </span>
+          </p>
           <h1 id="app-title" className="app-hero__title">
-            {APP_NAME} <span className="app-beta">{t('beta')}</span>
+            {t('title')}
           </h1>
-          <p className="app-hero__tagline">{t('tagline')}</p>
           <p className="hero__lead">{t('lead')}</p>
           {affiliate && (
             <p className="notice app-affiliate" role="status">
@@ -93,28 +112,12 @@ export default async function AppPage({ params }: Props) {
                     months: affiliate.discountMonths ?? 0,
                   })
                 : t('affiliate.noDiscount', { code: affiliate.code })}
-              {playWithReferrer && (
-                <>
-                  {' '}
-                  <a href={playWithReferrer}>{t('affiliate.play')}</a>
-                </>
-              )}
             </p>
           )}
-          <p className="app-hero__price">
-            <strong>{t('price', { price })}</strong>
-            <span>{t('priceNote')}</span>
-            <span className="app-hero__net">{t('priceBusiness', { net: netFrom })}</span>
+          {storeButtons(true)}
+          <p className="app-hero__free">
+            {t('freeLine', { price })} <a href="#abos">{t('comparePlans')}</a>
           </p>
-          <p className="hero__actions">
-            <a className="btn btn--accent" href="#abos">
-              {t('buy')}
-            </a>
-            <a className="btn btn--quiet" href="#funktionen">
-              {t('seeFeatures')}
-            </a>
-          </p>
-          <p className="app-hero__platform">{store ? t('platformStore') : t('platformApk')}</p>
         </div>
         <figure className="app-shot">
           <img
@@ -133,6 +136,22 @@ export default async function AppPage({ params }: Props) {
         <h2 id="features-title" className="section__head">
           {t('featuresTitle')}
         </h2>
+        <ul className="app-screens">
+          {SCREENS.map((s) => (
+            <li key={s}>
+              <figure>
+                <img
+                  src={`/images/app-screen-${s}.webp`}
+                  width={320}
+                  height={616}
+                  alt={t(`screens.${s}.alt`)}
+                  loading="lazy"
+                />
+                <figcaption>{t(`screens.${s}.caption`)}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
         <dl className="app-features">
           {FEATURES.map((f) => (
             <div key={f}>
@@ -141,6 +160,72 @@ export default async function AppPage({ params }: Props) {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="section" id="abos" aria-labelledby="plans-title">
+        <h2 id="plans-title" className="section__head">
+          {t('plansTitle')}
+        </h2>
+        <p className="app-services__intro">{t('plansIntro')}</p>
+        <div className="plan-cards">
+          <section className="plan-card plan-card--free" aria-labelledby="plan-free">
+            <h3 id="plan-free">{t('free.name')}</h3>
+            <p className="plan-card__price">
+              <span className="num">{t('free.price')}</span>
+            </p>
+            <ul className="app-ticks">
+              {(t.raw('free.points') as string[]).map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+            {play && (
+              <p>
+                <a className="btn" href={play} rel="noopener noreferrer">
+                  {t('play')}
+                </a>
+              </p>
+            )}
+          </section>
+          {(['collector', 'creator'] as const).map((k) => (
+            <section key={k} className={`plan-card plan-card--${k}`} aria-labelledby={`plan-${k}`}>
+              <h3 id={`plan-${k}`}>{tSub(`plans.${k}.name`)}</h3>
+              <p className="plan-card__price">
+                <span className="num">{eur(prices[k])}</span> {tSub('perMonth')}
+              </p>
+              <ul className="app-ticks">
+                {(tSub.raw(`plans.${k}.points`) as string[]).map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+              <p className="small muted">
+                {tSub('extraDevice', { price: eur(prices[`${k}_device`]) })}
+              </p>
+              <p>
+                <Link
+                  href={{ pathname: '/konto/abo', query: { plan: k } }}
+                  className={k === 'creator' ? 'btn btn--accent' : 'btn'}
+                >
+                  {t('planCta', { plan: tSub(`plans.${k}.name`) })}
+                </Link>
+              </p>
+            </section>
+          ))}
+        </div>
+        <p className="small muted app-plans__note">
+          {t('plansNote', { net: netFrom, seller: seller.name })}
+        </p>
+      </section>
+
+      <section className="section" aria-labelledby="how-title">
+        <h2 id="how-title" className="section__head">
+          {t('howTitle')}
+        </h2>
+        <ol className="app-steps">
+          <li>{stores.apple ? t('steps.installBoth') : t('steps.install')}</li>
+          <li>{t('steps.free')}</li>
+          <li>{t('steps.subscribe')}</li>
+        </ol>
+        {storeButtons(false)}
       </section>
 
       <section className="section" id="dienste" aria-labelledby="services-title">
@@ -178,87 +263,29 @@ export default async function AppPage({ params }: Props) {
       </section>
 
       <div className="app-columns">
-        <section className="app-beta-box" aria-labelledby="beta-title">
-          <h2 id="beta-title">{t('betaTitle')}</h2>
-          <p>{t('betaIntro')}</p>
+        <section className="app-notes" aria-labelledby="notes-title">
+          <h2 id="notes-title">{t('notesTitle')}</h2>
           <ul>
-            <li>{t('betaPoints.recognition')}</li>
-            <li>{t('betaPoints.prices')}</li>
-            <li>{t('betaPoints.english')}</li>
+            <li>{t('notes.recognition')}</li>
+            <li>{t('notes.prices')}</li>
+            <li>{t('notes.english')}</li>
             <li>
-              {t.rich('betaPoints.updates', {
+              {t.rich('notes.feedback', {
                 email,
                 mail: (chunks) => <a href={`mailto:${email}`}>{chunks}</a>,
               })}
             </li>
           </ul>
         </section>
-        <section aria-labelledby="licence-title">
-          <h2 id="licence-title">{t('licenceTitle')}</h2>
-          <ul className="app-ticks">
-            <li>{t('subPoints.monthly', { price })}</li>
-            <li>{t('subPoints.portal')}</li>
-            <li>{t('subPoints.device')}</li>
-            <li>{t('subPoints.online')}</li>
-          </ul>
-          <h3 className="app-sub">{t('needsTitle')}</h3>
+        <section aria-labelledby="needs-title">
+          <h2 id="needs-title">{t('needsTitle')}</h2>
           <ul className="app-ticks">
             <li>{t('needs.android')}</li>
-            <li>
-              {sales.release
-                ? t('needs.space', { size: megabytes(sales.release.sizeBytes, locale) })
-                : t('needs.spaceUnknown')}
-            </li>
+            <li>{t('needs.space')}</li>
             <li>{t('needs.internet')}</li>
           </ul>
         </section>
       </div>
-
-      <section className="section" aria-labelledby="how-title">
-        <h2 id="how-title" className="section__head">
-          {t('howTitle')}
-        </h2>
-        <ol className="app-steps">
-          <li>{t('steps.subscribe')}</li>
-          <li>{store ? t('steps.installStore') : t('steps.download')}</li>
-          <li>{t('steps.connect')}</li>
-        </ol>
-        {!store && <p className="app-store-note">{t('storeTarget')}</p>}
-      </section>
-
-      <section className="section app-buy" id="abos" aria-labelledby="buy-title">
-        <h2 id="buy-title" className="section__head">
-          {t('plansTitle')}
-        </h2>
-        <p className="app-services__intro">{t('plansIntro')}</p>
-        <div className="plan-cards">
-          {(['collector', 'creator'] as const).map((k) => (
-            <section key={k} className={`plan-card plan-card--${k}`} aria-labelledby={`plan-${k}`}>
-              <h3 id={`plan-${k}`}>{tSub(`plans.${k}.name`)}</h3>
-              <p className="plan-card__price">
-                <span className="num">{eur(prices[k])}</span> {tSub('perMonth')}
-              </p>
-              <ul className="app-ticks">
-                {(tSub.raw(`plans.${k}.points`) as string[]).map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-              <p className="small muted">
-                {tSub('extraDevice', { price: eur(prices[`${k}_device`]) })}
-              </p>
-              <p>
-                <Link
-                  href={{ pathname: '/konto/abo', query: { plan: k } }}
-                  className={k === 'creator' ? 'btn btn--accent' : 'btn'}
-                >
-                  {t('planCta', { plan: tSub(`plans.${k}.name`) })}
-                </Link>
-              </p>
-            </section>
-          ))}
-        </div>
-        <p className="small muted">{t('plansNote', { net: netFrom, seller: seller.name })}</p>
-      </section>
     </div>
   );
 }

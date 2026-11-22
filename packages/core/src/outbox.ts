@@ -11,8 +11,6 @@ export type MailTemplate =
   | 'withdrawal_ack'
   | 'withdrawal_notification'
   | 'admin_alert'
-  | 'license_delivery'
-  | 'license_resend'
   | 'voucher_purchase'
   | 'contact_notification'
   | 'account_login'

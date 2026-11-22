@@ -2,6 +2,17 @@
 
 Short records of choices that shape the code. Newest first.
 
+## 2026-11-22 · Licences switched off; the app comes from the stores
+
+The app is on Google Play (`com.overpricedcardboard.app`) and soon in the App Store, with a free
+version and the subscriptions; no licence was ever sold. So the licences are gone from the shop:
+the licence service (`apps/license`, its container, `license.<host>` in Caddy), licence orders
+(checkout, keys, mails, worker jobs, refunds), codes for licences, and the APK upload and
+download (`app_releases`). Admin › App keeps the store links (`app_play_store_url`,
+`app_app_store_url`) and the GmbH's sender address. Old licence orders (on staging) stay in the
+database for the records but are left out of every list; open ones are expired by migration 0031. The GmbH's Stripe variables (`STRIPE_LICENSE_*`) and its webhook path keep their names:
+the account and the webhook in Stripe stay the same.
+
 ## 2026-11-15 · Subscriptions instead of licences
 
 The app is sold as a monthly subscription by Antalyse GmbH (Stripe Billing on its account):
@@ -182,7 +193,7 @@ learns that on its next online check; offline the app keeps working. A suspended
 back only by scanning a QR code again. Keys are stored encrypted so the shop can send them again
 to a customer who lost the device. The shop talks to the service only inside the stack (bearer
 token); Caddy exposes just `/health`, `/v1/activate` and `/v1/check`. See
-[license-service.md](license-service.md).
+the licence service (removed 2026-11-22).
 
 ## 2026-11-06 · Image tags per stack: staging follows main, production is promoted
 

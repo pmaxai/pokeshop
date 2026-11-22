@@ -218,8 +218,8 @@
     "chamber": "Member of",
     "authority": "Trade authority",
     "contact": "Contact",
-    "licenses": "Sale of the app licences (Overpriced Cardboard Scanner)",
-    "licensesIntro": "The licences for the app Overpriced Cardboard Scanner are sold and invoiced by:"
+    "app": "The Overpriced Cardboard app",
+    "appIntro": "Provider of the Overpriced Cardboard app and seller of its subscriptions on this website:"
   },
   "Privacy": {
     "title": "Privacy",
@@ -401,52 +401,112 @@
     "until": "until"
   },
   "App": {
-    "metaTitle": "Overpriced Cardboard Scanner – scan Pokémon cards, see prices",
-    "metaDescription": "The Android app by Overpriced Cardboard: scan a card and see the Cardmarket price of the right printing, even without signal. Subscription from €7 a month, with a web portal for your collection.",
-    "beta": "Android Beta",
-    "tagline": "Scan a card and check current prices. Even without signal.",
-    "lead": "The Overpriced Cardboard Scanner recognises Pokémon cards with your phone’s camera and shows the Cardmarket price of the right printing right away. Built for flea markets, card shows and openings.",
-    "price": "from {price} a month",
-    "priceNote": "Collector, VAT included, cancel monthly",
-    "buy": "Choose a plan",
-    "seeFeatures": "What the app does",
-    "platformApk": "Currently Android only (Android 8 or newer). The Overpriced Cardboard Scanner isn’t in the Play Store yet: you get the app as an APK file.",
-    "platformStore": "Currently Android only (Android 8 or newer), on Google Play.",
+    "metaTitle": "Overpriced Cardboard app – scan Pokémon cards, see prices",
+    "metaDescription": "The Overpriced Cardboard app: scan a card and see the prices of the right printing, even without signal. Free on Google Play, plans from {price} a month. Coming soon to the App Store for iPhone.",
+    "platforms": "Android app, iPhone coming soon",
+    "platformsBoth": "For Android and iPhone",
+    "title": "Scan a card, see its price. Even without signal.",
+    "lead": "The app recognises Pokémon cards with your phone’s camera and shows the prices of the right printing right away: Cardmarket, TCGplayer and their history. For flea markets, card shows, openings and your collection.",
+    "play": "Get it on Google Play",
+    "appStore": "Download on the App Store",
+    "appStoreSoon": "iPhone: coming soon to the App Store",
+    "freeLine": "Free to download. Scan without an account in the free version; everything else comes with a plan from {price} a month.",
+    "comparePlans": "Compare free and the plans",
     "screenshotAlt": "A scan in the app: the card Altaria from Silver Tempest sits in the green frame, with its name, set, number, Cardmarket trend and the price history of the last 90 days below.",
-    "featuresTitle": "What the Overpriced Cardboard Scanner does",
+    "featuresTitle": "What the app does",
+    "screens": {
+      "search": {
+        "caption": "Every card with every price",
+        "alt": "A card page in the app: Charizard ex (German print, Glurak-ex) from 151, special illustration rare, Cardmarket trend €313.78 for the holo."
+      },
+      "prices": {
+        "caption": "Cardmarket, TCGplayer and the history",
+        "alt": "The price table: Cardmarket trend, 30-day average, average sell price and lowest offer, TCGplayer market price, and the last 90 days below."
+      },
+      "cart": {
+        "caption": "At a booth: check the price, negotiate",
+        "alt": "Add to cart: condition EX, market value €266.71, the vendor asks €30, verdict “Great deal”."
+      },
+      "free": {
+        "caption": "Free: 10 prices an hour",
+        "alt": "The free version: a recognised card with the “Reveal the price” button, 7 of 10 left this hour."
+      }
+    },
     "features": {
       "recognise": {
         "title": "Recognise",
-        "text": "Hold the card inside the frame: when it turns green, the app is sure. It also reads the language and the card number, so it finds the right set, in English, German, French, Spanish, Italian, Portuguese and Japanese. Take uncertain cards with a double tap, and find anything else with the search."
+        "text": "Hold the card inside the frame: when it turns green, the app is sure. It also reads the language and the card number, so it finds the right card in the right set, in English, German, French, Spanish, Italian, Portuguese, Japanese and Chinese. Take uncertain cards with a double tap."
       },
       "prices": {
         "title": "Prices",
-        "text": "Cardmarket trend, 30-day average and lowest price for each printing (normal, holo, reverse holo, 1st edition), TCGplayer as a second opinion and, with the PSA prices add-on, PSA 10, 9 and 8 for graded cards. If a more valuable printing of the same card exists, the app tells you."
+        "text": "Cardmarket (trend, 30-day average, average sell price, lowest offer) and TCGplayer for each printing: normal, holo, reverse holo, 1st edition. You choose which price is shown large. If a more valuable printing of the same card exists, the app tells you. PSA 10, 9 and 8 come as an add-on."
       },
       "history": {
         "title": "Price history",
         "text": "Under the price you see the last 90 days; a tap opens the chart for up to a year."
       },
+      "search": {
+        "title": "Search",
+        "text": "Look up any card, even without it in your hand: with every price, the history, your collection and your missing cards."
+      },
       "offline": {
         "title": "Offline",
-        "text": "Recognition and prices work without the internet, even in exhibition halls with no signal. Fresh prices arrive every night with an app update."
+        "text": "Recognition and prices work without the internet, even in exhibition halls with no signal. The app downloads fresh prices every night."
       },
       "alert": {
         "title": "Price alert",
         "text": "Set a limit, say € 5. The phone vibrates as soon as a card above it shows up, so you can sweep through a whole box and only stop when it buzzes."
       },
       "trading": {
-        "title": "Trading Mode",
-        "text": "For Card Shows: market value by condition, a verdict on the vendor’s price with an opening offer and a walk-away price, a cart per booth, bundles, trades with a balance, a day budget and your deals as CSV."
+        "title": "Card shows",
+        "text": "“Add to cart” straight from the scanner: I get or I give, condition, the vendor’s price and a verdict with an opening offer and a walk-away price. A cart per booth, bundles, trades with a balance, a budget for the show and your deals as CSV."
+      },
+      "collection": {
+        "title": "Collection",
+        "text": "“+ Collection” puts the card in your collection, with condition, quantity, purchase price and binder; its value stays current. Mark missing cards with ☆ and we tell you when one of them is in the shop. Share it with a link, and the same collection is in your account on the website."
       },
       "youtube": {
         "title": "YouTube mode",
-        "text": "A clean screen for opening videos: a big price that counts up, a hit effect above your alert price and the pack total as CSV. In recording mode the app records your opening itself; our Automatic Content Processing turns it into a finished video (see below)."
+        "text": "For opening videos, with Creator: a big price that counts up, a hit effect above your alert price and the pack total. The app records screen and camera itself; our Automatic Content Processing turns it into a finished video (see below)."
       },
       "webshop": {
-        "title": "Webshop Mode",
+        "title": "Webshop mode",
         "text": "For dealers: scan a card, pick language, condition, price and storage box, and it is in your own webshop, picture included. At your table you sell straight from stock. It pairs with our Webshop as a Service (see below)."
       }
+    },
+    "plansTitle": "Free or with a plan",
+    "plansIntro": "The app is free to download. Subscribe in the app through Google Play, monthly or yearly, or here on the website, monthly. Cancel any time, effective at the end of the period you paid for; prices include VAT.",
+    "free": {
+      "name": "Free",
+      "price": "€0",
+      "points": [
+        "Scanner: recognise cards",
+        "Prices for 10 cards an hour",
+        "Collection on your phone, up to 50 cards",
+        "No account needed"
+      ]
+    },
+    "planCta": "Choose {plan}",
+    "plansNote": "On the website you log in with your e-mail address, which creates your account; in the app you sign in with the same address. EU businesses outside Austria with a VAT ID pay net on the website (from {net}). Seller: {seller}.",
+    "howTitle": "How to start",
+    "steps": {
+      "install": "Get the app free on Google Play. The iPhone app is coming soon to the App Store.",
+      "installBoth": "Get the app free on Google Play or the App Store.",
+      "free": "Start scanning: the free version needs no account.",
+      "subscribe": "For everything else, sign in to the app with Google or a code by e-mail and choose a plan. Subscribed on the website already? Sign in with the same e-mail address."
+    },
+    "notesTitle": "Good to know",
+    "notes": {
+      "recognition": "Recognition is right most of the time, not always, especially when cards touch each other or sit in binders. The app then shows you the most likely matches to pick from.",
+      "prices": "Prices come from public data and can be missing or off for some cards. The app warns you about uncertain prices; check valuable cards before you buy.",
+      "english": "The app is in English. It recognises cards in all the languages above.",
+      "feedback": "Feedback to <mail>{email}</mail> helps us make the app better."
+    },
+    "needsTitle": "What you need",
+    "needs": {
+      "android": "An Android phone with Android 8 or newer and a camera",
+      "space": "Space for the app and its card database",
+      "internet": "Internet to sign in, for card pictures and fresh prices; with a plan the app works offline for up to 35 days"
     },
     "services": {
       "title": "Services to go with it",
@@ -463,7 +523,7 @@
       },
       "waas": {
         "title": "Webshop as a Service",
-        "text": "Your own online shop for single cards, like this one. We host and run it; you stock it with the app’s Webshop Mode.",
+        "text": "Your own online shop for single cards, like this one. We host and run it; you stock it with the app’s Webshop mode.",
         "needsTitle": "All you need:",
         "points": {
           "domain": "a domain",
@@ -474,62 +534,9 @@
       "ask": "Get in touch",
       "askSubject": "Enquiry: {service}"
     },
-    "betaTitle": "What beta means",
-    "betaIntro": "The Overpriced Cardboard Scanner is already used every day, but it isn’t finished. For you that means:",
-    "betaPoints": {
-      "recognition": "Recognition is right most of the time, not always, especially when cards touch each other or sit in binders. The app then shows you the most likely matches to pick from.",
-      "prices": "Prices come from public data and can be missing or off for some cards. The app warns you about uncertain prices; check valuable cards before you buy.",
-      "english": "The app is in English for now.",
-      "updates": "Updates come all the time. Feedback to <mail>{email}</mail> helps."
-    },
-    "licenceTitle": "The subscription",
-    "howTitle": "How you get the app",
-    "steps": {
-      "subscribe": "Log in with your e-mail address (no password) and subscribe.",
-      "download": "Download the app in your account under “Devices” and open the APK file on your phone. Android asks once whether your browser may install apps: allow it.",
-      "installStore": "Install the Overpriced Cardboard Scanner from Google Play.",
-      "connect": "In your account choose “Connect a device” and scan the QR code with the app. Done."
-    },
-    "storeTarget": "We aim to have the Overpriced Cardboard Scanner on Google Play by the end of November 2026. Until then you install the app as an APK file; the app announces new versions itself.",
-    "needsTitle": "What you need",
-    "needs": {
-      "android": "An Android phone with Android 8 or newer and a camera",
-      "space": "About {size} for the download and about 80 MB for the card database",
-      "spaceUnknown": "About 80 MB of space for the card database, plus the app itself",
-      "internet": "Internet to connect, for card pictures and updates; offline the app works for up to 35 days"
-    },
-    "thanks": {
-      "title": "Thank you! Your licence is on its way.",
-      "text": "We are sending the licence key and QR code to {email}. The e-mail arrives within a few minutes; please check your spam folder too.",
-      "pendingTitle": "Confirming your payment …",
-      "pendingText": "This usually takes only seconds. Reload the page in a moment.",
-      "reload": "Reload",
-      "unpaidTitle": "This order isn’t paid.",
-      "unpaidText": "The payment was cancelled or ran out. You can try again any time.",
-      "refundedTitle": "This order was refunded.",
-      "refundedText": "Its licence no longer works.",
-      "back": "Back to the app page",
-      "facts": "Order {number} · {count, plural, one {# licence} other {# licences}} · {total}",
-      "download": "Download Overpriced Cardboard Scanner",
-      "downloadMeta": "APK, version {version}, {size}",
-      "store": "Overpriced Cardboard Scanner on Google Play",
-      "installHint": "Open the file on your Android phone. Android asks once whether your browser may install apps: allow it. Then start the app and scan the QR code from the e-mail."
-    },
-    "priceBusiness": "EU businesses outside Austria with a VAT ID: from {net} net",
-    "subPoints": {
-      "monthly": "From {price} a month, cancel any time to the end of the month.",
-      "portal": "With the web portal: your collection with current prices, missing cards and sharing.",
-      "device": "One device is included, add more as you need. New phone? A QR code from the app moves it.",
-      "online": "The app checks your subscription online but works offline for up to 35 days in between."
-    },
-    "plansTitle": "The plans",
-    "plansIntro": "Monthly, cancel any time to the end of the month. Prices include VAT.",
-    "planCta": "Choose {plan}",
-    "plansNote": "To subscribe you log in with your e-mail address; that creates your account. EU businesses outside Austria with a VAT ID pay net (from {net}). Seller: {seller}.",
     "affiliate": {
       "discount": "With the code {code} you pay {percent} % less{months, plural, =0 {} one { in the first month} other { in the first # months}} – on your first subscription, here on the website or in the app.",
-      "noDiscount": "You came with the code {code}. It is for your first subscription, here on the website or in the app.",
-      "play": "Open the app in Google Play"
+      "noDiscount": "You came with the code {code}. It is for your first subscription, here on the website or in the app."
     }
   },
   "Codes": {
@@ -539,13 +546,11 @@
     "not_yet": "This code is not valid yet.",
     "used_up": "This code has been used up.",
     "already_used": "You have already used this code.",
-    "not_for_cards": "This code is for app licences only.",
-    "not_for_licenses": "This code is for cards only.",
+    "not_for_cards": "This code was for app licences, which are no longer sold.",
     "min_goods": "This code applies from {min} worth of cards.",
     "empty": "There is nothing left on this voucher.",
     "blocked": "This voucher is blocked. If you have questions, reply to your order e-mail or write to us.",
-    "too_many": "More than five vouchers in one order is not possible.",
-    "voucher_for_licenses": "Vouchers are for cards, not for app licences."
+    "too_many": "More than five vouchers in one order is not possible."
   },
   "Vouchers": {
     "metaTitle": "Gift vouchers",
@@ -586,7 +591,7 @@
     "how1": "Put cards into the cart.",
     "how2": "In the cart, enter the code under “Voucher or discount code”.",
     "how3": "The amount is deducted. If it is not enough, the rest is paid as usual.",
-    "howNote": "Vouchers are valid for cards, not for app licences. They are not paid out in cash. Several vouchers can be combined in one order.",
+    "howNote": "Vouchers are valid for cards, not for app subscriptions. They are not paid out in cash. Several vouchers can be combined in one order.",
     "errors": {
       "required": "Please fill in.",
       "too_long": "That is too long.",
@@ -654,7 +659,7 @@
     "overview": {
       "title": "Your account",
       "appTitle": "App subscription",
-      "appText": "With Collector or Creator you get the Overpriced Cardboard Scanner and this portal: your collection with current prices, missing cards and sharing.",
+      "appText": "With Collector or Creator you get the whole app and this portal: your collection with current prices, missing cards and sharing.",
       "appLink": "See the plans",
       "ordersTitle": "Latest orders",
       "allOrders": "All orders",
@@ -674,8 +679,7 @@
       "intro": "Your shop orders, including those placed with this e-mail address before you had an account.",
       "empty": "No orders yet.",
       "cards": "{count, plural, one {# card} other {# cards}}",
-      "voucher": "Gift voucher",
-      "license": "App licence"
+      "voucher": "Gift voucher"
     },
     "orderStatus": {
       "awaiting_payment": "Payment pending",
@@ -736,12 +740,12 @@
     "plans": {
       "collector": {
         "name": "Collector",
-        "short": "Scanner and Trading mode, with the web portal for your collection.",
+        "short": "Scanner, search and card shows, with your collection in the app and your account.",
         "points": [
-          "Scanner: recognise cards, prices also offline",
-          "Trading mode for card shows",
-          "Web portal: your collection with current prices",
-          "Missing cards: we tell you when one is in the shop",
+          "Scanner and search: every price, also offline",
+          "Card shows: cart, verdict, trades",
+          "Collection and missing cards, in the app and your account",
+          "We tell you when a missing card is in the shop",
           "Share your collection",
           "1 device included"
         ]
@@ -927,18 +931,14 @@
     "needsSubscription": "The app and connecting devices need a subscription.",
     "toSubscription": "See the plans",
     "playStore": "Get it on Google Play",
-    "apkText": "The Overpriced Cardboard Scanner for Android.",
-    "apk": "Download the app (version {version})",
-    "apkHint": "Open the downloaded file on your phone. Android asks once to allow installing from your browser.",
-    "apkSoon": "The download is available shortly.",
     "connectTitle": "Connect a device",
     "connectText": "{free} of {seats} devices free. Show a QR code here and scan it with the app.",
     "connect": "Show QR code",
     "full": "All {seats} devices of your subscription are in use.",
     "addDevice": "Add a device",
     "qrLabel": "QR code to connect the app",
-    "step1": "Open the Overpriced Cardboard Scanner on your phone.",
-    "step2": "Tap “Scan QR code” on its connect screen (or ⚙ → Account).",
+    "step1": "Open the Overpriced Cardboard app on your phone.",
+    "step2": "In Settings › Account, tap “Have a QR code from the portal? Connect with it”.",
     "step3": "Point the camera at this code. The app is connected right away.",
     "typed": "Or type the code:",
     "validUntil": "The code works once, until {time}.",
@@ -952,14 +952,19 @@
     "remove": "Remove",
     "removeText": "The app on this device locks at its next check. The slot is free right away.",
     "removeConfirm": "Remove device",
-    "removed": "Device removed."
+    "removed": "Device removed.",
+    "appText": "Get Overpriced Cardboard on Google Play and the App Store.",
+    "appTextSoon": "Overpriced Cardboard is on Google Play for Android; the iPhone app is coming soon to the App Store.",
+    "appStore": "Download on the App Store",
+    "signIn": "In the app, sign in under Settings › Account with {email}, or connect it below with a QR code.",
+    "freeHint": "Without a plan the app runs as the free version."
   },
   "Pair": {
     "title": "Connect the app",
-    "text": "This code connects the Overpriced Cardboard Scanner to an account. Scan it in the app, not with the phone’s camera.",
-    "step1": "Open the Overpriced Cardboard Scanner.",
-    "step2": "Tap “Scan QR code” and point the camera at the code on your computer screen.",
-    "noApp": "No app yet? It comes with a Collector or Creator subscription.",
+    "text": "This code connects the Overpriced Cardboard app to an account. Scan it in the app, not with the phone’s camera.",
+    "step1": "Open the Overpriced Cardboard app.",
+    "step2": "In Settings › Account, tap “Have a QR code from the portal? Connect with it” and point the camera at the code on your computer screen.",
+    "noApp": "No app yet? Get it free on Google Play.",
     "toApp": "About the app"
   },
   "Portal": {
@@ -1170,12 +1175,12 @@
     "empty": "No cards here yet.",
     "expired": "This link has expired. Ask the person to send a new one.",
     "unknown": "This link doesn’t work (any more).",
-    "note": "Values from the Overpriced Cardboard Scanner’s data (Cardmarket and TCGplayer), guide values only."
+    "note": "Values from the Overpriced Cardboard app’s price data (Cardmarket and TCGplayer), guide values only."
   },
   "DeleteAccount": {
     "title": "Delete your account",
     "done": "Your account has been deleted. The app is signed out on all devices.",
-    "intro": "This page explains how to delete your Overpriced Cardboard account – the account you sign in with in the scanner app and the customer portal.",
+    "intro": "This page explains how to delete your Overpriced Cardboard account – the account you sign in with in the app and the customer portal.",
     "howTitle": "How to delete your account",
     "inApp": "In the app: with the “Delete account” button in the account section.",
     "online": "Here on the website: <link>log in</link> and delete the account on this page.",

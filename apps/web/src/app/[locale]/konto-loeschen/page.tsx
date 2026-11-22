@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { licenseSeller } from '@pokeshop/core/licenses';
+import { gmbhSeller } from '@pokeshop/core/app';
 import { getPathname, Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { db } from '@/server/config';
@@ -40,7 +40,7 @@ export default async function DeleteAccountPage({ params, searchParams }: Props)
   setRequestLocale(locale);
   const { e, done } = await searchParams;
   const t = await getTranslations('DeleteAccount');
-  const [account, seller] = await Promise.all([currentAccount(), licenseSeller(db())]);
+  const [account, seller] = await Promise.all([currentAccount(), gmbhSeller(db())]);
   const login = loginPath(locale, getPathname({ href: '/konto-loeschen', locale }));
   const mail = (
     <a href={`mailto:${seller.email}?subject=${encodeURIComponent(t('mailSubject'))}`}>

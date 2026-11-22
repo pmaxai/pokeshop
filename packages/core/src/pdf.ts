@@ -91,7 +91,6 @@ export type InvoiceData = {
   billing: {
     name: string;
     company?: string | undefined;
-    /** App licences are billed with name and country only. */
     street?: string | undefined;
     postcode?: string | undefined;
     city?: string | undefined;
@@ -374,7 +373,7 @@ const VOUCHER_TEXT = {
       'Im Warenkorb unter „Gutschein oder Rabattcode“ den Code eingeben.',
       'Der Betrag wird abgezogen. Was übrig bleibt, bleibt auf dem Gutschein und lässt sich später einlösen.',
     ],
-    fine: 'Der Gutschein gilt für Karten im Shop, nicht für App-Lizenzen. Er wird nicht bar ausbezahlt. Bitte den Code wie Bargeld aufbewahren: Wer ihn kennt, kann ihn einlösen.',
+    fine: 'Der Gutschein gilt für Karten im Shop, nicht für App-Abos. Er wird nicht bar ausbezahlt. Bitte den Code wie Bargeld aufbewahren: Wer ihn kennt, kann ihn einlösen.',
   },
   en: {
     title: 'Gift voucher',
@@ -389,7 +388,7 @@ const VOUCHER_TEXT = {
       'In the cart, enter the code under “Voucher or discount code”.',
       'The amount is deducted. Whatever is left stays on the voucher for later.',
     ],
-    fine: 'The voucher is valid for cards in the shop, not for app licences. It is not paid out in cash. Keep the code like cash: anyone who knows it can redeem it.',
+    fine: 'The voucher is valid for cards in the shop, not for app subscriptions. It is not paid out in cash. Keep the code like cash: anyone who knows it can redeem it.',
   },
 };
 

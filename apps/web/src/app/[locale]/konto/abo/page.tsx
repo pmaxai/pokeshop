@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { formatEuro } from '@pokeshop/core';
-import { licenseSeller } from '@pokeshop/core/licenses';
+import { gmbhSeller } from '@pokeshop/core/app';
 import {
   accountServices,
   deviceSubscriptionOf,
@@ -106,7 +106,7 @@ export default async function SubscriptionPage({ params, searchParams }: Props) 
     subscriptionOf(db(), account.id),
     accountServices(db(), account.id),
     subscriptionPrices(db()),
-    licenseSeller(db()),
+    gmbhSeller(db()),
     accountAddons(db(), account.id),
     storeProducts(db()),
   ]);

@@ -114,7 +114,6 @@ export async function createDiscountCodesAction(form: FormData) {
   const percent = Number(str(form, 'percent').replace(',', '.'));
   const count = Number(str(form, 'count') || 1);
   const maxUses = str(form, 'max_uses');
-  const maxLicenses = str(form, 'max_licenses');
   let created: { id: number; code: string }[] = [];
   try {
     created = await createDiscountCodes(
@@ -127,11 +126,7 @@ export async function createDiscountCodesAction(form: FormData) {
         kind,
         percentBp: kind === 'percent' && percent > 0 ? Math.round(percent * 100) : undefined,
         amountCents: kind === 'amount' ? (cents(str(form, 'amount')) ?? undefined) : undefined,
-        appliesTo:
-          (['cards', 'licenses', 'both'] as const).find((a) => a === str(form, 'applies_to')) ??
-          'cards',
         minGoodsCents: cents(str(form, 'min_goods')) ?? 0,
-        maxLicenses: maxLicenses ? Number(maxLicenses) : null,
         maxUses: maxUses ? Number(maxUses) : null,
         oncePerCustomer: str(form, 'once') === 'on',
         validFrom: day(str(form, 'valid_from'), false),

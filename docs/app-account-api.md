@@ -1,6 +1,7 @@
 # Account API for the scanner app
 
-The Overpriced Cardboard Scanner no longer uses licence keys. A customer has an **account** on
+The Overpriced Cardboard app no longer uses licence keys (the licence service is switched off since
+22 Nov 2026). A customer has an **account** on
 overpricedcardboard.com (login by e-mail link, no password) and a **subscription** sold by
 Antalyse GmbH, on the website or in the app stores. The app is connected to the account by
 **scanning a QR code** from the web portal, or — in the store editions, for buying in the app —

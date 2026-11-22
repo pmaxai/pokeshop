@@ -22,7 +22,6 @@ recorded in [docs/decisions.md](docs/decisions.md).
 ```
 apps/web          Next.js: storefront (DE/EN), admin (/admin), signed REST API (/api/v1)
 apps/worker       background jobs: images, card-data sync; CLI for API keys and sync
-apps/license      license service for the scanning app (own container and database)
 packages/core     shop rules shared by web and worker
   src/            money and VAT, shipping and insurance, checkout checks, SKU and boxes,
                   10-minute hold, API request signing, secret encryption, numbering
@@ -71,10 +70,11 @@ Packing, shipping, refunds and withdrawals: [docs/operations.md](docs/operations
 Manual, see [docs/deploy.md](docs/deploy.md). Microsoft 365 app registrations:
 [docs/m365-setup.md](docs/m365-setup.md).
 
-## Scanning-app licences
+## The app's accounts and subscriptions
 
-One-off licences, one active device at a time: [docs/license-service.md](docs/license-service.md)
-(API for the shop, administration, setup).
+The Overpriced Cardboard app (Google Play, the App Store soon) signs in to customer accounts and
+checks their subscriptions: [docs/app-account-api.md](docs/app-account-api.md). One-off app
+licences and their licence service were switched off on 22 Nov 2026.
 
 ## Scanning-app API
 

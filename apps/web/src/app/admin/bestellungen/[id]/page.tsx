@@ -2,8 +2,6 @@ import { notFound } from 'next/navigation';
 import { formatEuro, formatRate } from '@pokeshop/core';
 import { cardNameText, rowNames } from '@pokeshop/core/catalog';
 import { orderAdmin } from '@pokeshop/core/fulfilment';
-import { licenseClientFromEnv, type License } from '@pokeshop/core/license-client';
-import { APP_NAME } from '@pokeshop/core/licenses';
 import { db } from '@/server/config';
 import { requireAdmin } from '@/server/admin-auth';
 import { AdminShell } from '../../AdminShell';
@@ -14,7 +12,6 @@ import {
   renderDocumentAction,
   shipAction,
 } from '../../order-actions';
-import { refundLicenseAction, resendLicenseMailAction } from '../../app-actions';
 import { dateTime, EVENT_LABELS, MAIL_LABELS, SHIPPING_LABELS, STATUS_LABELS } from '../../labels';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +69,6 @@ export default async function OrderDetail({
     refunds,
     mails,
     withdrawals,
-    license,
     redemptions,
     giftVoucher,
   } = data;
@@ -85,12 +81,6 @@ export default async function OrderDetail({
     !isVoucher &&
     ['paid', 'packing', 'shipped', 'completed'].includes(o.status) &&
     user.role === 'owner';
-  // Live state of the keys (active device, revoked) from the licence service.
-  let keys: (License | null)[] = [];
-  const client = isLicense && license?.license_ids.length ? licenseClientFromEnv() : null;
-  if (client && license) {
-    keys = await Promise.all(license.license_ids.map((id) => client.get(id).catch(() => null)));
-  }
   const boxesOf = (itemId: number) =>
     allocations
       .filter((a) => a.order_item_id === itemId)
@@ -201,83 +191,13 @@ export default async function OrderDetail({
       )}
 
       <div className="two-col">
-        {isLicense && license ? (
+        {isLicense ? (
           <section>
-            <h2>Lizenzen ({APP_NAME})</h2>
-            <p>
-              {license.quantity} × {formatEuro(license.unit_price_cents)} · gesamt{' '}
-              {formatEuro(o.total_cents)} <span className="muted">({taxText})</span>
+            <h2>App-Lizenzen</h2>
+            <p className="muted">
+              Eine alte Bestellung von App-Lizenzen. Lizenzen werden nicht mehr verkauft; die
+              Schlüssel und der Lizenzdienst sind abgeschaltet.
             </p>
-            <p>
-              Verkäufer:{' '}
-              {gmbh ? (
-                <strong>GmbH (eigenes Stripe-Konto, Rechnung von Stripe)</strong>
-              ) : (
-                'Shop (ältere Bestellung)'
-              )}
-              {license.terms_version ? ` · Lizenzbedingungen v${license.terms_version}` : ''} ·
-              Sofortlieferung verlangt am {dateTime(license.immediate_delivery_consent_at)}
-            </p>
-            <p>
-              {license.issued_at ? (
-                <>Verschickt {dateTime(license.issued_at)}</>
-              ) : (
-                <span className="muted">
-                  Noch nicht verschickt (kommt direkt nach der Zahlung).
-                </span>
-              )}
-              {license.revoked_at && <> · gesperrt {dateTime(license.revoked_at)}</>}
-              {' · '}
-              {license.downloads} Download{license.downloads === 1 ? '' : 's'}
-              {license.last_download_at && <>, zuletzt {dateTime(license.last_download_at)}</>}
-            </p>
-            {license.license_ids.length > 0 && (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Lizenz</th>
-                      <th>Schlüssel</th>
-                      <th>Aktiv auf</th>
-                      <th>Geräte bisher</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {license.license_ids.map((id, i) => {
-                      const k = keys[i];
-                      return (
-                        <tr key={id}>
-                          <td>
-                            <code>{id}</code>
-                          </td>
-                          <td>
-                            {k ? <code>…{k.key.slice(-5)}</code> : <span className="muted">–</span>}
-                          </td>
-                          <td>
-                            {k?.revoked_at ? (
-                              <strong>gesperrt</strong>
-                            ) : k?.active_device ? (
-                              `${k.active_device.name ?? 'Gerät'} seit ${dateTime(k.active_device.since)}`
-                            ) : (
-                              <span className="muted">noch nicht aktiviert</span>
-                            )}
-                          </td>
-                          <td>{k?.activations ?? '–'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {license.issued_at && !license.revoked_at && (
-              <form action={resendLicenseMailAction} className="actions">
-                <input type="hidden" name="id" value={o.id} />
-                <button className="btn" type="submit">
-                  Lizenz-E-Mail erneut senden
-                </button>
-              </form>
-            )}
           </section>
         ) : (
           <section>
@@ -528,86 +448,11 @@ export default async function OrderDetail({
         </section>
       )}
 
-      {isLicense && user.role === 'owner' && ['paid', 'completed'].includes(o.status) && (
-        <section className="panel">
-          <h2>Erstatten</h2>
-          <form action={refundLicenseAction} className="stack-admin">
-            <input type="hidden" name="id" value={o.id} />
-            <p>
-              Erstattet den vollen Betrag ({formatEuro(o.total_cents - o.refunded_cents)}) über
-              Stripe{gmbh ? ' (Gutschrift der GmbH, Stripe bucht die USt. zurück)' : ''} und sperrt
-              die Lizenzschlüssel: Die App hört beim nächsten Online-Check auf.
-            </p>
-            <label className="field">
-              <span>Grund (intern)</span>
-              <input name="reason" maxLength={500} />
-            </label>
-            <label className="check">
-              <input type="checkbox" name="confirm" required /> Ich will erstatten und die Lizenz
-              sperren.
-            </label>
-            <p>
-              <button className="btn btn--accent" type="submit">
-                Erstatten und sperren
-              </button>
-            </p>
-          </form>
-        </section>
-      )}
-
       <div className="two-col">
         <section>
           <h2>Dokumente</h2>
-          {gmbh && license && (
-            <ul className="plain">
-              {license.invoice_number ? (
-                <li>
-                  Rechnung {license.invoice_number} (Stripe)
-                  {license.invoice_url && (
-                    <>
-                      {' · '}
-                      <a href={license.invoice_url} target="_blank" rel="noreferrer">
-                        ansehen
-                      </a>
-                    </>
-                  )}
-                  {license.invoice_pdf_url && (
-                    <>
-                      {' · '}
-                      <a href={license.invoice_pdf_url} target="_blank" rel="noreferrer">
-                        PDF
-                      </a>
-                    </>
-                  )}
-                </li>
-              ) : (
-                <li className="muted">
-                  Die Rechnung kommt von Stripe und wird mit der Lizenz verschickt.
-                </li>
-              )}
-              {refunds
-                .filter((r) => r.credit_note_number)
-                .map((r) => (
-                  <li key={r.id}>
-                    Gutschrift {r.credit_note_number} (Stripe)
-                    {r.credit_note_pdf_url && (
-                      <>
-                        {' · '}
-                        <a href={r.credit_note_pdf_url} target="_blank" rel="noreferrer">
-                          PDF
-                        </a>
-                      </>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          )}
           {gmbh ? null : documents.length === 0 ? (
-            <p className="muted">
-              {isLicense
-                ? 'Die Rechnung entsteht, sobald die Lizenz verschickt ist.'
-                : 'Die Rechnung entsteht beim Versenden.'}
-            </p>
+            <p className="muted">Die Rechnung entsteht beim Versenden.</p>
           ) : (
             <ul className="plain">
               {documents.map((d) => (

@@ -8,7 +8,6 @@ import { emptyCart, loadCart, saveCheckoutDraft, validOffer } from './cart.ts';
 import { cardNames, translationText } from './catalog.ts';
 import type { CheckoutProblem } from './checkout.ts';
 import { currentLegalVersions } from './legal.ts';
-import { licenseOrderPaid, licensePaymentLine, queueLicenseRevoke } from './licenses.ts';
 import { newOrderNumber } from './numbering.ts';
 import { alertShop, enqueueMail, enqueueShopMail } from './outbox.ts';
 import type { PaymentEvent, PaymentProvider, SessionInfo, SessionInput } from './payments.ts';
@@ -343,8 +342,6 @@ async function paymentLines(db: Db, orderId: number, locale: 'de' | 'en') {
       quantity: i.quantity,
     };
   });
-  const license = await licensePaymentLine(db, orderId, locale);
-  if (license) lines.push(license);
   const gift = await giftVoucherPaymentLine(db, orderId, locale);
   if (gift) lines.push(gift);
   if (o && o.shipping_cents > 0) {
@@ -438,6 +435,7 @@ const DONE = ['paid', 'packing', 'shipped', 'completed', 'refunded'];
 type OrderRow = {
   id: number;
   number: string;
+  /** 'license': app licences, no longer sold (old orders only) */
   kind: 'cards' | 'license' | 'voucher';
   seller: 'shop' | 'gmbh';
   status: string;
@@ -480,8 +478,11 @@ export async function processPaidSession(
           OR (${session.orderId}::bigint IS NOT NULL AND id = ${session.orderId}::bigint
               AND stripe_session_id IS NULL)
        FOR UPDATE`;
-    // Each seller's sessions come from its own Stripe account (and webhook).
-    if (!o || o.seller !== provider.seller) return { kind: 'unknown_order' as const };
+    // Each seller's sessions come from its own Stripe account (and webhook). App licences are
+    // no longer sold: an old licence checkout is not an order any more.
+    if (!o || o.seller !== provider.seller || o.kind === 'license') {
+      return { kind: 'unknown_order' as const };
+    }
     if (DONE.includes(o.status)) return { kind: 'already' as const, orderId: o.id };
     const [pending] =
       await tx`SELECT 1 FROM refunds WHERE order_id = ${o.id} AND status = 'pending'`;
@@ -515,16 +516,6 @@ export async function processPaidSession(
 
     if (o.kind === 'voucher') {
       await giftVoucherOrderPaid(tx, o, now);
-      await orderEvent(tx, o.id, 'paid', {
-        session: session.id,
-        method: session.paymentMethodType,
-      });
-      return { kind: 'paid' as const, orderId: o.id };
-    }
-
-    if (o.kind === 'license') {
-      // Nothing to take from stock: the worker fetches the keys and mails them.
-      await licenseOrderPaid(tx, o, session, now);
       await orderEvent(tx, o.id, 'paid', {
         session: session.id,
         method: session.paymentMethodType,
@@ -609,11 +600,6 @@ export async function completeWithoutPayment(
     }
     const method = o.voucher_cents > 0 ? 'voucher' : 'discount';
     await tx`UPDATE orders SET payment_method_type = ${method} WHERE id = ${o.id}`;
-    if (o.kind === 'license') {
-      await licenseOrderPaid(tx, o, null, now);
-      await orderEvent(tx, o.id, 'paid', { method });
-      return 'paid' as const;
-    }
     if (o.kind !== 'cards') return 'not_free' as const;
     return cardOrderPaid(tx, o, now, { session: null, method });
   });
@@ -812,16 +798,10 @@ export async function recordExternalRefund(
                     status = CASE WHEN refunded_cents + ${diff} >= total_cents THEN 'refunded' ELSE status END
               WHERE id = ${o.id}`;
     await orderEvent(tx, o.id, 'refunded_in_stripe', { amount: diff });
-    if (o.kind === 'license' && amountRefunded >= o.total_cents) {
-      // Refunded in full: the licence keys stop working.
-      await queueLicenseRevoke(tx, o.id, `refunded in Stripe (${eventId})`);
-    }
     await alertShop(
       tx,
       `Erstattung in Stripe: ${o.number}`,
-      o.kind === 'license'
-        ? `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet.${amountRefunded >= o.total_cents ? ' Die Lizenzschlüssel werden gesperrt.' : ' Teilerstattung: die Lizenzen bleiben aktiv.'}${o.seller === 'gmbh' ? ' Bitte im Stripe-Dashboard der GmbH eine Gutschrift zur Rechnung erstellen, falls das nicht schon mit der Erstattung geschehen ist.' : ' Eine Rechnungskorrektur bitte im Admin prüfen.'}`
-        : `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet. Bestand und Gutschrift bitte im Admin prüfen – der Shop hat keine Karten zurückgebucht.`,
+      `Im Stripe-Dashboard wurden ${(diff / 100).toFixed(2)} € erstattet. Bestand und Gutschrift bitte im Admin prüfen – der Shop hat keine Karten zurückgebucht.`,
       `stripe_refund:${eventId}`,
     );
     return 'recorded';

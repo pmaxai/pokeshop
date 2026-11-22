@@ -55,7 +55,7 @@ export async function currentLegalVersions(db: Db): Promise<Record<LegalKind, nu
 
 export type LegalContext = {
   company: Record<string, unknown>;
-  /** Antalyse GmbH, seller of the app licences (setting license_seller): {{seller.…}}. */
+  /** Antalyse GmbH, seller of the app subscriptions (setting license_seller): {{seller.…}}. */
   seller?: Record<string, unknown>;
   baseUrl: string;
   locale: LegalLocale;

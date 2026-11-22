@@ -28,7 +28,6 @@ export default async function OrderPage({ params, searchParams }: Props) {
   setRequestLocale(locale);
   let order = await orderByToken(db(), token);
   if (!order) notFound();
-  // App licences have their own page (download instead of shipping).
   const [kind] = await db()<{ kind: string }[]>`SELECT kind FROM orders WHERE id = ${order.id}`;
   // A bought gift voucher: its own page with the PDF.
   if (kind?.kind === 'voucher') {
@@ -38,13 +37,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
         (sid ? `?session_id=${encodeURIComponent(sid)}` : ''),
     );
   }
-  if (kind?.kind === 'license') {
-    const sid = (await searchParams).session_id;
-    redirect(
-      getPathname({ href: { pathname: '/app/lizenz/[token]', params: { token } }, locale }) +
-        (sid ? `?session_id=${encodeURIComponent(sid)}` : ''),
-    );
-  }
+  // App licences are no longer sold; their old orders have no page.
+  if (kind?.kind === 'license') notFound();
 
   // Back from Stripe before the webhook: ask Stripe directly instead of waiting.
   const sessionId = (await searchParams).session_id;

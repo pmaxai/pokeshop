@@ -56,9 +56,9 @@ You create a customer account with your e-mail address: we send you a login link
 
 The legal basis is the performance of the contract (Art. 6 (1) (b) GDPR), for protection against misuse our legitimate interest (Art. 6 (1) (f) GDPR). You can delete your account at any time under "Settings" ({{delete_account_url}}); we keep orders (point 3), but without the account.
 
-## 10. App subscription and portal (Overpriced Cardboard Scanner)
+## 10. App subscription and portal (Overpriced Cardboard)
 
-The subscription for the app Overpriced Cardboard Scanner with the web portal (collection, prices, missing cards, sharing, devices) is sold and provided by {{seller.name}}. It is the controller for the data of the subscription and the app; what it processes is set out in the app's privacy policy ({{app_privacy_url}}) and in the data protection section of its subscription terms ({{license_terms_url}}). We run the website, the customer account and the server for it and process the data on its behalf (Art. 28 GDPR).
+The subscription for the Overpriced Cardboard app with the web portal (collection, prices, missing cards, sharing, devices) is sold and provided by {{seller.name}}. It is the controller for the data of the subscription and the app; what it processes is set out in the app's privacy policy ({{app_privacy_url}}) and in the data protection section of its subscription terms ({{license_terms_url}}). We run the website, the customer account and the server for it and process the data on its behalf (Art. 28 GDPR).
 
 In addition, as the shop we see your list of missing cards so we can make you offers and tell you as soon as a matching card is in the shop, and we add cards you buy in the shop to your collection. This is part of the service you use with the subscription (Art. 6 (1) (b) GDPR).
 

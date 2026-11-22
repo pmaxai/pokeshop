@@ -91,21 +91,6 @@ export function tcgdexClient(): TcgdexClient {
 
 export const db = getSql;
 
-/** App licences can be sold only when the shop can reach the licence service. */
-export function licenseServiceConfigured(): boolean {
-  return Boolean(process.env.LICENSE_SERVICE_URL?.trim() && process.env.LICENSE_SHOP_TOKEN?.trim());
-}
-
-/**
- * Licences are on sale when the licence service is reachable and the GmbH's Stripe account
- * is set up (STRIPE_LICENSE_SECRET_KEY; the stand-in on localhost).
- */
-export function licenseSalesConfigured(): boolean {
-  if (!licenseServiceConfigured()) return false;
-  if (process.env.STRIPE_LICENSE_SECRET_KEY?.trim()) return true;
-  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(config.baseUrl);
-}
-
 /** Admin settings with sensible defaults. */
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const [row] = await db()<{ value: T }[]>`SELECT value FROM settings WHERE key = ${key}`;

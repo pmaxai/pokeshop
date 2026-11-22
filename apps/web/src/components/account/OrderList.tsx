@@ -32,11 +32,7 @@ export async function OrderList({ orders, locale }: { orders: AccountOrder[]; lo
             >
               <span className="order-list__number num">{o.number}</span>
               <span className="order-list__what">
-                {o.kind === 'cards'
-                  ? t('orders.cards', { count: o.items })
-                  : o.kind === 'voucher'
-                    ? t('orders.voucher')
-                    : t('orders.license')}
+                {o.kind === 'cards' ? t('orders.cards', { count: o.items }) : t('orders.voucher')}
               </span>
               <span className="order-list__date muted">{date.format(o.createdAt)}</span>
               <span className={`order-list__status order-list__status--${o.status}`}>

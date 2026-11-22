@@ -1,8 +1,8 @@
-# Privacy Policy of the Overpriced Cardboard Scanner App
+# Privacy Policy of the Overpriced Cardboard App
 
 As of November 2026. This is a translation for your convenience; only the German version is legally binding.
 
-This privacy policy covers the Overpriced Cardboard Scanner app (Android, from Google Play or from {{app_url}}, and iPhone, from the App Store) and the account you sign in with in the app and in the web portal. For orders in the card shop, the shop's privacy policy applies ({{privacy_url}}).
+This privacy policy covers the Overpriced Cardboard app (Android, from Google Play, and iPhone, from the App Store) and the account you sign in with in the app and in the web portal. For orders in the card shop, the shop's privacy policy applies ({{privacy_url}}).
 
 ## 1. Controller
 
@@ -70,7 +70,7 @@ You can delete your account at any time: in the app, in the web portal or by e-m
 - Deleted at once: your collection, your missing cards, your shares, your sign-ins (including with Google and Apple; we also revoke a sign-in with Apple at Apple), the S3 credentials, your name and your address; the e-mail address is removed from the account and the app is signed out on all devices. What is left of the account is deleted after 30 days, once no subscription is running any more and nothing remains to be billed.
 - After deleting, a running subscription from the website or from Google Play no longer renews and ends with the paid period. Only you can cancel a subscription from the App Store, in the App Store; deleting does not end it.
 - We keep invoices and accounting records for seven years (§ 132 BAO). Google's and Apple's details of purchases in Google Play and the App Store and the creator-code details are kept just as long, without your e-mail address, for the accounts with Google, Apple and the creators.
-- While your account exists, we keep the data above unless you delete it yourself. When a subscription ends, the account and collection stay; only the app's features are locked.
+- While your account exists, we keep the data above unless you delete it yourself. When a subscription ends, the account and collection stay; the app then runs as the free version.
 
 ## 11. Your rights
 

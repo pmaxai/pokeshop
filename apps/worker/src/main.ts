@@ -46,12 +46,6 @@ import {
   type MailContext,
 } from '@pokeshop/core/mail';
 import { expireHolds, runPendingRefunds } from '@pokeshop/core/orders';
-import { licenseClientFromEnv } from '@pokeshop/core/license-client';
-import {
-  issueOrderLicenses,
-  resendLicensesByEmail,
-  revokeOrderLicenses,
-} from '@pokeshop/core/licenses';
 import { paymentsFromEnv } from '@pokeshop/core/payments';
 import { importPack, packFetch } from '@pokeshop/core/pricepack';
 import { mirrorAppPack } from '@pokeshop/core/app-pack';
@@ -71,7 +65,7 @@ const mediaDir = process.env.MEDIA_DIR ?? './.media';
 const baseUrl = (process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const sql = createSql(process.env.DATABASE_URL, { max: 4, applicationName: 'pokeshop-worker' });
 const tcgdex = httpTcgdexClient();
-// Two Stripe accounts: the shop's (cards) and Antalyse GmbH's (app licences).
+// Two Stripe accounts: the shop's (cards) and Antalyse GmbH's (the app's subscriptions).
 const payments = paymentsFromEnv(process.env, 'shop');
 const gmbhPayments = paymentsFromEnv(process.env, 'gmbh');
 // Stripe Billing of the GmbH: usage of S3 and the pipeline goes to its meters. The local
@@ -94,7 +88,6 @@ const masterKey = (() => {
   }
 })();
 const mailer = mailTransportFromEnv();
-const licenses = licenseClientFromEnv();
 let stopping = false;
 
 /** Heartbeat for the Docker health check; long jobs call it as they make progress. */
@@ -119,38 +112,6 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
     const lang = Object.values(TCGDEX_LOCAL_LANGS).find((l) => l === job.payload.lang);
     if (lang) await syncLocalName(sql, tcgdex, String(job.payload.card_ref), lang);
   },
-  // App licences: keys from the licence service after payment, e-mail with invoice.
-  'license.issue': async (job) => {
-    if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
-    const r = await issueOrderLicenses(
-      sql,
-      licenses,
-      Number(job.payload.order_id),
-      new Date(),
-      gmbhPayments,
-    );
-    console.log(`[licence] order ${String(job.payload.order_id)}: ${r}`);
-  },
-  'license.revoke': async (job) => {
-    if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
-    const n = await revokeOrderLicenses(
-      sql,
-      licenses,
-      Number(job.payload.order_id),
-      String(job.payload.reason ?? 'refund'),
-    );
-    console.log(`[licence] order ${String(job.payload.order_id)}: revoked ${n}`);
-  },
-  // "Licence e-mail lost?" on the app page.
-  'license.resend': async (job) => {
-    if (!licenses) throw new Error('LICENSE_SERVICE_URL / LICENSE_SHOP_TOKEN not set');
-    await resendLicensesByEmail(
-      sql,
-      licenses,
-      String(job.payload.email),
-      job.payload.locale === 'de' ? 'de' : 'en',
-    );
-  },
   // The app's nightly data pack: cards and prices for the customer portal.
   'pricepack.import': async (job) => {
     const r = await importPack(sql, {
@@ -170,9 +131,6 @@ const handlers: Record<string, (job: Job) => Promise<void>> = {
     await documentPdf(sql, Number(job.payload.document_id), await mailContext());
   },
 };
-
-/** Customer-facing jobs (licence keys right after payment) also run in the fast shop loop. */
-const SHOP_JOBS = ['license.issue', 'license.revoke', 'license.resend'];
 
 async function runJobs(kinds?: readonly string[]) {
   for (let i = 0; i < 10 && !stopping; i++) {
@@ -206,15 +164,13 @@ async function mailContext(): Promise<MailContext> {
     mediaDir,
     company: (get('company') ?? {}) as MailContext['company'],
     replyTo: String(get('shop_mailbox') ?? 'order@overpricedcardboard.com'),
-    licenses,
-    licenseSeller: (get('license_seller') ?? null) as MailContext['licenseSeller'],
+    gmbh: (get('license_seller') ?? null) as MailContext['gmbh'],
     gmbhPayments,
   };
 }
 
 /** Holds, refunds and mails: own loop every 5 s, so a long card sync never delays them. */
 async function runShop() {
-  await runJobs(SHOP_JOBS);
   for (const p of [payments, gmbhPayments]) {
     if (!p) continue;
     const n = await expireHolds(sql, p);

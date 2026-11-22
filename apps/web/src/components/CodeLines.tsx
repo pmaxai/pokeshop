@@ -68,12 +68,10 @@ const PROBLEMS = [
   'used_up',
   'already_used',
   'not_for_cards',
-  'not_for_licenses',
   'min_goods',
   'empty',
   'blocked',
   'too_many',
-  'voucher_for_licenses',
 ] as const;
 
 /** Why a code does nothing, in the visitor's words. */

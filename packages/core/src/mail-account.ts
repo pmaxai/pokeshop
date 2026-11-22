@@ -2,7 +2,7 @@
 // sends (its name, sender and details; the invoice from its Stripe account is attached).
 import type { Db } from './db.ts';
 import { localePath } from './locale-paths.ts';
-import { APP_NAME } from './licenses.ts';
+import { APP_NAME } from './app.ts';
 import { formatEuro } from './money.ts';
 import { cardNames, cardNameText, FINISHES } from './catalog.ts';
 import {
@@ -33,7 +33,7 @@ const TEXT = {
       'Du hast das nicht angefordert? Dann ignoriere diese E-Mail. Ohne Klick auf den Link passiert nichts.',
     hello: 'Hallo,',
     codeSubject: (code: string) => `${code} ist dein Code für Overpriced Cardboard`,
-    codeIntro: 'gib diesen Code in der App Overpriced Cardboard Scanner ein, um dich anzumelden:',
+    codeIntro: 'gib diesen Code in der App Overpriced Cardboard ein, um dich anzumelden:',
     codeValid: (m: number) => `Der Code gilt ${m} Minuten und nur ein Mal.`,
     codeIgnore:
       'Du hast das nicht angefordert? Dann ignoriere diese E-Mail. Ohne den Code kann sich niemand anmelden.',
@@ -45,8 +45,8 @@ const TEXT = {
       again
         ? 'mit diesem Link bestätigst du deine E-Mail-Adresse und meldest dich im Kundenkonto an.'
         : verified
-          ? 'du hast in der App Overpriced Cardboard Scanner ein Konto mit dieser E-Mail-Adresse angelegt. Mit dem Button meldest du dich im Kundenkonto auf overpricedcardboard.com an, wo du deine Sammlung, deine Geräte und dein Abo siehst.'
-          : 'du hast in der App Overpriced Cardboard Scanner ein Konto mit dieser E-Mail-Adresse angelegt. Bitte bestätige die Adresse mit dem Button. Damit meldest du dich auch im Kundenkonto auf overpricedcardboard.com an, wo du deine Sammlung, deine Geräte und dein Abo siehst.',
+          ? 'du hast in der App Overpriced Cardboard ein Konto mit dieser E-Mail-Adresse angelegt. Mit dem Button meldest du dich im Kundenkonto auf overpricedcardboard.com an, wo du deine Sammlung, deine Geräte und dein Abo siehst.'
+          : 'du hast in der App Overpriced Cardboard ein Konto mit dieser E-Mail-Adresse angelegt. Bitte bestätige die Adresse mit dem Button. Damit meldest du dich auch im Kundenkonto auf overpricedcardboard.com an, wo du deine Sammlung, deine Geräte und dein Abo siehst.',
     verifyButton: (verified: boolean) =>
       verified ? 'Zum Kundenkonto' : 'E-Mail-Adresse bestätigen',
     verifyValid: (d: number) =>
@@ -57,7 +57,7 @@ const TEXT = {
         : 'Du hast kein Konto angelegt? Dann ignoriere diese E-Mail. Ein unbestätigtes Konto ohne Abo löschen wir nach 30 Tagen.',
     plan: { collector: 'Collector', creator: 'Creator' } as Record<string, string>,
     devices: (n: number) => (n === 1 ? '1 Gerät' : `${n} Geräte`),
-    welcomeSubject: `Dein Abo für den ${APP_NAME}`,
+    welcomeSubject: `Dein Abo für die App ${APP_NAME}`,
     welcomeIntro: (plan: string, devices: string) =>
       `danke für dein Abo! Du hast jetzt <strong>${plan}</strong> für ${devices}. Die Rechnung hängt an dieser E-Mail.`,
     nextTitle: 'So geht es weiter',
@@ -68,7 +68,7 @@ const TEXT = {
     nextPortal:
       'Im Konto findest du auch deine Sammlung mit aktuellen Preisen und deine fehlenden Karten.',
     toDevices: 'Gerät verbinden',
-    invoiceSubject: (n: string) => `Deine Rechnung ${n} für den ${APP_NAME}`,
+    invoiceSubject: (n: string) => `Deine Rechnung ${n} für die App ${APP_NAME}`,
     invoiceIntro: (total: string) =>
       `hier ist deine Rechnung über ${total} für dein Abo. Sie hängt als PDF an dieser E-Mail.`,
     toAccount: 'Zum Konto',
@@ -80,7 +80,7 @@ const TEXT = {
     failedHow: 'Unter „Abo“ in deinem Konto führt „Zahlungsart und Rechnungen“ zu Stripe.',
     endedSubject: 'Dein Abo ist beendet',
     endedIntro:
-      'dein Abo für den Overpriced Cardboard Scanner ist beendet. Die App ist gesperrt, deine Sammlung bleibt gespeichert.',
+      'dein Abo für die App Overpriced Cardboard ist beendet. Die App läuft jetzt als Gratis-Version, deine Sammlung bleibt gespeichert.',
     endedAgain: 'Du kannst jederzeit wieder ein Abo abschließen; deine Geräte bleiben verbunden.',
     toSubscription: 'Abo abschließen',
     devicesEndedSubject: 'Deine zusätzlichen Geräte sind beendet',
@@ -152,7 +152,7 @@ const TEXT = {
       'You did not ask for this? Then ignore this e-mail. Nothing happens unless the link is opened.',
     hello: 'Hello,',
     codeSubject: (code: string) => `${code} is your Overpriced Cardboard code`,
-    codeIntro: 'enter this code in the Overpriced Cardboard Scanner app to sign in:',
+    codeIntro: 'enter this code in the Overpriced Cardboard app to sign in:',
     codeValid: (m: number) => `The code works for ${m} minutes and only once.`,
     codeIgnore:
       'You did not ask for this? Then ignore this e-mail. Nobody can sign in without the code.',
@@ -162,8 +162,8 @@ const TEXT = {
       again
         ? 'use this link to confirm your e-mail address and log in to your account.'
         : verified
-          ? 'you created an account with this e-mail address in the Overpriced Cardboard Scanner app. The button logs you in to your account on overpricedcardboard.com, where you see your collection, your devices and your subscription.'
-          : 'you created an account with this e-mail address in the Overpriced Cardboard Scanner app. Please confirm the address with the button. It also logs you in to your account on overpricedcardboard.com, where you see your collection, your devices and your subscription.',
+          ? 'you created an account with this e-mail address in the Overpriced Cardboard app. The button logs you in to your account on overpricedcardboard.com, where you see your collection, your devices and your subscription.'
+          : 'you created an account with this e-mail address in the Overpriced Cardboard app. Please confirm the address with the button. It also logs you in to your account on overpricedcardboard.com, where you see your collection, your devices and your subscription.',
     verifyButton: (verified: boolean) =>
       verified ? 'Open your account' : 'Confirm e-mail address',
     verifyValid: (d: number) =>
@@ -184,7 +184,7 @@ const TEXT = {
       'In your account, open “Devices” → “Connect a device” and scan the QR code with the app. No password needed.',
     nextPortal: 'Your account also has your collection with current prices and your missing cards.',
     toDevices: 'Connect a device',
-    invoiceSubject: (n: string) => `Your invoice ${n} for the ${APP_NAME}`,
+    invoiceSubject: (n: string) => `Your invoice ${n} for the ${APP_NAME} app`,
     invoiceIntro: (total: string) =>
       `here is your invoice for ${total} for your subscription. It is attached as a PDF.`,
     toAccount: 'Open your account',
@@ -197,7 +197,7 @@ const TEXT = {
       'In your account, “Subscription” → “Payment method and invoices” takes you to Stripe.',
     endedSubject: 'Your subscription has ended',
     endedIntro:
-      'your Overpriced Cardboard Scanner subscription has ended. The app is locked; your collection stays saved.',
+      'your Overpriced Cardboard subscription has ended. The app now runs as the free version; your collection stays saved.',
     endedAgain: 'You can subscribe again any time; your devices stay connected.',
     toSubscription: 'Subscribe',
     devicesEndedSubject: 'Your extra devices have ended',

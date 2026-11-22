@@ -33,17 +33,7 @@ import {
   voucherLedger,
   voucherTotals,
 } from '../../src/vouchers.ts';
-import {
-  checkLicenseBuyer,
-  createLicenseOrder,
-  issueOrderLicenses,
-  licenseSeller,
-  startLicensePayment,
-  validateLicenseCheckout,
-  LicenseCheckoutRejected,
-} from '../../src/licenses.ts';
-import { memoryLicenseClient } from '../../src/license-client.ts';
-import { fakeVies } from '../../src/tax-id.ts';
+import { gmbhSeller } from '../../src/app.ts';
 import { documentData, sendDueMails, type Mail, type MailTransport } from '../../src/mail.ts';
 
 let sql: Sql;
@@ -51,7 +41,6 @@ let drop: () => Promise<void>;
 let mediaDir: string;
 const shop = fakeProvider('http://localhost:3000');
 const gmbh = fakeProvider('http://localhost:3000', 'gmbh');
-const licenses = memoryLicenseClient();
 let seller: Record<string, string>;
 
 class MemoryTransport implements MailTransport {
@@ -72,8 +61,7 @@ const mailCtx = () => ({
     city: 'Moosbrunn',
     country: 'AT',
   },
-  licenses,
-  licenseSeller: seller,
+  gmbh: seller,
   gmbhPayments: gmbh,
 });
 
@@ -158,7 +146,7 @@ before(async () => {
   ({ sql, drop } = await freshDatabase());
   await syncLegalTexts(sql);
   mediaDir = await mkdtemp(join(tmpdir(), 'pokeshop-media-'));
-  seller = (await licenseSeller(sql)) as unknown as Record<string, string>;
+  seller = (await gmbhSeller(sql)) as unknown as Record<string, string>;
   // Shipping that costs something, so vouchers can be seen paying it.
   await sql`UPDATE countries SET standard_shipping_cents = 250 WHERE code = 'AT'`;
 });
@@ -213,17 +201,14 @@ test('cart: code + promotional voucher + bought voucher, in that order', async (
       code: 'Christmas',
       kind: 'percent',
       percentBp: 2000,
-      appliesTo: 'both',
       oncePerCustomer: true,
       minGoodsCents: 1000,
     },
     'owner@example.com',
   );
-  await createDiscountCodes(
-    sql,
-    { code: 'APPONLY', kind: 'percent', percentBp: 5000, appliesTo: 'licenses' },
-    'owner',
-  );
+  // A code from the time app licences were sold: it never takes anything off cards.
+  await sql`INSERT INTO discount_codes (code, kind, percent_bp, applies_to, created_by)
+            VALUES ('APPONLY', 'percent', 5000, 'licenses', 'owner')`;
   const [promo] = await createPromoVouchers(
     sql,
     { valueCents: 500, count: 1, expiresAt: null, note: 'für Brock' },
@@ -400,7 +385,6 @@ test('an order that is not paid gives code and vouchers back; Stripe minimum', a
       code: 'ONCE',
       kind: 'amount',
       amountCents: 500,
-      appliesTo: 'cards',
       maxUses: 1,
       oncePerCustomer: false,
     },
@@ -477,123 +461,6 @@ test('a bought voucher taken back: refund of what is left', async () => {
     /schon storniert/,
   );
 });
-
-test('licences: a 20 % campaign through Stripe, a free licence for a friend without', async () => {
-  await addReleaseOnce();
-  await createDiscountCodes(
-    sql,
-    { code: 'APP20', kind: 'percent', percentBp: 2000, appliesTo: 'licenses' },
-    'owner',
-  );
-  await createDiscountCodes(
-    sql,
-    {
-      count: 2,
-      prefix: 'FREUND',
-      campaign: 'Freunde 2026',
-      kind: 'percent',
-      percentBp: 10_000,
-      appliesTo: 'licenses',
-      maxLicenses: 1,
-    },
-    'owner',
-  );
-  const [friend] = await sql<
-    { code: string }[]
-  >`SELECT code FROM discount_codes WHERE campaign = 'Freunde 2026' ORDER BY id LIMIT 1`;
-  assert.match(friend!.code, /^FREUND-[A-Z0-9]{6}$/);
-
-  const buy = async (over: Record<string, unknown>) => {
-    const v = validateLicenseCheckout({
-      buyer: 'consumer',
-      name: 'Misty',
-      email: 'misty@example.com',
-      street: 'Arenaweg 2',
-      postcode: '1010',
-      city: 'Wien',
-      country: 'AT',
-      quantity: '1',
-      acceptTerms: true,
-      immediateDelivery: true,
-      ...over,
-    });
-    assert.ok(v.ok, JSON.stringify(!v.ok && v.errors));
-    const c = await checkLicenseBuyer(sql, v.data, { grossCents: 13900, vies: fakeVies });
-    assert.ok(c.ok);
-    const o = await createLicenseOrder(sql, { locale: 'de', details: v.data, buyer: c.buyer });
-    return { o, v, c };
-  };
-  // 20 % off two licences, through the GmbH's Stripe with a coupon.
-  const { o, v, c } = await buy({ code: 'app20', quantity: '2' });
-  assert.equal(o.totalCents, 27800 - 5560);
-  await startLicensePayment(sql, gmbh, o, {
-    details: v.data,
-    buyer: c.buyer,
-    locale: 'de',
-    successUrl: 'x',
-    cancelUrl: 'y',
-  });
-  const [row] = await sql<
-    { stripe_session_id: string }[]
-  >`SELECT stripe_session_id FROM orders WHERE id = ${o.id}`;
-  const s = gmbh.sessions.get(row!.stripe_session_id)!;
-  assert.equal(s.input.discount!.amount, 5560);
-  assert.equal(s.amountTotal, 22240);
-  assert.equal(s.amountTax, 22240 - Math.round(22240 / 1.2), 'Stripe Tax on the reduced price');
-  assert.equal(await handlePaymentEvent(sql, gmbh, gmbh.pay(row!.stripe_session_id)), 'paid');
-  const [paid] = await sql<{ goods_cents: number; discount_cents: number; total_cents: number }[]>`
-    SELECT goods_cents, discount_cents, total_cents FROM orders WHERE id = ${o.id}`;
-  assert.deepEqual(paid, { goods_cents: 27800, discount_cents: 5560, total_cents: 22240 });
-
-  // Cards-only codes and vouchers do not work for licences.
-  await assert.rejects(
-    buy({ code: 'ONCE' }),
-    (e) => e instanceof LicenseCheckoutRejected && e.problem === 'not_for_licenses',
-  );
-  await assert.rejects(
-    buy({ code: sold.code }),
-    (e) => e instanceof LicenseCheckoutRejected && e.problem === 'voucher_for_licenses',
-  );
-
-  // A friend's code: one licence free, the second at full price.
-  const two = await buy({ code: friend!.code, quantity: '2', email: 'brock@example.com' });
-  assert.equal(two.o.totalCents, 13900);
-  await assert.rejects(
-    buy({ code: friend!.code, email: 'other@example.com' }),
-    (e) => e instanceof LicenseCheckoutRejected && e.problem === 'used_up',
-  );
-  const [second] = await sql<
-    { code: string }[]
-  >`SELECT code FROM discount_codes WHERE campaign = 'Freunde 2026' ORDER BY id DESC LIMIT 1`;
-  const free = await buy({ code: second!.code, email: 'tracey@example.com' });
-  assert.equal(free.o.totalCents, 0);
-  assert.equal(await completeWithoutPayment(sql, free.o.id), 'paid');
-  assert.equal(
-    await issueOrderLicenses(sql, licenses, free.o.id, new Date(), null),
-    'issued',
-    'no Stripe needed',
-  );
-  const [fo] = await sql<
-    { invoice_number: string | null }[]
-  >`SELECT invoice_number FROM order_licenses WHERE order_id = ${free.o.id}`;
-  assert.equal(fo!.invoice_number, null, 'free: no invoice');
-  const t = new MemoryTransport();
-  await sendDueMails(sql, t, mailCtx(), 30);
-  const m = t.sent.find((x) => x.to === 'tracey@example.com')!;
-  assert.match(m.html, /Die Lizenz ist ein Geschenk/);
-  assert.deepEqual(
-    m.attachments.filter((a) => !a.contentId).map((a) => a.name),
-    ['Lizenzbedingungen.pdf'],
-  );
-});
-
-let released = false;
-async function addReleaseOnce() {
-  if (released) return;
-  released = true;
-  await sql`INSERT INTO app_releases (version, storage_key, size_bytes, sha256, uploaded_by)
-            VALUES ('1.0.0', 'app/x.apk', 1000, ${'a'.repeat(64)}, 'owner')`;
-}
 
 test('sold out after payment: vouchers back, the card part refunded', async () => {
   const f = await product('F1', 1000, 1);
