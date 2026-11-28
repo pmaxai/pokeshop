@@ -19,7 +19,7 @@ import {
   listCategories,
   updateCategory,
 } from '../../src/categories.ts';
-import { listCatalog, productBySlug, setsForSale } from '../../src/storefront.ts';
+import { heroCards, listCatalog, productBySlug, setsForSale } from '../../src/storefront.ts';
 import type { TcgdexClient } from '../../src/tcgdex.ts';
 
 let sql: Sql;
@@ -299,4 +299,22 @@ test('categories: create, label through the API fields, filter the shop', async 
   );
   await deleteCategory(sql, cuteId);
   assert.deepEqual((await getProduct(sql, skus.pika!))!.categories, ['suesse-karten']);
+});
+
+test('the hero shows the three dearest cards in stock with a picture, the dearest in the middle', async () => {
+  assert.deepEqual(
+    (await heroCards(sql, 'de')).map((t) => t.sku),
+    [skus.deEX, skus.enNM, skus.pika],
+    'Charizard EN (€ 150) in the middle, Glurak DE (up to € 129) left, Pikachu right',
+  );
+  // A card without any picture doesn't count; with only two left there is no fan.
+  await sql`UPDATE card_master SET image_url = NULL, image_url_de = NULL
+             WHERE card_ref = 'sv03.5-025'`;
+  try {
+    assert.deepEqual(await heroCards(sql, 'de'), []);
+  } finally {
+    await sql`UPDATE card_master SET image_url = 'https://assets.tcgdex.net/en/sv/sv03.5/025',
+                                     image_url_de = 'https://assets.tcgdex.net/de/sv/sv03.5/025'
+               WHERE card_ref = 'sv03.5-025'`;
+  }
 });

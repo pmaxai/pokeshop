@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { newestCards, setsForSale, listCatalog } from '@pokeshop/core/storefront';
+import { heroCards, newestCards, setsForSale, listCatalog } from '@pokeshop/core/storefront';
 import { Link, getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { config, db } from '@/server/config';
@@ -14,7 +14,7 @@ import { pageAlternates, siteJsonLd } from '@/server/seo';
 
 export const dynamic = 'force-dynamic';
 
-/** Cards under "Neu eingetroffen"; the hero fan picks from a few more. */
+/** Cards under "Neu eingetroffen". */
 const NEWEST_SHOWN = 4;
 
 export async function generateMetadata({
@@ -34,16 +34,13 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
   const t = await getTranslations('Home');
   const tl = await getTranslations('Languages');
   const ts = await getTranslations('Sets');
-  const [cards, sets, all] = await Promise.all([
-    newestCards(db(), locale, 12),
+  const [cards, fan, sets, all] = await Promise.all([
+    newestCards(db(), locale, NEWEST_SHOWN),
+    // the fan: the three most expensive cards in the shop
+    heroCards(db(), locale),
     setsForSale(db(), locale),
     listCatalog(db(), { pageSize: 1 }, locale),
   ]);
-  // The fan: the three most valuable of the recent cards that have a picture.
-  const fan = [...cards]
-    .filter((c) => c.image.kind !== 'none')
-    .sort((a, b) => b.priceCents - a.priceCents)
-    .slice(0, 3);
 
   const [countries, company] = await Promise.all([deliveryCountries(db()), getCompany()]);
   return (

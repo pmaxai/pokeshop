@@ -401,6 +401,16 @@ export async function newestCards(db: Db, locale: Locale, limit = 12): Promise<C
   return (await listCatalog(db, { sort: 'newest', pageSize: limit }, locale)).items;
 }
 
+/**
+ * The hero on the home page: the three most expensive cards in stock that have a picture, the
+ * dearest in the middle, where the fan puts it on top. Empty when fewer than three have one.
+ */
+export async function heroCards(db: Db, locale: Locale): Promise<CatalogTile[]> {
+  const { items } = await listCatalog(db, { sort: 'price_desc', pageSize: 24 }, locale);
+  const [first, second, third] = items.filter((c) => c.image.kind !== 'none');
+  return first && second && third ? [second, first, third] : [];
+}
+
 export type ProductPage = CatalogTile & {
   slugDe: string;
   slugEn: string;
