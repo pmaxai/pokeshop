@@ -402,7 +402,7 @@
   },
   "App": {
     "metaTitle": "Overpriced Cardboard: die App – Pokémon-Karten scannen, Preise sehen",
-    "metaDescription": "Die App von Overpriced Cardboard: Karte scannen und die Preise der richtigen Version sehen, auch ohne Empfang. Gratis bei Google Play, Abo ab {price} im Monat. Fürs iPhone bald im App Store.",
+    "metaDescription": "Die App von Overpriced Cardboard: Karte scannen und die Preise der richtigen Version sehen, auch ohne Empfang. Gratis bei Google Play und im App Store, Abo ab {price} im Monat.",
     "platforms": "Android-App, fürs iPhone bald",
     "platformsBoth": "Für Android und iPhone",
     "title": "Karte scannen, Preis sehen. Auch ohne Empfang.",
@@ -428,7 +428,7 @@
         "alt": "In den Warenkorb: Zustand EX, Marktwert 266,71 €, der Händler will 30 €, Urteil „Great deal“."
       },
       "free": {
-        "caption": "Gratis: 10 Preise pro Stunde",
+        "caption": "Gratis: Preise aufdecken",
         "alt": "Gratis-Version: erkannte Karte mit dem Knopf „Reveal the price“, noch 7 von 10 in dieser Stunde."
       }
     },
@@ -475,13 +475,13 @@
       }
     },
     "plansTitle": "Gratis oder mit Abo",
-    "plansIntro": "Die App lädst du gratis. Ein Abo schließt du in der App über Google Play ab, monatlich oder jährlich, oder hier auf der Website, monatlich. Kündbar zum Ende des bezahlten Zeitraums; Preise inkl. USt.",
+    "plansIntro": "Die App lädst du gratis. Ein Abo schließt du in der App über Google Play oder den App Store ab, monatlich oder jährlich, oder hier auf der Website, monatlich. Kündbar zum Ende des bezahlten Zeitraums; Preise inkl. USt.",
     "free": {
       "name": "Gratis",
       "price": "€ 0",
       "points": [
         "Scanner: Karten erkennen",
-        "Preise für 10 Karten pro Stunde",
+        "Preise für eine begrenzte Zahl von Karten",
         "Sammlung auf dem Handy, bis 50 Karten",
         "Ohne Konto"
       ]
@@ -493,7 +493,7 @@
       "install": "Lade die App gratis bei Google Play. Fürs iPhone kommt sie bald in den App Store.",
       "installBoth": "Lade die App gratis bei Google Play oder im App Store.",
       "free": "Scanne gleich los: Die Gratis-Version braucht kein Konto.",
-      "subscribe": "Für alles andere meldest du dich in der App an, mit Google oder einem Code per E-Mail, und wählst ein Abo. Schon ein Abo von der Website? Dann meldest du dich mit derselben E-Mail-Adresse an."
+      "subscribe": "Für alles andere meldest du dich in der App an, mit Google (Android), Apple (iPhone) oder einem Code per E-Mail, und wählst ein Abo. Schon ein Abo von der Website? Dann meldest du dich mit derselben E-Mail-Adresse an."
     },
     "notesTitle": "Gut zu wissen",
     "notes": {
@@ -504,7 +504,7 @@
     },
     "needsTitle": "Was du brauchst",
     "needs": {
-      "android": "Ein Android-Handy mit Android 8 oder neuer und Kamera",
+      "android": "Ein Android-Handy ab Android 8 oder ein iPhone ab iOS 17, jeweils mit Kamera",
       "space": "Platz für die App und ihre Kartendatenbank",
       "internet": "Internet zum Anmelden, für Kartenbilder und die neuen Preise; mit Abo läuft die App bis zu 35 Tage offline"
     },
@@ -932,14 +932,14 @@
     "toSubscription": "Zu den Abos",
     "playStore": "Bei Google Play laden",
     "connectTitle": "Gerät verbinden",
-    "connectText": "{free} von {seats} Geräten frei. Zeig hier einen QR-Code an und scanne ihn mit der App.",
+    "connectText": "{free} von {seats} Geräten frei. Zeig hier einen Code an und verbinde die App damit.",
     "connect": "QR-Code anzeigen",
     "full": "Alle {seats} Geräte deines Abos sind belegt.",
     "addDevice": "Gerät dazubuchen",
     "qrLabel": "QR-Code zum Verbinden der App",
     "step1": "Öffne die App Overpriced Cardboard auf dem Handy.",
-    "step2": "Tippe unter Settings › Account auf „Have a QR code from the portal? Connect with it“.",
-    "step3": "Halte die Kamera auf diesen Code. Die App ist sofort verbunden.",
+    "step2": "Tippe unter Settings › Account auf „Have a QR code from the portal?“ (Android) oder „Have a code from your account?“ (iPhone).",
+    "step3": "Android: Halte die Kamera auf diesen Code. iPhone: Tippe den Code darunter ein. Die App ist sofort verbunden.",
     "typed": "Oder tippe den Code ein:",
     "validUntil": "Der Code gilt einmal, bis {time} Uhr.",
     "newCode": "Neuer Code",
@@ -956,15 +956,15 @@
     "appText": "Overpriced Cardboard gibt es bei Google Play und im App Store.",
     "appTextSoon": "Overpriced Cardboard gibt es für Android bei Google Play; fürs iPhone kommt die App bald in den App Store.",
     "appStore": "Im App Store laden",
-    "signIn": "In der App meldest du dich unter Settings › Account mit {email} an, oder du verbindest sie unten mit einem QR-Code.",
+    "signIn": "In der App meldest du dich unter Settings › Account mit {email} an, oder du verbindest sie unten mit einem Code.",
     "freeHint": "Ohne Abo läuft die App als Gratis-Version."
   },
   "Pair": {
     "title": "App verbinden",
     "text": "Dieser Code verbindet die App Overpriced Cardboard mit einem Konto. Scanne ihn in der App, nicht mit der Handy-Kamera.",
     "step1": "Öffne die App Overpriced Cardboard.",
-    "step2": "Tippe unter Settings › Account auf „Have a QR code from the portal? Connect with it“ und halte die Kamera auf den Code am Computer-Bildschirm.",
-    "noApp": "Noch keine App? Du bekommst sie gratis bei Google Play.",
+    "step2": "Tippe unter Settings › Account auf „Have a QR code from the portal?“ und halte die Kamera auf den Code am Computer-Bildschirm. Am iPhone tippst du stattdessen unter „Have a code from your account?“ den Code unter dem QR-Code ein.",
+    "noApp": "Noch keine App? Du bekommst sie gratis bei Google Play und im App Store.",
     "toApp": "Zur App"
   },
   "Portal": {

@@ -17,11 +17,14 @@ type Props = { params: Promise<{ locale: Locale }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'App' });
-  const prices = await subscriptionPrices(db());
+  const [prices, stores] = await Promise.all([subscriptionPrices(db()), appStores(db())]);
+  // Safari on an iPhone offers the App Store app in a banner.
+  const appleId = stores.apple?.match(/\/id(\d+)/)?.[1];
   return {
     title: { absolute: t('metaTitle') },
     description: t('metaDescription', { price: formatEuro(prices.collector, locale) }),
     alternates: pageAlternates('/app', locale),
+    ...(appleId ? { itunes: { appId: appleId } } : {}),
   };
 }
 
